@@ -124,9 +124,9 @@ INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS)
 	   $(BOOST_CXXFLAGS) -I$(includedir)
 
 
-LDFLAGS = $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) 
+LIBS = $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) 
 
-LDADD = LDADD = ../clipper/core/libclipper-core.la ../clipper/contrib/libclipper-contrib.la ../clipper/cif/libclipper-cif.la ../clipper/mmdb/libclipper-mmdb.la ../clipper/ccp4/libclipper-ccp4.la ../clipper/phs/libclipper-phs.la
+LDADD = ../clipper/contrib/libclipper-contrib.la ../clipper/cif/libclipper-cif.la ../clipper/mmdb/libclipper-mmdb.la ../clipper/ccp4/libclipper-ccp4.la ../clipper/phs/libclipper-phs.la ../clipper/core/libclipper-core.la
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
@@ -137,23 +137,23 @@ PROGRAMS = $(bin_PROGRAMS)
 am_chltofom_OBJECTS = chltofom.$(OBJEXT) ccp4-extras.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
-chltofom_DEPENDENCIES = LDADD = ../clipper/core/libclipper-core.la \
-	../clipper/contrib/libclipper-contrib.la \
+chltofom_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/cif/libclipper-cif.la \
 	../clipper/mmdb/libclipper-mmdb.la \
 	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la
+	../clipper/phs/libclipper-phs.la \
+	../clipper/core/libclipper-core.la
 chltofom_LDFLAGS =
 am_cpirate_OBJECTS = cpirate.$(OBJEXT) ccp4-extras.$(OBJEXT) \
 	piralib.$(OBJEXT)
 cpirate_OBJECTS = $(am_cpirate_OBJECTS)
 cpirate_LDADD = $(LDADD)
-cpirate_DEPENDENCIES = LDADD = ../clipper/core/libclipper-core.la \
-	../clipper/contrib/libclipper-contrib.la \
+cpirate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/cif/libclipper-cif.la \
 	../clipper/mmdb/libclipper-mmdb.la \
 	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la
+	../clipper/phs/libclipper-phs.la \
+	../clipper/core/libclipper-core.la
 cpirate_LDFLAGS =
 SCRIPTS = $(noinst_SCRIPTS)
 
@@ -161,7 +161,7 @@ SCRIPTS = $(noinst_SCRIPTS)
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
-LIBS = @LIBS@
+LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/ccp4-extras.Po \
