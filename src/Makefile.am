@@ -1,7 +1,7 @@
-bin_PROGRAMS = chltofom cpirate
+bin_PROGRAMS = cpirate chltofom
 
 cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
-chltofom_SOURCES = chltofom.cpp
+chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
 
 noinst_SCRIPTS = makereference.csh
 
