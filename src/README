@@ -1,0 +1,97 @@
+Installing pirate:
+
+First you should have a licensed, working install of CCP4 version 5.0
+(or 5.0beta). This 'pirate' package contains a time-limited binary of
+pirate compiled for Linux/x86, and distributed as proprietary software.
+
+You may install this software for your use within your site for testing
+and structure solution. You may not modify or redistribute it.
+This software includes Clipper and kiss-fft, see the accompanying
+COPYING* files for license details.
+
+
+There are two ways to install pirate:
+
+ - In your CCP4 distribution (this requires you having access to the
+ appropriate account).
+
+ - In your own area (doesn't require any access, but the help buttons
+ on the GUI may not work).
+
+If you are reading this, you have presumably already unpacked the main
+tar file. This will give you the following files and directories:
+
+ bin/cpirate
+ bin/chltofom
+ html/cpirate.html
+ html/chltofom.html
+ reference_structures/makereference.csh
+ pirate.tar.gz   (THE GUI)
+
+You will need to take the following steps:
+ 1. (optionally) copy files into your distribution.
+ 2. install the new ccp4i GUI components.
+ 3. make some reference structures.
+
+The steps are as follows:
+
+--
+
+1. COPY FILES INTO YOUR DISTRIBUTION
+
+If you are installing in your CCP4 distribution, setup ccp4 and then
+give the following commands:
+ cp bin/* $CCP4/bin
+ cp html/* $CCP4/html
+
+--
+
+2. INSTALL THE NEW CCP4I GUI COMPONENTS
+
+Start the ccp4i gui. From the 'System Administration' menu (bottom
+right) select 'Install tasks'.
+
+If you are installing in your own area, change the installation area
+(on the second line down) from 'main CCP4i' to 'Users local CCP4i'.
+
+Now enter the name and path of the file pirate.tar.gz from the
+distribution (or use the browse button if you prefer). Hit 'Apply'
+to add the new GUI components.
+
+If you are installing in your own area, you must now take an
+additional step to tell the GUI where to find the new programs. From
+the 'System Administration' menu select 'Configure Interface'. At the
+bottom of the 'External Programs' section, click the 'Add a Program'
+button twice. Enter the names 'cpirate' and 'chltofom' in the boxes on
+the left, and give the full path and filename of the corresponding
+programs in the boxes on the right.
+
+--
+
+3. MAKE SOME REFERENCE STRUCTURES
+
+Go to the reference_structures directory. If you are installing in you
+main CCP4 directory, you can move this directory into $CCP4 so all
+your users can see it.
+
+Now run the makereference.csh script with a list of suitable PDB codes
+for which reflection data is available. 
+The following list 3 good large structures (1dll, 1ajr, 1bv4), and two
+medium structures for extreme solvent cases (1tol 1at6).
+
+ ./makereference.csh 1tol 1dll 1ajr 1bv4 1at6
+
+Protein fractions are as follows: 1tol-33% 1dll-43% 1ajr-50% 1bv4-56% 1at6-64%
+Treat results from the two extreme structures wioth suspicion unless the
+maps look good.
+The old list of small structures was as follows, these can be a bit hit
+and miss: 1svn, 1lz8, 1c8u, 1b9m, 1bm3
+
+Note: You will usually receive error messages from 'truncate' while
+running these scripts. These are nothing to worry about, and arise from
+the fact that a few cif files have I's instead of F's.
+
+Note: if you are behind a firewall, the ftp commands may fail. In
+which case you will have to fetch the coordinate and structure factor
+files by hand. Put these in the same directory, and edit the script to
+comment out the ncftpget commands, then rerun it.
