@@ -3,7 +3,7 @@ bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft 
 cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
 chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
 
-cmakereference_SOURCES = cmakereference.cpp ccp4-extras.cpp ftplib.h ftplib.c compress42.c ccp4-extras.h
+cmakereference_SOURCES = cmakereference.cpp ccp4-extras.cpp ftplib.h ccp4-extras.h
 
 cphasematch_SOURCES = cphasematch.cpp ccp4-extras.cpp
 
@@ -21,7 +21,7 @@ cphasecombine_SOURCES = cphasecombine.cpp ccp4-extras.cpp
 
 cpatterson_SOURCES = cpatterson.cpp ccp4-extras.cpp
 
-EXTRA_DIST = README
+EXTRA_DIST = README ftplib.c compress42.c
 
 INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
 	   $(BOOST_CXXFLAGS) -I$(includedir)
