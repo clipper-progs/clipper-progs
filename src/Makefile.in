@@ -124,7 +124,9 @@ INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS)
 	   $(BOOST_CXXFLAGS) -I$(includedir)
 
 
-LDFLAGS = -L$(libdir) -lclipper-contrib -lclipper-cif -lclipper-mmdb  -lclipper-ccp4 -lclipper-phs -lclipper-core $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) 
+LDFLAGS = $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) 
+
+LDADD = LDADD = ../clipper/core/libclipper-core.la ../clipper/contrib/libclipper-contrib.la ../clipper/cif/libclipper-cif.la ../clipper/mmdb/libclipper-mmdb.la ../clipper/ccp4/libclipper-ccp4.la ../clipper/phs/libclipper-phs.la
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
@@ -135,13 +137,23 @@ PROGRAMS = $(bin_PROGRAMS)
 am_chltofom_OBJECTS = chltofom.$(OBJEXT) ccp4-extras.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
-chltofom_DEPENDENCIES =
+chltofom_DEPENDENCIES = LDADD = ../clipper/core/libclipper-core.la \
+	../clipper/contrib/libclipper-contrib.la \
+	../clipper/cif/libclipper-cif.la \
+	../clipper/mmdb/libclipper-mmdb.la \
+	../clipper/ccp4/libclipper-ccp4.la \
+	../clipper/phs/libclipper-phs.la
 chltofom_LDFLAGS =
 am_cpirate_OBJECTS = cpirate.$(OBJEXT) ccp4-extras.$(OBJEXT) \
 	piralib.$(OBJEXT)
 cpirate_OBJECTS = $(am_cpirate_OBJECTS)
 cpirate_LDADD = $(LDADD)
-cpirate_DEPENDENCIES =
+cpirate_DEPENDENCIES = LDADD = ../clipper/core/libclipper-core.la \
+	../clipper/contrib/libclipper-contrib.la \
+	../clipper/cif/libclipper-cif.la \
+	../clipper/mmdb/libclipper-mmdb.la \
+	../clipper/ccp4/libclipper-ccp4.la \
+	../clipper/phs/libclipper-phs.la
 cpirate_LDFLAGS =
 SCRIPTS = $(noinst_SCRIPTS)
 
