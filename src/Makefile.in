@@ -113,7 +113,7 @@ install_sh = @install_sh@
 bin_PROGRAMS = chltofom cpirate
 
 cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
-chltofom_SOURCES = chtofom.cpp
+chltofom_SOURCES = chltofom.cpp
 
 noinst_SCRIPTS = makereference.csh
 
@@ -131,7 +131,7 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cpirate$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
-am_chltofom_OBJECTS = chtofom.$(OBJEXT)
+am_chltofom_OBJECTS = chltofom.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
 chltofom_DEPENDENCIES =
@@ -152,7 +152,7 @@ LIBS = @LIBS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/ccp4-extras.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/chtofom.Po ./$(DEPDIR)/cpirate.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/chltofom.Po ./$(DEPDIR)/cpirate.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/piralib.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -225,7 +225,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccp4-extras.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chtofom.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpirate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/piralib.Po@am__quote@
 
