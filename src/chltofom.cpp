@@ -16,7 +16,7 @@ int main( int argc, char** argv )
   clipper::String ipcolh = "NONE";
   clipper::String ipcolp = "NONE";
   clipper::String opfile = "hltofom.mtz";
-  clipper::String opcol = "hl";
+  clipper::String opcol = "";
 
   // command input
   CommandInput args( argc, argv, true );
@@ -55,10 +55,12 @@ int main( int argc, char** argv )
   clipper::HKL_data<clipper::data32::ABCD>    abcd( hkls );
   clipper::HKL_data<clipper::data32::F_sigF>  fsig( hkls );
   clipper::HKL_data<clipper::data32::F_phi>   fphi( hkls );
-  if ( ipcolf != "NONE" ) mtzin.import_hkl_data( fsig, ipcolf );
   if ( ipcolh != "NONE" ) mtzin.import_hkl_data( abcd, ipcolh );
   if ( ipcolp != "NONE" ) mtzin.import_hkl_data( phiw, ipcolp );
-  if ( opcol[0] != '/' ) opcol = mtzin.assigned_paths()[0].notail()+"/"+opcol;
+  if ( ipcolf != "NONE" ) mtzin.import_hkl_data( fsig, ipcolf );
+  clipper::String opbase = mtzin.assigned_paths()[0];
+  if      ( opcol == "" )     opcol = opbase.substr( 0, opbase.find(".") );
+  else if ( opcol[0] != '/' ) opcol = opbase.notail()+"/"+opcol;
   mtzin.close_read();
   mtzout.open_append( ipfile, opfile );
   // compute phi+fom from abcd
