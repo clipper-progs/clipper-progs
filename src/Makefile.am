@@ -1,4 +1,4 @@
-bin_PROGRAMS = cpirate chltofom
+bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
 
 cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
 chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
