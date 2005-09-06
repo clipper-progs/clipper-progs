@@ -1,6 +1,6 @@
 bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
 
-cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
+cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h pirancslib.cpp pirancslib.h
 chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
 
 cmakereference_SOURCES = cmakereference.cpp ccp4-extras.cpp ftplib.h ftplib.c compress42.c ccp4-extras.h

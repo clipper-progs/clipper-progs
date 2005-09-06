@@ -115,7 +115,7 @@ am__quote = @am__quote@
 install_sh = @install_sh@
 bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
 
-cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h
+cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h pirancslib.cpp pirancslib.h
 chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
 
 cmakereference_SOURCES = cmakereference.cpp ccp4-extras.cpp ftplib.h ftplib.c compress42.c ccp4-extras.h
@@ -237,7 +237,7 @@ cphasematch_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/core/libclipper-core.la
 cphasematch_LDFLAGS =
 am_cpirate_OBJECTS = cpirate.$(OBJEXT) ccp4-extras.$(OBJEXT) \
-	piralib.$(OBJEXT)
+	piralib.$(OBJEXT) pirancslib.$(OBJEXT)
 cpirate_OBJECTS = $(am_cpirate_OBJECTS)
 cpirate_LDADD = $(LDADD)
 cpirate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -282,7 +282,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/cpirate.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/csfcalc.Po ./$(DEPDIR)/csigmaa.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/ftplib.Po ./$(DEPDIR)/piralib.Po
+@AMDEP_TRUE@	./$(DEPDIR)/ftplib.Po ./$(DEPDIR)/piralib.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pirancslib.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -401,6 +402,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csigmaa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ftplib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/piralib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pirancslib.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
