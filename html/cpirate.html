@@ -21,6 +21,7 @@
 <b>cpirate</b>
 <b>-mtzin-ref </b><i>filename</i>
 <b>-mtzin-wrk </b><i>filename</i>
+<b>-pdbin-ha </b><i>filename</i>
 <b>-mtzout </b><i>filename</i>
 <b>-colin-ref-fo </b><i>colpath</i>
 <b>-colin-ref-hl </b><i>colpath</i>
@@ -34,11 +35,16 @@
 <b>-weight-expllk </b><i>weight</i>
 <b>-weight-mapllk </b><i>weight</i>
 <b>-weight-ramp </b><i>weight</i>
+<b>-resolution </b><i>resolution/A</i>
+<b>-stats-radius </b><i>radius/A</i>,<i>radius/A</i>
+<b>-skew-content </b><i>factor</i>,<i>factor</i>
+<b>-auto-content</b>
 <b>-unbias</b>
 <b>-evaluate</b>
 <b>-strict-free</b>
-<b>-stats-radius </b><i>radius/A</i>
-<b>-resolution </b><i>resolution/A</i>
+<b>-ncs-volume</b> <i>factor</i>
+<b>-ncs-radius</b> <i>radius</i>
+<b>-ncs-operator</b> <i>alpha</i>,<i>beta</i>,<i>gamma</i>,<i>x<sub>source</sub></i>,<i>y<sub>source</sub></i>,<i>z<sub>source</sub></i>,<i>x<sub>target</sub></i>,<i>y<sub>target</sub></i>,<i>z<sub>target</sub></i>
 <b>-seed </b><i>seed</i>
 <b>-verbose </b><i>verbosity</i>
 <b>-stdin </b>
@@ -57,30 +63,53 @@ using a known 'reference' structure for which calculated phases are
 available. The success of the method is dependent on the features of
 the reference structure matching those of the unsolved, 'work'
 structure. For the common case of a protein of mostly equal atoms
-(i.e. not a metalloprotein), a standard set of reference structures
-can be tested, and the one with the best Free residuals used for a
-full phasing calculation.</p>
+(i.e. not a metalloprotein), a single reference structures can be
+used, with modifications automatically applied to the reference
+structure to match its features to the work structure.</p>
 
 <h2><a name="howtorun"></a>HOW TO RUN PIRATE</h2>
 
-<p>To get the best results from 'pirate', you must run it several
-times to select the best reference structure. These initial runs are
+<p>To get the best results from 'pirate', you should allow it to
+modify the cell contents of the reference structure to match the
+contents of the work structure. To do this, simply leave the
+'auto-content' option selected, and use a generic reference structure
+of medium solvent content, such as 1AJR.</p>
+
+<p>Alternatively, you may run 'pirate' several times in 'evaluation'
+mode to select the best reference structure. These initial runs are
 for a single cycle only, and the output is ignored. Simply check the
 Free-E correlation in the log file to determine which reference
-structure gives the best results.</p>
+structure gives the best results. Once you have identified the best
+reference structure, make a longer run (3-9 cycles) to produce an
+improved set of phases.</p>
 
-<p>A set of reference structure should have been provided by whoever
-installed 'pirate' on your system. These are suitable for common
-light-atom protein structures with varying solvent content and
-resolution up to 2.0A. For exotic cases and high resolution cases you
-will have to provide your own reference structures.</p>
+<p>A set of reference structure may have been provided by whoever
+installed 'pirate' on your system, otherwise you can generate one
+using the 'Make ref structure' task. The structure 1AJR is good for
+typical protein problems at resolutions up to 1.85A. For exotic cases
+and high resolution cases you will have to provide your own reference
+structures.  The 'Make ref structure' task requires ftp access to the
+EBI - if your local firewall prevents this, you will have to fetch the
+coordinate and structure factor files (pdbXXXX.ent.Z, rXXXXsf.ext.Z)
+using your preferred tool, and then run the task using the local
+files.
+</p>
 
-<p>Once you have identified the best reference structure, make a
-longer run (3-5 cycles) to produce an improved set of phases.</p>
+<p>You may have to adjust the log-likelihood weights in some cases -
+particularly SAD, where the error estimates may be very poor. The
+Free-E correlation is less helpful for this purpose - look at the maps
+to decide if this is necessary.</p>
 
-<p>You may have to adjust the log-likelihood weights in some
-cases. The Free-E correlation is less helpful for this purpose - look
-at the maps to decide if this is necessary.</p>
+<h3><a name="ncs"></a>PIRATE AND NCS</h3>
+
+<p>The use of NCS for phase improvement in 'pirate' is fully automatic
+- all you need to do is provide a file of heavy atom coordinates. It
+is often worth running 'pirate' for more cycles when NCS is
+available.</p>
+
+<p>Rarely, it may be necessary to describe the NCS explicitly to
+pirate. In this case, expert users may be able to make use of the
+'-ncs-...' keywords.</p>
 
 <h2><a name="files"></a>INPUT/OUTPUT FILES</h2>
 
@@ -89,8 +118,8 @@ at the maps to decide if this is necessary.</p>
 data for a known, reference structure. The required columns are F,
 sigF, and a set of Hendrickson-Lattman (HL) coefficients describing
 the calculated phases from the final model. Suitable reference
-structures can be constructed from the PDB using
-cmakereference.</dd>
+structures can be constructed from the PDB using the
+makereference.csh script.</dd>
 
 <dt>-mtzin-wrk</dt> <dd>Input 'work' MTZ file. This contains the data
 for the unknown, work structure. The required columns are F, sigF, and
@@ -99,7 +128,12 @@ molecular replacement). A Free-R flag may be provided. The HL
 distributions should be accurate - in my experience no current program
 fulfils this criterion, although Solve comes close. I have strong
 hopes for Phaser. Currently, the input HL coefficients are corrected
-using a user parameter.</dd>
+using a user parameter. (Note: If you are using phases from a
+molecular replacement calculation, you may need to run sigmaa and/or
+hltofom before pirate to get HL coefficients.)</dd>
+
+<dt>-pdbin-ha</dt> <dd>[Optional] Input PDB file containing heavy-atom
+coordinates. If this file is provided, the atoms will be used for automatic determination of NCS.</dd>
 
 <dt>-mtzout</dt> <dd>Output MTZ file. This will contain the updated HL
 coefficients, and map coefficients for a best electron density map,
@@ -173,6 +207,27 @@ final run.</p>
 <p>[Optional] Weight for the ramping up of the map likelihood. Defaults
 are 2.0 in normal mode and 1.0 in unbias mode.</p>
 
+<h3><a name="resolution"></a>-resolution <i>resolution/A</i></h3>
+
+<p>[Optional] Resolution limit for the calculation. All data is truncated.</p>
+
+<h3><a name="stats-radius"></a>-stats-radius <i>radius/A</i>,<i>radius/A</i></h3>
+
+<p>[Optional] Radius for local mean and standard deviation, used in
+classifying the map. Default 9.0,3.0A. First value is initial value, second is final values for multi-cycle calculations.</p>
+
+<h3><a name="skew-content"></a>-skew-content <i>factor</i>,<i>factor</i></h3>
+
+<p>[Optional] Factors for skewing the content of dense and ordered
+density of the reference structure. +ve increases the specified
+region, -ve decreases. Useful range is -1...+1.</p>
+
+<h3><a name="auto-content"></a>-auto-content</h3>
+
+<p>[Optional] Automatically refine values for content skewing to fit
+the reference structure to the work structure. This is slow but gives
+a better result.</p>
+
 <h3><a name="unbias"></a>-unbias</h3>
 
 <p>[Optional] Select '-unbias' to remove bias from molecular
@@ -192,11 +247,29 @@ may be a good idea if you want to try and refine against the final
 output phases. A better option is to run only one cycle to produce
 phases for refinement, or more to make a map.</p>
 
-<h3><a name="stats-radius"></a>-stats-radius <i>radius/A</i></h3>
+<h3><a name="ncs-volume"></a>-ncs-volume <i>factor</i></h3>
 
-<p>[Optional] Radius for local mean and standard deviation, used in
-classifying the map. Default 9.0A. Current experience suggests there
-is not much to be gained by varying this value.</p>
+<p>[Optional] The expected volume of the region obeying the NCS in
+assymetric units. Default is 1.0. for viruses or other constructs
+where the NCS envelope is larger than the ASU, increase this
+appropriately.</p>
+
+<h3><a name="ncs-radius"></a>-ncs-radius <i>radius</i></h3>
+<p>[Optional] Radius for local statistics used in identifying the NCS
+envelope. Default 6.0A. Increase this for low resolution cases (worse
+than 4.0A).</p>
+
+<h3><a name="ncs-operator"></a>-ncs-operator <i>alpha</i>,<i>beta</i>,<i>gamma</i>,<i>x<sub>source</sub></i>,<i>y<sub>source</sub></i>,<i>z<sub>source</sub></i>,<i>x<sub>target</sub></i>,<i>y<sub>target</sub></i>,<i>z<sub>target</sub></i></h3>
+
+<p>[Optional] Explicitly specify an NCS operator. Usually this is done
+by giving a heavy-atom coordinate file, but if this is not available,
+the operators may be specified explicitly. The first 3 numbers are
+Euler angles in degrees, the next three are the centre of mass of the
+source copy, and the final 3 are the centre of mass of the target
+copy. Do not specify an identity operator. In the case of improper
+NCS, an operator relating every possible pair of molecules is
+required. Multi-domain operators may also be specified. The CCP4
+program 'lsqkab' can be used to determine the operators.</p>
 
 <h3><a name="seed"></a>-seed <i>seed</i></h3>
 <h3><a name="verbose"></a>-verbose <i>verbosity</i></h3>
