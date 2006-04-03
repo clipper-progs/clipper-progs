@@ -21,7 +21,7 @@ int main( int argc, char** argv )
   clipper::String ipcolh = "NONE";
   clipper::String ipcolp = "NONE";
   clipper::String opfile = "hltofom.mtz";
-  clipper::String opcol = "";
+  clipper::String opcol = "hltofom";
 
   // command input
   CommandInput args( argc, argv, true );
