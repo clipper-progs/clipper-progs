@@ -80,10 +80,10 @@ CLIPPER_CCTBX_DIR = @CLIPPER_CCTBX_DIR@
 CLIPPER_CIF_DIR = @CLIPPER_CIF_DIR@
 CLIPPER_CNS_DIR = @CLIPPER_CNS_DIR@
 CLIPPER_CONTRIB_DIR = @CLIPPER_CONTRIB_DIR@
+CLIPPER_FORTRAN_DIR = @CLIPPER_FORTRAN_DIR@
 CLIPPER_MINIMOL_DIR = @CLIPPER_MINIMOL_DIR@
 CLIPPER_MMDBOLD_DIR = @CLIPPER_MMDBOLD_DIR@
 CLIPPER_MMDB_DIR = @CLIPPER_MMDB_DIR@
-CLIPPER_MTZ_DIR = @CLIPPER_MTZ_DIR@
 CLIPPER_PHS_DIR = @CLIPPER_PHS_DIR@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -100,8 +100,6 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 MAINT = @MAINT@
-MCCP4_CXXFLAGS = @MCCP4_CXXFLAGS@
-MCCP4_LIBS = @MCCP4_LIBS@
 MMDB_CXXFLAGS = @MMDB_CXXFLAGS@
 MMDB_LIBS = @MMDB_LIBS@
 OBJDUMP = @OBJDUMP@
@@ -115,26 +113,27 @@ am__quote = @am__quote@
 install_sh = @install_sh@
 bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
 
-cpirate_SOURCES = cpirate.cpp ccp4-extras.cpp piralib.cpp ccp4-extras.h piralib.h pirancslib.cpp pirancslib.h
-chltofom_SOURCES = chltofom.cpp ccp4-extras.cpp
+cpirate_SOURCES = cpirate.cpp piralib.cpp piralib.h pirancslib.cpp pirancslib.h
 
-cmakereference_SOURCES = cmakereference.cpp ccp4-extras.cpp ftplib.h ftplib.c compress42.c ccp4-extras.h
+chltofom_SOURCES = chltofom.cpp
 
-cphasematch_SOURCES = cphasematch.cpp ccp4-extras.cpp
+cmakereference_SOURCES = cmakereference.cpp ftplib.h ftplib.c compress42.c
 
-csfcalc_SOURCES = csfcalc.cpp ccp4-extras.cpp
+cphasematch_SOURCES = cphasematch.cpp
 
-cfft_SOURCES = cfft.cpp ccp4-extras.cpp
+csfcalc_SOURCES = csfcalc.cpp
 
-cinvfft_SOURCES = cinvfft.cpp ccp4-extras.cpp
+cfft_SOURCES = cfft.cpp
 
-csigmaa_SOURCES = csigmaa.cpp ccp4-extras.cpp
+cinvfft_SOURCES = cinvfft.cpp
 
-cecalc_SOURCES = cecalc.cpp ccp4-extras.cpp
+csigmaa_SOURCES = csigmaa.cpp
 
-cphasecombine_SOURCES = cphasecombine.cpp ccp4-extras.cpp
+cecalc_SOURCES = cecalc.cpp
 
-cpatterson_SOURCES = cpatterson.cpp ccp4-extras.cpp
+cphasecombine_SOURCES = cphasecombine.cpp
+
+cpatterson_SOURCES = cpatterson.cpp
 
 EXTRA_DIST = README ftplib.c compress42.c
 
@@ -155,7 +154,7 @@ bin_PROGRAMS = cpirate$(EXEEXT) chltofom$(EXEEXT) \
 	cphasecombine$(EXEEXT) cpatterson$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
-am_cecalc_OBJECTS = cecalc.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cecalc_OBJECTS = cecalc.$(OBJEXT)
 cecalc_OBJECTS = $(am_cecalc_OBJECTS)
 cecalc_LDADD = $(LDADD)
 cecalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -165,7 +164,7 @@ cecalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cecalc_LDFLAGS =
-am_cfft_OBJECTS = cfft.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cfft_OBJECTS = cfft.$(OBJEXT)
 cfft_OBJECTS = $(am_cfft_OBJECTS)
 cfft_LDADD = $(LDADD)
 cfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -175,7 +174,7 @@ cfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cfft_LDFLAGS =
-am_chltofom_OBJECTS = chltofom.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_chltofom_OBJECTS = chltofom.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
 chltofom_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -185,7 +184,7 @@ chltofom_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 chltofom_LDFLAGS =
-am_cinvfft_OBJECTS = cinvfft.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cinvfft_OBJECTS = cinvfft.$(OBJEXT)
 cinvfft_OBJECTS = $(am_cinvfft_OBJECTS)
 cinvfft_LDADD = $(LDADD)
 cinvfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -195,8 +194,8 @@ cinvfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cinvfft_LDFLAGS =
-am_cmakereference_OBJECTS = cmakereference.$(OBJEXT) \
-	ccp4-extras.$(OBJEXT) ftplib.$(OBJEXT) compress42.$(OBJEXT)
+am_cmakereference_OBJECTS = cmakereference.$(OBJEXT) ftplib.$(OBJEXT) \
+	compress42.$(OBJEXT)
 cmakereference_OBJECTS = $(am_cmakereference_OBJECTS)
 cmakereference_LDADD = $(LDADD)
 cmakereference_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -206,7 +205,7 @@ cmakereference_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cmakereference_LDFLAGS =
-am_cpatterson_OBJECTS = cpatterson.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cpatterson_OBJECTS = cpatterson.$(OBJEXT)
 cpatterson_OBJECTS = $(am_cpatterson_OBJECTS)
 cpatterson_LDADD = $(LDADD)
 cpatterson_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -216,7 +215,7 @@ cpatterson_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cpatterson_LDFLAGS =
-am_cphasecombine_OBJECTS = cphasecombine.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cphasecombine_OBJECTS = cphasecombine.$(OBJEXT)
 cphasecombine_OBJECTS = $(am_cphasecombine_OBJECTS)
 cphasecombine_LDADD = $(LDADD)
 cphasecombine_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -226,7 +225,7 @@ cphasecombine_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cphasecombine_LDFLAGS =
-am_cphasematch_OBJECTS = cphasematch.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_cphasematch_OBJECTS = cphasematch.$(OBJEXT)
 cphasematch_OBJECTS = $(am_cphasematch_OBJECTS)
 cphasematch_LDADD = $(LDADD)
 cphasematch_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -236,8 +235,8 @@ cphasematch_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cphasematch_LDFLAGS =
-am_cpirate_OBJECTS = cpirate.$(OBJEXT) ccp4-extras.$(OBJEXT) \
-	piralib.$(OBJEXT) pirancslib.$(OBJEXT)
+am_cpirate_OBJECTS = cpirate.$(OBJEXT) piralib.$(OBJEXT) \
+	pirancslib.$(OBJEXT)
 cpirate_OBJECTS = $(am_cpirate_OBJECTS)
 cpirate_LDADD = $(LDADD)
 cpirate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -247,7 +246,7 @@ cpirate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cpirate_LDFLAGS =
-am_csfcalc_OBJECTS = csfcalc.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_csfcalc_OBJECTS = csfcalc.$(OBJEXT)
 csfcalc_OBJECTS = $(am_csfcalc_OBJECTS)
 csfcalc_LDADD = $(LDADD)
 csfcalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -257,7 +256,7 @@ csfcalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 csfcalc_LDFLAGS =
-am_csigmaa_OBJECTS = csigmaa.$(OBJEXT) ccp4-extras.$(OBJEXT)
+am_csigmaa_OBJECTS = csigmaa.$(OBJEXT)
 csigmaa_OBJECTS = $(am_csigmaa_OBJECTS)
 csigmaa_LDADD = $(LDADD)
 csigmaa_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
@@ -274,9 +273,8 @@ CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/ccp4-extras.Po ./$(DEPDIR)/cecalc.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/cfft.Po ./$(DEPDIR)/chltofom.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/cinvfft.Po \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cecalc.Po ./$(DEPDIR)/cfft.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/chltofom.Po ./$(DEPDIR)/cinvfft.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cmakereference.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/compress42.Po ./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
@@ -387,7 +385,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ccp4-extras.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cecalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chltofom.Po@am__quote@

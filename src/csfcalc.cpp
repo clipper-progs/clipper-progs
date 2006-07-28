@@ -1,40 +1,39 @@
 // Clipper app to perform structure factor calculation
 /* Copyright 2003-2004 Kevin Cowtan & University of York all rights reserved */
 
-//L   This code is distributed under the terms and conditions of the
-//L   CCP4 Program Suite Licence Agreement as a CCP4 Application.
-//L   A copy of the CCP4 licence can be obtained by writing to the
-//L   CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
-
 #include <clipper/clipper.h>
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 #include <clipper/clipper-mmdb.h>
-#include "ccp4-extras.h"
 
 
 int main( int argc, char** argv )
 {
-  CCP4program prog( "csfcalc", "0.1", "$Date: 2004/06/01" );
+  CCP4Program prog( "csfcalc", "0.1", "$Date: 2004/06/01" );
 
   // defaults
+  enum ANISO { NONE, FOBS, FCAL };
+  clipper::String title;
   clipper::String ippdb = "NONE";
   clipper::String ipfile = "NONE";
   clipper::String ipcolfo = "NONE";
   clipper::String ipcolfree = "NONE";
   clipper::String opfile = "sfcalc.mtz";
   clipper::String opcol = "sfcalc";
-  bool bulk = true;
+  bool bulk  = true;
+  ANISO aniso = NONE;
   int freeflag = 0;
   int n_refln = 1000;
   int n_param = 20;
   int verbose = 0;
 
   // command input
-  CommandInput args( argc, argv, true );
+  CCP4CommandInput args( argc, argv, true );
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if ( args[arg] == "-pdbin" ) {
+    if ( args[arg] == "-title" ) {
+      if ( ++arg < args.size() ) title = args[arg];
+    } else if ( args[arg] == "-pdbin" ) {
       if ( ++arg < args.size() ) ippdb = args[arg];
     } else if ( args[arg] == "-mtzin" ) {
       if ( ++arg < args.size() ) ipfile = args[arg];
@@ -54,6 +53,10 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) n_param = clipper::String(args[arg]).i();
     } else if ( args[arg] == "-no-bulk" ) {
       bulk = false;
+    } else if ( args[arg] == "-aniso-obs" ) {
+      aniso = FOBS;
+    } else if ( args[arg] == "-aniso-cal" ) {
+      aniso = FCAL;
     } else if ( args[arg] == "-verbose" ) {
       if ( ++arg < args.size() ) verbose = clipper::String(args[arg]).i();
     } else {
@@ -62,7 +65,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: csfcalc\n\t-pdbin <filename>\n\t-mtzin <filename>\n\t-colin-fo <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-free-flag <free set>\n\t-num-reflns <reflns per spline param>\n\t-num-params <spline params>\n\t-no-bulk\nStructure factor calculation with bulk solvent correction.\n";
+    std::cout << "Usage: csfcalc\n\t-pdbin <filename>\n\t-mtzin <filename>\n\t-colin-fo <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-free-flag <free set>\n\t-num-reflns <reflns per spline param>\n\t-num-params <spline params>\n\t-no-bulk\n\t-aniso-obs\n\t-aniso-cal\nStructure factor calculation with bulk solvent correction.\n";
     exit(1);
   }
 
@@ -72,13 +75,15 @@ int main( int argc, char** argv )
   clipper::HKL_info hkls;
   double bulkfrc, bulkscl;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
+  using clipper::data32::F_sigF;  using clipper::data32::F_phi;
+  using clipper::data32::Phi_fom; using clipper::data32::Flag;
 
   // open file
   mtzin.open_read( ipfile );
   mtzin.import_hkl_info( hkls );
   mtzin.import_crystal( cxtl, ipcolfo );
-  clipper::HKL_data<clipper::data32::F_sigF> fo( hkls, cxtl );
-  clipper::HKL_data<clipper::data32::Flag> free( hkls, cxtl );
+  clipper::HKL_data<F_sigF> fo( hkls, cxtl );
+  clipper::HKL_data<Flag> free( hkls, cxtl );
   mtzin.import_hkl_data( fo, ipcolfo );
   if ( ipcolfree != "NONE" ) mtzin.import_hkl_data( free, ipcolfree );
   if ( opcol[0] != '/' ) opcol = mtzin.assigned_paths()[0].notail()+"/"+opcol;
@@ -99,7 +104,7 @@ int main( int argc, char** argv )
   mmdb.DeleteSelection( hndl );
 
   // calculate structure factors
-  clipper::HKL_data<clipper::data32::F_phi> fc( hkls, cxtl );
+  clipper::HKL_data<F_phi> fc( hkls, cxtl );
   if ( bulk ) {
     clipper::SFcalc_obs_bulk<float> sfcb;
     sfcb( fc, fo, atoms );
@@ -111,10 +116,19 @@ int main( int argc, char** argv )
     bulkfrc = bulkscl = 0.0;
   }
 
+  // do anisotropic scaling
+  if ( aniso != NONE )  {
+    clipper::SFscale_aniso<float> sfscl;
+    if ( aniso == FOBS ) sfscl( fo, fc );  // scale Fobs
+    if ( aniso == FCAL ) sfscl( fc, fo );  // scale Fcal
+    std::cout << "\nAnisotropic scaling:\n"
+	      << sfscl.u_aniso_orth().format() << "\n";
+  }
+
   // now do sigmaa calc
-  clipper::HKL_data<clipper::data32::F_phi> fb( hkls, cxtl ), fd( hkls, cxtl );
-  clipper::HKL_data<clipper::data32::Phi_fom> phiw( hkls, cxtl );
-  clipper::HKL_data<clipper::data32::Flag> flag( hkls, cxtl );
+  clipper::HKL_data<F_phi>   fb( hkls, cxtl ), fd( hkls, cxtl );
+  clipper::HKL_data<Phi_fom> phiw( hkls, cxtl );
+  clipper::HKL_data<Flag>    flag( hkls, cxtl );
   for ( HRI ih = flag.first(); !ih.last(); ih.next() )
     if ( !fo[ih].missing() && (free[ih].missing()||free[ih].flag()==freeflag) )
       flag[ih].flag() = clipper::SFweight_spline<float>::BOTH;
@@ -123,7 +137,7 @@ int main( int argc, char** argv )
 
   // do sigmaa calc
   clipper::SFweight_spline<float> sfw( n_refln, n_param );
-  bool fl = sfw( fb, fd, phiw, fo, fc, flag );
+  sfw( fb, fd, phiw, fo, fc, flag );
 
   // calc abcd
   clipper::HKL_data<clipper::data32::ABCD> abcd( hkls );
@@ -140,7 +154,7 @@ int main( int argc, char** argv )
   // now calc R and R-free
   std::vector<double> params( n_param, 1.0 );
   clipper::BasisFn_spline basisfn( fo, n_param, 1.0 );
-  clipper::TargetFn_scaleF1F2<clipper::data32::F_phi,clipper::data32::F_sigF> targetfn( fc, fo );
+  clipper::TargetFn_scaleF1F2<F_phi,F_sigF> targetfn( fc, fo );
   clipper::ResolutionFn rfn( hkls, basisfn, targetfn, params );
   double r1w, f1w, r1f, f1f, Fo, Fc;
   r1w = f1w = r1f = f1f = 0.0;

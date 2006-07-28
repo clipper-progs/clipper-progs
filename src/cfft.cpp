@@ -1,15 +1,9 @@
 // Clipper app to perform ffts and map stats
 /* Copyright 2003-2004 Kevin Cowtan & University of York all rights reserved */
 
-//L   This code is distributed under the terms and conditions of the
-//L   CCP4 Program Suite Licence Agreement as a CCP4 Application.
-//L   A copy of the CCP4 licence can be obtained by writing to the
-//L   CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
-
 #include <clipper/clipper.h>
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
-#include "ccp4-extras.h"
 
 
 double sfunc( double q, int i, int j );
@@ -18,9 +12,10 @@ double pfunc( double t, int nt );
 
 int main( int argc, char** argv )
 {
-  CCP4program prog( "cfft", "0.1", "$Date: 2004/05/01" );
+  CCP4Program prog( "cfft", "0.1", "$Date: 2004/05/01" );
 
   // defaults
+  clipper::String title;
   clipper::String ipfile = "NONE";
   clipper::String ipcolf = "NONE";
   clipper::String ipcold = "NONE";
@@ -34,13 +29,14 @@ int main( int argc, char** argv )
   double uvalue = 0.0;
   clipper::Resolution reso;
   clipper::Grid_sampling grid;
-  const int nprm = 12;
 
   // command input
-  CommandInput args( argc, argv, true );
+  CCP4CommandInput args( argc, argv, true );
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if ( args[arg] == "-mtzin" ) {
+    if ( args[arg] == "-title" ) {
+      if ( ++arg < args.size() ) title = args[arg];
+    } else if ( args[arg] == "-mtzin" ) {
       if ( ++arg < args.size() ) ipfile = args[arg];
     } else if ( args[arg] == "-mapout" ) {
       if ( ++arg < args.size() ) opfile = args[arg];

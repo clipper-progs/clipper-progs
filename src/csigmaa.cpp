@@ -1,22 +1,17 @@
 // Clipper app to do sigmaa calc
 /* Copyright 2003-2004 Kevin Cowtan & University of York all rights reserved */
 
-//L   This code is distributed under the terms and conditions of the
-//L   CCP4 Program Suite Licence Agreement as a CCP4 Application.
-//L   A copy of the CCP4 licence can be obtained by writing to the
-//L   CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
-
 #include <clipper/clipper.h>
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
-#include "ccp4-extras.h"
 
 
 int main( int argc, char** argv )
 {
-  CCP4program prog( "csigmaa", "0.1", "$Date: 2004/06/01" );
+  CCP4Program prog( "csigmaa", "0.1", "$Date: 2004/06/01" );
 
   // defaults
+  clipper::String title;
   clipper::String ipfile = "NONE";
   clipper::String ipcolfo = "NONE";
   clipper::String ipcolfc = "NONE";
@@ -29,10 +24,12 @@ int main( int argc, char** argv )
   int verbose = 0;
 
   // command input
-  CommandInput args( argc, argv, true );
+  CCP4CommandInput args( argc, argv, true );
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if ( args[arg] == "-mtzin" ) {
+    if ( args[arg] == "-title" ) {
+      if ( ++arg < args.size() ) title = args[arg];
+    } else if ( args[arg] == "-mtzin" ) {
       if ( ++arg < args.size() ) ipfile = args[arg];
     } else if ( args[arg] == "-mtzout" ) {
       if ( ++arg < args.size() ) opfile = args[arg];
@@ -90,7 +87,7 @@ int main( int argc, char** argv )
 
   // do sigmaa calc
   clipper::SFweight_spline<float> sfw( n_refln, n_param );
-  bool fl = sfw( fb, fd, phiw, fo, fc, flag );
+  sfw( fb, fd, phiw, fo, fc, flag );
 
   // calc abcd
   clipper::HKL_data<clipper::data32::ABCD> abcd( hkls );

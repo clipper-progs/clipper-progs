@@ -1,31 +1,28 @@
 // Clipper app to perform inverse ffts
 /* Copyright 2003-2004 Kevin Cowtan & University of York all rights reserved */
 
-//L   This code is distributed under the terms and conditions of the
-//L   CCP4 Program Suite Licence Agreement as a CCP4 Application.
-//L   A copy of the CCP4 licence can be obtained by writing to the
-//L   CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
-
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
-#include "ccp4-extras.h"
 
 
 int main( int argc, char** argv )
 {
-  CCP4program prog( "cinvfft", "0.1", "$Date: 2004/06/01" );
+  CCP4Program prog( "cinvfft", "0.1", "$Date: 2004/06/01" );
 
   // defaults
+  clipper::String title;
   clipper::String ipmap = "NONE";
   clipper::String ipfile = "NONE";
   clipper::String opfile = "NONE";
   clipper::String opcol = "invfft";
 
   // command input
-  CommandInput args( argc, argv, true );
+  CCP4CommandInput args( argc, argv, true );
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if ( args[arg] == "-mapin" ) {
+    if ( args[arg] == "-title" ) {
+      if ( ++arg < args.size() ) title = args[arg];
+    } else if ( args[arg] == "-mapin" ) {
       if ( ++arg < args.size() ) ipmap = args[arg];
     } else if ( args[arg] == "-mtzin" ) {
       if ( ++arg < args.size() ) ipfile = args[arg];
