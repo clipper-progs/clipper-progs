@@ -1,10 +1,9 @@
-bin_PROGRAMS = cpirate chltofom cmakereference cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
+DIST_SUBDIRS = pirate buccaneer
+SUBDIRS = pirate buccaneer
 
-cpirate_SOURCES = cpirate.cpp piralib.cpp piralib.h pirancslib.cpp pirancslib.h
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
 
 chltofom_SOURCES = chltofom.cpp
-
-cmakereference_SOURCES = cmakereference.cpp ftplib.h ftplib.c compress42.c
 
 cphasematch_SOURCES = cphasematch.cpp
 
@@ -22,7 +21,7 @@ cphasecombine_SOURCES = cphasecombine.cpp
 
 cpatterson_SOURCES = cpatterson.cpp
 
-EXTRA_DIST = README ftplib.c compress42.c
+EXTRA_DIST = README
 
 INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
 	   $(BOOST_CXXFLAGS) -I$(includedir)
