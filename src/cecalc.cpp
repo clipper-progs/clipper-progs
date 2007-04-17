@@ -72,4 +72,21 @@ int main( int argc, char** argv )
   mtzout.open_append( ipfile, opfile );
   mtzout.export_hkl_data( esig, opcol );
   mtzout.close_append();
+
+
+  // generate stats:
+  double na, nc, sa, sc;
+  na = nc = sa = sc = 0.0;
+  for ( HRI ih = esig.first(); !ih.last(); ih.next() )
+    if ( !esig[ih].missing() ) 
+      if ( ih.hkl_class().centric() ) {
+	nc += 1.0;
+	sc += esig[ih].E()*esig[ih].E();
+      } else {
+	na += 1.0;
+	sa += esig[ih].E()*esig[ih].E();
+      }
+  std::cout << "Number of reflections: " << clipper::Util::intr(na+nc) << "  Mean E^2: " << (sa+sc)/clipper::Util::max(na+nc,1.0) << std::endl;
+  std::cout << "Number of acentrics  : " << clipper::Util::intr(na) << "  Mean E^2: " << (sa)/clipper::Util::max(na,1.0) << std::endl;
+  std::cout << "Number of centrics   : " << clipper::Util::intr(nc) << "  Mean E^2: " << (sc)/clipper::Util::max(nc,1.0) << std::endl;
 }
