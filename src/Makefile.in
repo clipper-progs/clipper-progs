@@ -114,7 +114,7 @@ install_sh = @install_sh@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -134,6 +134,10 @@ cphasecombine_SOURCES = cphasecombine.cpp
 
 cpatterson_SOURCES = cpatterson.cpp
 
+caniso_SOURCES = caniso.cpp
+
+convert2mtz_SOURCES = convert2mtz.cpp
+
 EXTRA_DIST = README
 
 INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
@@ -149,9 +153,20 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cfft$(EXEEXT) cinvfft$(EXEEXT) csigmaa$(EXEEXT) cecalc$(EXEEXT) \
-	cphasecombine$(EXEEXT) cpatterson$(EXEEXT)
+	cphasecombine$(EXEEXT) cpatterson$(EXEEXT) caniso$(EXEEXT) \
+	convert2mtz$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
+am_caniso_OBJECTS = caniso.$(OBJEXT)
+caniso_OBJECTS = $(am_caniso_OBJECTS)
+caniso_LDADD = $(LDADD)
+caniso_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
+	../clipper/cif/libclipper-cif.la \
+	../clipper/mmdb/libclipper-mmdb.la \
+	../clipper/ccp4/libclipper-ccp4.la \
+	../clipper/phs/libclipper-phs.la \
+	../clipper/core/libclipper-core.la
+caniso_LDFLAGS =
 am_cecalc_OBJECTS = cecalc.$(OBJEXT)
 cecalc_OBJECTS = $(am_cecalc_OBJECTS)
 cecalc_LDADD = $(LDADD)
@@ -192,6 +207,16 @@ cinvfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 cinvfft_LDFLAGS =
+am_convert2mtz_OBJECTS = convert2mtz.$(OBJEXT)
+convert2mtz_OBJECTS = $(am_convert2mtz_OBJECTS)
+convert2mtz_LDADD = $(LDADD)
+convert2mtz_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
+	../clipper/cif/libclipper-cif.la \
+	../clipper/mmdb/libclipper-mmdb.la \
+	../clipper/ccp4/libclipper-ccp4.la \
+	../clipper/phs/libclipper-phs.la \
+	../clipper/core/libclipper-core.la
+convert2mtz_LDFLAGS =
 am_cpatterson_OBJECTS = cpatterson.$(OBJEXT)
 cpatterson_OBJECTS = $(am_cpatterson_OBJECTS)
 cpatterson_LDADD = $(LDADD)
@@ -249,8 +274,9 @@ CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/cecalc.Po ./$(DEPDIR)/cfft.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/chltofom.Po ./$(DEPDIR)/cinvfft.Po \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/caniso.Po ./$(DEPDIR)/cecalc.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cfft.Po ./$(DEPDIR)/chltofom.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cinvfft.Po ./$(DEPDIR)/convert2mtz.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/csfcalc.Po \
@@ -264,17 +290,17 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 CXXFLAGS = @CXXFLAGS@
-DIST_SOURCES = $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) \
-	$(cinvfft_SOURCES) $(cpatterson_SOURCES) \
-	$(cphasecombine_SOURCES) $(cphasematch_SOURCES) \
-	$(csfcalc_SOURCES) $(csigmaa_SOURCES)
+DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
+	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
+	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
+	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README Makefile.am Makefile.in
-SOURCES = $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES)
+SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES)
 
 all: all-recursive
 
@@ -314,6 +340,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+caniso$(EXEEXT): $(caniso_OBJECTS) $(caniso_DEPENDENCIES) 
+	@rm -f caniso$(EXEEXT)
+	$(CXXLINK) $(caniso_LDFLAGS) $(caniso_OBJECTS) $(caniso_LDADD) $(LIBS)
 cecalc$(EXEEXT): $(cecalc_OBJECTS) $(cecalc_DEPENDENCIES) 
 	@rm -f cecalc$(EXEEXT)
 	$(CXXLINK) $(cecalc_LDFLAGS) $(cecalc_OBJECTS) $(cecalc_LDADD) $(LIBS)
@@ -326,6 +355,9 @@ chltofom$(EXEEXT): $(chltofom_OBJECTS) $(chltofom_DEPENDENCIES)
 cinvfft$(EXEEXT): $(cinvfft_OBJECTS) $(cinvfft_DEPENDENCIES) 
 	@rm -f cinvfft$(EXEEXT)
 	$(CXXLINK) $(cinvfft_LDFLAGS) $(cinvfft_OBJECTS) $(cinvfft_LDADD) $(LIBS)
+convert2mtz$(EXEEXT): $(convert2mtz_OBJECTS) $(convert2mtz_DEPENDENCIES) 
+	@rm -f convert2mtz$(EXEEXT)
+	$(CXXLINK) $(convert2mtz_LDFLAGS) $(convert2mtz_OBJECTS) $(convert2mtz_LDADD) $(LIBS)
 cpatterson$(EXEEXT): $(cpatterson_OBJECTS) $(cpatterson_DEPENDENCIES) 
 	@rm -f cpatterson$(EXEEXT)
 	$(CXXLINK) $(cpatterson_LDFLAGS) $(cpatterson_OBJECTS) $(cpatterson_LDADD) $(LIBS)
@@ -348,10 +380,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/caniso.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cecalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cinvfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/convert2mtz.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasecombine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasematch.Po@am__quote@
