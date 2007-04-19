@@ -1,2 +1,2 @@
 htmldir = ${prefix}/html
-html_DATA = cpirate.html chltofom.html
+html_DATA = cpirate.html chltofom.html cbuccaneer.html
