@@ -114,7 +114,7 @@ install_sh = @install_sh@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -138,6 +138,8 @@ caniso_SOURCES = caniso.cpp
 
 convert2mtz_SOURCES = convert2mtz.cpp
 
+ctruncate_SOURCES = ctruncate.cpp
+
 EXTRA_DIST = README
 
 INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
@@ -154,7 +156,7 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cfft$(EXEEXT) cinvfft$(EXEEXT) csigmaa$(EXEEXT) cecalc$(EXEEXT) \
 	cphasecombine$(EXEEXT) cpatterson$(EXEEXT) caniso$(EXEEXT) \
-	convert2mtz$(EXEEXT)
+	convert2mtz$(EXEEXT) ctruncate$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_caniso_OBJECTS = caniso.$(OBJEXT)
@@ -267,6 +269,16 @@ csigmaa_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
 	../clipper/phs/libclipper-phs.la \
 	../clipper/core/libclipper-core.la
 csigmaa_LDFLAGS =
+am_ctruncate_OBJECTS = ctruncate.$(OBJEXT)
+ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
+ctruncate_LDADD = $(LDADD)
+ctruncate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
+	../clipper/cif/libclipper-cif.la \
+	../clipper/mmdb/libclipper-mmdb.la \
+	../clipper/ccp4/libclipper-ccp4.la \
+	../clipper/phs/libclipper-phs.la \
+	../clipper/core/libclipper-core.la
+ctruncate_LDFLAGS =
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
@@ -280,7 +292,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/csfcalc.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po
+@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/ctruncate.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
@@ -293,14 +306,15 @@ CXXFLAGS = @CXXFLAGS@
 DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
 	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
 	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
-	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES)
+	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
+        $(ctruncate_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README Makefile.am Makefile.in
-SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES)
+SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(ctruncate_SOURCES)
 
 all: all-recursive
 
@@ -373,6 +387,9 @@ csfcalc$(EXEEXT): $(csfcalc_OBJECTS) $(csfcalc_DEPENDENCIES)
 csigmaa$(EXEEXT): $(csigmaa_OBJECTS) $(csigmaa_DEPENDENCIES) 
 	@rm -f csigmaa$(EXEEXT)
 	$(CXXLINK) $(csigmaa_LDFLAGS) $(csigmaa_OBJECTS) $(csigmaa_LDADD) $(LIBS)
+ctruncate$(EXEEXT): $(ctruncate_OBJECTS) $(ctruncate_DEPENDENCIES) 
+	@rm -f ctruncate$(EXEEXT)
+	$(CXXLINK) $(ctruncate_LDFLAGS) $(ctruncate_OBJECTS) $(ctruncate_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -391,6 +408,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasematch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csfcalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csigmaa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
