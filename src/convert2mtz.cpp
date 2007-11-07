@@ -22,6 +22,7 @@ int main( int argc, char** argv )
   clipper::String colin = "NONE";
   bool complete = true;
   bool anom = false;
+  int seed = 54321;
   int verbose = 0;
 
   // command input
@@ -46,6 +47,8 @@ int main( int argc, char** argv )
       anom = true;
     } else if ( args[arg] == "-no-complete" ) {
       complete = false;
+    } else if ( args[arg] == "-seed" ) {
+      if ( ++arg < args.size() ) seed = clipper::String(args[arg]).i();
     } else if ( args[arg] == "-verbose" ) {
       if ( ++arg < args.size() ) verbose = clipper::String(args[arg]).i();
     } else {
@@ -54,7 +57,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: convert2mtz\n\t-hklin <filename> [COMPULSORY]\n\t-mtzout <filename>\n\t-cell a,b,c,a,b,g\n\t-spacegroup <spacegroup>\n\t-pdbin <filename>\n\t-anomalous\n\t-no-complete\n\t-colin <column names>\nConvert formatted reflection file to MTZ.\nCell and spacegroup may be specified directly or by providing a PDB file.\nFor CNS files, column labels and anomalous are detected automatically.\nFor other files (e.g. Shelx/XtalView), give -colin.\n";
+    std::cout << "Usage: convert2mtz\n\t-hklin <filename> [COMPULSORY]\n\t-mtzout <filename>\n\t-cell a,b,c,a,b,g\n\t-spacegroup <spacegroup>\n\t-pdbin <filename>\n\t-anomalous\n\t-no-complete\n\t-colin <column names>\n\t-seed <seed>\nConvert formatted reflection file to MTZ.\nCell and spacegroup may be specified directly or by providing a PDB file.\nFor CNS files, column labels and anomalous are detected automatically.\nFor other files (e.g. Shelx/XtalView), give -colin.\n";
     exit(1);
   }
 
@@ -64,6 +67,7 @@ int main( int argc, char** argv )
     { std::cout << "Missing spacegroup."; exit(1); }
 
   // set defaults
+  srand( seed );
   if ( opfile == "NONE" ) {
     opfile = ipfile;
     int ldot = int(opfile.rfind("."));
@@ -528,13 +532,13 @@ int main( int argc, char** argv )
       if ( dataflag[0][ih].flag() == fl )  // free: add to free set
 	datafree[ih] = dataFlag( 0 );
       else                           // missing or work: pick a working set
-	datafree[ih] = dataFlag( random()%(nfree-1) + 1 );
+	datafree[ih] = dataFlag( rand()%(nfree-1) + 1 );
   } else {
     int nfree = nref / 1000;
     if ( nfree < 10 ) nfree = 10;
     if ( nfree > 20 ) nfree = 20;
     for ( HRI ih = datafree.first(); !ih.last(); ih.next() )
-      datafree[ih] = dataFlag( random()%nfree );
+      datafree[ih] = dataFlag( rand()%nfree );
   }
 
   // export
