@@ -209,10 +209,10 @@ int main(int argc, char **argv)
   int read_refs=1;  // not sure what read_refs actually does
   float minres,maxres;
   mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
-  MtzResLimits(mtz1,&minres,&maxres);
+  CMtz::MtzResLimits(mtz1,&minres,&maxres);
   printf("\n\nMinimum resolution = %f\nMaximum resolution = %f\n\n",minres,maxres);
-  printf("Spacegroup number: %i\n\n",MtzSpacegroupNumber(mtz1));
-  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(MtzSpacegroupNumber(mtz1));
+  printf("Spacegroup number: %i\n\n",CMtz::MtzSpacegroupNumber(mtz1));
+  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(CMtz::MtzSpacegroupNumber(mtz1));
 
   if (debug) {
       FILE *ftestfile;
@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 
   Cell cell = hklinf.cell();
   Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
-  int sg = MtzSpacegroupNumber(mtz1);
+  int sg = CMtz::MtzSpacegroupNumber(mtz1);
   if ( (sg >= 75 && sg <= 80) || sg == 146 || (sg >= 168 && sg <= 173) || (sg >= 195 && sg <= 199) ) { 
 	  printf("twinning operator k, h, -l\n");
 	  //printf("twinning operator h, -h-k, -l\n");
