@@ -16,6 +16,7 @@ AC_LANG(C++)
 
 # Checks for programs.
 AC_PROG_CXX(xlc++ CC cxx c++ icc g++)
+AC_PROG_CC(xlc cc icc gcc)
 AC_HEADER_STDC
 AC_PROG_INSTALL
 #AC_PROG_RANLIB
@@ -128,6 +129,10 @@ AC_SUBST(AR_FLAGS)
 AM_CONDITIONAL(DEBUG, test "$ac_cv_enable_debug" = yes)
 AM_CONDITIONAL(AMDEP, test "x$enable_dependency_tracking" != xno)
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+                 src/Makefile
+                 src/pirate/Makefile
+                 src/buccaneer/Makefile
+                 ])
 
 AC_OUTPUT
