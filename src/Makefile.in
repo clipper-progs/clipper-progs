@@ -59,53 +59,27 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-host_alias = @host_alias@
-host_triplet = @host@
 
 EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 AMTAR = @AMTAR@
-AR = @AR@
 AR_FLAGS = @AR_FLAGS@
-AS = @AS@
 AWK = @AWK@
 CC = @CC@
 CCP4_CXXFLAGS = @CCP4_CXXFLAGS@
 CCP4_LIBS = @CCP4_LIBS@
-CCTBX_CXXFLAGS = @CCTBX_CXXFLAGS@
-CCTBX_LIBS = @CCTBX_LIBS@
-CLIPPER_CCP4_DIR = @CLIPPER_CCP4_DIR@
-CLIPPER_CCTBX_DIR = @CLIPPER_CCTBX_DIR@
-CLIPPER_CIF_DIR = @CLIPPER_CIF_DIR@
-CLIPPER_CNS_DIR = @CLIPPER_CNS_DIR@
-CLIPPER_CONTRIB_DIR = @CLIPPER_CONTRIB_DIR@
-CLIPPER_FORTRAN_DIR = @CLIPPER_FORTRAN_DIR@
-CLIPPER_MINIMOL_DIR = @CLIPPER_MINIMOL_DIR@
-CLIPPER_MMDBOLD_DIR = @CLIPPER_MMDBOLD_DIR@
-CLIPPER_MMDB_DIR = @CLIPPER_MMDB_DIR@
-CLIPPER_PHS_DIR = @CLIPPER_PHS_DIR@
+CLIPPER_CXXFLAGS = @CLIPPER_CXXFLAGS@
+CLIPPER_LIBS = @CLIPPER_LIBS@
 CXX = @CXX@
-CXXCPP = @CXXCPP@
 DEPDIR = @DEPDIR@
-DLLTOOL = @DLLTOOL@
-ECHO = @ECHO@
-EGREP = @EGREP@
-F77 = @F77@
 FFTW_CXXFLAGS = @FFTW_CXXFLAGS@
 FFTW_LIBS = @FFTW_LIBS@
-GCJ = @GCJ@
-GCJFLAGS = @GCJFLAGS@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-LIBTOOL = @LIBTOOL@
-LN_S = @LN_S@
 MAINT = @MAINT@
 MMDB_CXXFLAGS = @MMDB_CXXFLAGS@
 MMDB_LIBS = @MMDB_LIBS@
-OBJDUMP = @OBJDUMP@
 PACKAGE = @PACKAGE@
-RANLIB = @RANLIB@
-RC = @RC@
 STRIP = @STRIP@
 VERSION = @VERSION@
 am__include = @am__include@
@@ -147,11 +121,8 @@ INCLUDES = $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS)
 
 
 LIBS = $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) @LIBS@
-
-LDADD = ../clipper/contrib/libclipper-contrib.la ../clipper/cif/libclipper-cif.la ../clipper/mmdb/libclipper-mmdb.la ../clipper/ccp4/libclipper-ccp4.la ../clipper/phs/libclipper-phs.la ../clipper/core/libclipper-core.la
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cfft$(EXEEXT) cinvfft$(EXEEXT) csigmaa$(EXEEXT) cecalc$(EXEEXT) \
@@ -162,126 +133,66 @@ PROGRAMS = $(bin_PROGRAMS)
 am_caniso_OBJECTS = caniso.$(OBJEXT)
 caniso_OBJECTS = $(am_caniso_OBJECTS)
 caniso_LDADD = $(LDADD)
-caniso_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+caniso_DEPENDENCIES =
 caniso_LDFLAGS =
 am_cecalc_OBJECTS = cecalc.$(OBJEXT)
 cecalc_OBJECTS = $(am_cecalc_OBJECTS)
 cecalc_LDADD = $(LDADD)
-cecalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cecalc_DEPENDENCIES =
 cecalc_LDFLAGS =
 am_cfft_OBJECTS = cfft.$(OBJEXT)
 cfft_OBJECTS = $(am_cfft_OBJECTS)
 cfft_LDADD = $(LDADD)
-cfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cfft_DEPENDENCIES =
 cfft_LDFLAGS =
 am_chltofom_OBJECTS = chltofom.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
-chltofom_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+chltofom_DEPENDENCIES =
 chltofom_LDFLAGS =
 am_cinvfft_OBJECTS = cinvfft.$(OBJEXT)
 cinvfft_OBJECTS = $(am_cinvfft_OBJECTS)
 cinvfft_LDADD = $(LDADD)
-cinvfft_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cinvfft_DEPENDENCIES =
 cinvfft_LDFLAGS =
 am_convert2mtz_OBJECTS = convert2mtz.$(OBJEXT)
 convert2mtz_OBJECTS = $(am_convert2mtz_OBJECTS)
 convert2mtz_LDADD = $(LDADD)
-convert2mtz_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+convert2mtz_DEPENDENCIES =
 convert2mtz_LDFLAGS =
 am_cpatterson_OBJECTS = cpatterson.$(OBJEXT)
 cpatterson_OBJECTS = $(am_cpatterson_OBJECTS)
 cpatterson_LDADD = $(LDADD)
-cpatterson_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cpatterson_DEPENDENCIES =
 cpatterson_LDFLAGS =
 am_cphasecombine_OBJECTS = cphasecombine.$(OBJEXT)
 cphasecombine_OBJECTS = $(am_cphasecombine_OBJECTS)
 cphasecombine_LDADD = $(LDADD)
-cphasecombine_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cphasecombine_DEPENDENCIES =
 cphasecombine_LDFLAGS =
 am_cphasematch_OBJECTS = cphasematch.$(OBJEXT)
 cphasematch_OBJECTS = $(am_cphasematch_OBJECTS)
 cphasematch_LDADD = $(LDADD)
-cphasematch_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+cphasematch_DEPENDENCIES =
 cphasematch_LDFLAGS =
 am_csfcalc_OBJECTS = csfcalc.$(OBJEXT)
 csfcalc_OBJECTS = $(am_csfcalc_OBJECTS)
 csfcalc_LDADD = $(LDADD)
-csfcalc_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+csfcalc_DEPENDENCIES =
 csfcalc_LDFLAGS =
 am_csigmaa_OBJECTS = csigmaa.$(OBJEXT)
 csigmaa_OBJECTS = $(am_csigmaa_OBJECTS)
 csigmaa_LDADD = $(LDADD)
-csigmaa_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+csigmaa_DEPENDENCIES =
 csigmaa_LDFLAGS =
 am_ctruncate_OBJECTS = ctruncate.$(OBJEXT)
 ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
 ctruncate_LDADD = $(LDADD)
-ctruncate_DEPENDENCIES = ../clipper/contrib/libclipper-contrib.la \
-	../clipper/cif/libclipper-cif.la \
-	../clipper/mmdb/libclipper-mmdb.la \
-	../clipper/ccp4/libclipper-ccp4.la \
-	../clipper/phs/libclipper-phs.la \
-	../clipper/core/libclipper-core.la
+ctruncate_DEPENDENCIES =
 ctruncate_LDFLAGS =
 
 DEFS = @DEFS@
-DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
+DEFAULT_INCLUDES =  -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -292,22 +203,18 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/csfcalc.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/ctruncate.Po
+@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po ./$(DEPDIR)/ctruncate.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 CXXFLAGS = @CXXFLAGS@
 DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
 	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
 	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
 	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
-        $(ctruncate_SOURCES)
+	$(ctruncate_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
@@ -319,7 +226,7 @@ SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .cpp .lo .o .obj
+.SUFFIXES: .cpp .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.ac $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --gnu  src/Makefile
@@ -332,11 +239,10 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  if test -f $$p \
-	     || test -f $$p1 \
 	  ; then \
 	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) $$p $(DESTDIR)$(bindir)/$$f"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) $$p $(DESTDIR)$(bindir)/$$f; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(binPROGRAMS_INSTALL) $$p $(DESTDIR)$(bindir)/$$f"; \
+	   $(INSTALL_PROGRAM_ENV) $(binPROGRAMS_INSTALL) $$p $(DESTDIR)$(bindir)/$$f; \
 	  else :; fi; \
 	done
 
@@ -349,11 +255,7 @@ uninstall-binPROGRAMS:
 	done
 
 clean-binPROGRAMS:
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  echo " rm -f $$p $$f"; \
-	  rm -f $$p $$f ; \
-	done
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 caniso$(EXEEXT): $(caniso_OBJECTS) $(caniso_DEPENDENCIES) 
 	@rm -f caniso$(EXEEXT)
 	$(CXXLINK) $(caniso_LDFLAGS) $(caniso_OBJECTS) $(caniso_LDADD) $(LIBS)
@@ -424,22 +326,7 @@ distclean-depend:
 @AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CXXCOMPILE) -c -o $@ `cygpath -w $<`
-
-.cpp.lo:
-@AMDEP_TRUE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(LTCXXCOMPILE) -c -o $@ `test -f '$<' || echo '$(srcdir)/'`$<
 CXXDEPMODE = @CXXDEPMODE@
-
-mostlyclean-libtool:
-	-rm -f *.lo
-
-clean-libtool:
-	-rm -rf .libs _libs
-
-distclean-libtool:
-	-rm -f libtool
 uninstall-info-am:
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -609,12 +496,12 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-recursive
 
 distclean-am: clean-am distclean-compile distclean-depend \
-	distclean-generic distclean-libtool distclean-tags
+	distclean-generic distclean-tags
 
 dvi: dvi-recursive
 
@@ -640,28 +527,27 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic
 
 uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
 uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) GTAGS all all-am check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool clean-recursive \
-	distclean distclean-compile distclean-depend distclean-generic \
-	distclean-libtool distclean-recursive distclean-tags distdir \
-	dvi dvi-am dvi-recursive info info-am info-recursive install \
-	install-am install-binPROGRAMS install-data install-data-am \
+	clean-binPROGRAMS clean-generic clean-recursive distclean \
+	distclean-compile distclean-depend distclean-generic \
+	distclean-recursive distclean-tags distdir dvi dvi-am \
+	dvi-recursive info info-am info-recursive install install-am \
+	install-binPROGRAMS install-data install-data-am \
 	install-data-recursive install-exec install-exec-am \
 	install-exec-recursive install-info install-info-am \
 	install-info-recursive install-man install-recursive \
 	install-strip installcheck installcheck-am installdirs \
 	installdirs-am installdirs-recursive maintainer-clean \
 	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	mostlyclean-recursive tags tags-recursive uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-info-am \
+	mostlyclean-compile mostlyclean-generic mostlyclean-recursive \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-info-am \
 	uninstall-info-recursive uninstall-recursive
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
