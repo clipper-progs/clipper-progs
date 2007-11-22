@@ -1159,14 +1159,14 @@ for ac_dir in $ac_clipper_dirs; do
 for ac_dir in $ac_clipper_dirs; do
   for ac_extension in a so sl dylib; do
   if test -r "$clipper_prefix/$ac_dir/libclipper-core.$ac_extension"; then
-    ac_CLIPPER_LDOPTS="-L$clipper_prefix/$ac_dir -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
+    ac_CLIPPER_LDOPTS="-L$clipper_prefix/$ac_dir -lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
     break 2
     fi
   done
   done
 else
  ac_CLIPPER_CXXFLAGS=""
- ac_CLIPPER_LDOPTS="-lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
+ ac_CLIPPER_LDOPTS="-lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
 fi
 
 

@@ -97,12 +97,12 @@ AM_PATH_CLIPPER(,
         esac
         ac_CLIPPER_LDOPTS=`echo "$ac_CLIPPER_LDOPTS" | sed s#-I#-L#`
         CLIPPER_CXXFLAGS="$ac_CLIPPER_CXXFLAGS"
-        CLIPPER_LIBS="$ac_CLIPPER_LDOPTS -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
+        CLIPPER_LIBS="$ac_CLIPPER_LDOPTS -lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
         AC_MSG_WARN([assuming library $CLIPPER_LIBS headers $CLIPPER_CXXFLAGS])
         have_clipper=yes
       else
         CLIPPER_CXXFLAGS="-I$clipper_prefix/lib/src"
-        CLIPPER_LIBS="-L$clipper_prefix/lib/src -L$clipper_prefix/lib -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
+        CLIPPER_LIBS="-L$clipper_prefix/lib/src -L$clipper_prefix/lib -lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
         AC_MSG_WARN([assuming library $CLIPPER_LIBS headers $CLIPPER_CXXFLAGS])
         have_clipper=yes
       fi
