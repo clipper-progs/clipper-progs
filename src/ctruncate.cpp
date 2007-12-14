@@ -23,6 +23,8 @@
 #include <math.h>
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
 
+#include "cpsf_utils.h"
+
 
 using namespace clipper;
 
@@ -38,10 +40,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 
 int main(int argc, char **argv)
 {
-  float J, sigJ, F, sigF;
-  int iflag;
-
-  CCP4Program prog( "ctruncate", "0.0.5", "$Date: 2007/10/16" );
+  CCP4Program prog( "ctruncate", "0.0.9", "$Date: 2007/12/14" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -59,19 +58,19 @@ int main(int argc, char **argv)
   // clipper seems to use its own column labels, then append yours
 
   CCP4MTZfile mtzfile, mtzout;
-  HKL_info hklinf;
+  HKL_info hklinf, hklp;
 
   // command input
-  printf("USER SUPPLIED INPUT:\n");
+  printf("\nUSER SUPPLIED INPUT:\n");
   CCP4CommandInput args( argc, argv, true );  
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if ( args[arg] == "-mtzin" ) {
+    if ( args[arg] == "-mtzin" || args[arg] == "-hklin") {
 		if ( ++arg < args.size() ) {
 			ipfile = args[arg];
 			mtzinarg = arg;
 		}
-    } else if ( args[arg] == "-mtzout" ) {
+    } else if ( args[arg] == "-mtzout" || args[arg] == "-hklout") {
       if ( ++arg < args.size() ) outfile = args[arg];
     } else if ( args[arg] == "-colin" ) {
       if ( ++arg < args.size() ) meancol = args[arg];
@@ -85,7 +84,11 @@ int main(int argc, char **argv)
       aniso = false;
 	} else if ( args[arg] == "-debug" ) {
       debug = true;
-    } 
+	} else {
+	  printf("Unrecognised argument\n");
+	  return(0);
+	}
+
   }
   if ( args.size() <= 1 ) {
 	  CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colplus <colpath> -colminus <colpath>");
@@ -137,6 +140,104 @@ int main(int argc, char **argv)
 
 
 
+  // check for pseudo translation (taken from cpatterson)
+  clipper::Spacegroup spgr = mtzfile.spacegroup();
+  clipper::Cell       cell1 = mtzfile.cell();
+  clipper::Resolution reso;
+  clipper::Grid_sampling grid;
+  clipper::String opfile = "patterson.map";
+  reso = mtzfile.resolution();
+
+  // get Patterson spacegroup
+  clipper::Spacegroup
+    pspgr( clipper::Spgr_descr( spgr.generator_ops().patterson_ops() ) );
+  hklp.init( pspgr, cell1, reso, true );
+
+  // make patterson coeffs
+  clipper::HKL_data<clipper::data32::F_phi> fphi( hklp );
+  for ( HRI ih = fphi.first(); !ih.last(); ih.next() ) {
+    clipper::data32::I_sigI i = isig[ih.hkl()];
+    if ( !i.missing() ) {
+      fphi[ih].f() = i.I();
+      fphi[ih].phi() = 0.0 ;
+    }
+  }
+
+  // make grid if necessary
+  if ( grid.is_null() ) grid.init( pspgr, cell1, reso );
+
+  // make xmap
+  clipper::Xmap<float> patterson( pspgr, cell1, grid );
+  patterson.fft_from( fphi );
+
+  // write map
+  clipper::CCP4MAPfile mapout;
+  mapout.open_write( opfile );
+  mapout.export_xmap( patterson );
+  mapout.close_write();
+
+
+  // use Charles's stuff to find peaks
+  PeakSearch pksch;                      // peak search object
+  PeakInterp pkinterp;                   // peak interpolation methods
+
+  //std::vector<clipper::Vec3<float> > cvec;
+  		//harker hs(spgr);
+		//clipper::Resolution p_reso( sreso.limit() );
+		//clipper::Grid_sampling tgrid( pattspg, cell, p_reso);
+		//clipper::Xmap<float> patterson( pattspg, cell, tgrid );
+		//clipper::HKL_info hklp( pattspg, cell, reso, true);
+  //std::vector<clipper::Coord_frac> origins = alt_origin(spgr);
+
+  int npeak = 5;
+
+  std::vector<int> ppks = pksch( patterson );
+
+  float top_peak = patterson.get_data( ppks[0] );
+  float next_peak = patterson.get_data( ppks[1] );
+  clipper::Coord_frac c0 = patterson.coord_of( ppks[1] ).coord_frac(grid);
+  float ratio = next_peak/top_peak;
+  float dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
+  // look for peaks > 20% of origin peak and at least 0.1 distant from origin
+  if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
+      printf("\n\nNCS:\n\n");
+	  printf("Translational NCS has been detected\n");
+      printf("Ratio = %f\n",ratio);
+      printf("Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
+  }
+
+
+/*  		clipper::Map_stats pattstats( patterson );
+		float mean = pattstats.mean();
+	    float std_dev = pattstats.std_dev();
+		int i = 0;
+		while ( (patterson.get_data( ppks[i] )-mean)/std_dev > 1.0f && cvec.size() < 4*npeak ) {
+			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid); */
+			/* must screen for peaks on harker sections */
+			// interpolate if requested
+/*#ifdef INTERP
+			clipper::Coord_map tmp = pkinterp( patterson , c0.coord_map(grid) );
+			c0 = tmp.coord_frac(grid);
+#endif	
+			if ( c0.lengthsq(cell1) > std::pow(reso.limit()/2.0,2.0) && !hs.is_harker(c0) ) {
+
+
+				bool ih = false;
+				for ( int iih = 1 ; iih != origins.size() ; ++iih ) {
+					clipper::Coord_frac t(c0 + origins[iih] );
+					if ( hs.is_harker( t ) ) ih = true;
+				}
+				if (!ih) cvec.push_back(clipper::Vec3<float>(c0[0],c0[1],c0[2]) );
+			}
+			++i;
+		}
+		for (int i = 0 ; i != cvec.size() ; ++i ) {
+			clipper::Coord_frac t(cvec[i][0],cvec[i][1],cvec[i][2]);
+			std::cout << i << t.format() << patterson.interp<clipper::Interp_cubic>( t ) << std::endl;
+		}*/
+
+
+
   // anisotropy correction
   if (aniso)  {
 	  printf("\n\nANISOTROPY CORRECTION:\n");
@@ -157,8 +258,27 @@ int main(int argc, char **argv)
       // scale structure factors
       clipper::SFscale_aniso<float> sfscl( 3.0 );
       sfscl( faniso );
-      std::cout << "\nAnisotropic scaling:\n"
-	        << sfscl.u_aniso_orth().format() << "\n";
+      //std::cout << "\nAnisotropic scaling:\n" << sfscl.u_aniso_orth().format() << "\n";
+	  printf("\nAnisotropic scaling (orthogonal coords):\n\n");
+
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(0,0), sfscl.u_aniso_orth()(0,1), sfscl.u_aniso_orth()(0,2) );
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(1,0), sfscl.u_aniso_orth()(1,1), sfscl.u_aniso_orth()(1,2) );
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(2,0), sfscl.u_aniso_orth()(2,1), sfscl.u_aniso_orth()(2,2) );
+
+	  clipper::U_aniso_orth uao = sfscl.u_aniso_orth();
+	  clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
+
+      printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
+
+	  printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
+	  printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
+	  printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
+
+      printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
+
+	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
+	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
+	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
 
 	  double FFtotal = 0.0;
       for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -210,9 +330,11 @@ int main(int argc, char **argv)
   float minres,maxres;
   mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
   CMtz::MtzResLimits(mtz1,&minres,&maxres);
-  printf("\n\nMinimum resolution = %f\nMaximum resolution = %f\n\n",minres,maxres);
-  printf("Spacegroup number: %i\n\n",CMtz::MtzSpacegroupNumber(mtz1));
+  printf("\n\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n\n",1.0/sqrt(minres),1.0/sqrt(maxres));
+  if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
   CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(CMtz::MtzSpacegroupNumber(mtz1));
+
+  std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
 
   if (debug) {
       FILE *ftestfile;
@@ -251,7 +373,7 @@ int main(int argc, char **argv)
 		  double I = isig[ih].I() / ih.hkl_class().epsilon();
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
-		  //fprintf(floggraph,"%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
+		  //printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 		  if (!ih.hkl_class().centric()) {
 		      Na[bin]++;
 		      if (I > 0.0) {
@@ -277,12 +399,12 @@ int main(int argc, char **argv)
 	  }
   }
 
-  fprintf(floggraph,"$TABLE: Acentric moments of E using Truncate method:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
-  fprintf(floggraph,": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
-  fprintf(floggraph,": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
-  fprintf(floggraph,"$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$TABLE: Acentric moments of E using Truncate method:\n");
+  printf("$GRAPHS");
+  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
+  printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
   for (int i=0; i<60; i++) {
 	  double res = maxres * pow((double(i) + 0.5)/double(nbins), 1.00000);
@@ -293,16 +415,16 @@ int main(int argc, char **argv)
 		  I3a[i] *= Na[i]*Na[i] / pow(I1a[i],3);
 		  I4a[i] *= pow(Na[i],3) / pow(I1a[i],4);
 	  }
-	  fprintf(floggraph,"%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1a[i], E3a[i], I2a[i], I3a[i], I4a[i]);
+	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1a[i], E3a[i], I2a[i], I3a[i], I4a[i]);
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
-  fprintf(floggraph,"$TABLE: Centric moments of E using Truncate method:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
-  fprintf(floggraph,": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  fprintf(floggraph,": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
-  fprintf(floggraph,"$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$TABLE: Centric moments of E using Truncate method:\n");
+  printf("$GRAPHS");
+  printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
+  printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
   for (int i=0; i<60; i++) {
 	  double res = maxres * pow((double(i) + 0.5)/double(nbins), 0.666666);
@@ -313,9 +435,9 @@ int main(int argc, char **argv)
 		  I3c[i] *= Nc[i]*Nc[i] / pow(I1c[i],3);
 		  I4c[i] *= pow(Nc[i],3) / pow(I1c[i],4);
 	  }
-	  fprintf(floggraph,"%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1c[i], E3c[i], I2c[i], I3c[i], I4c[i]);
+	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1c[i], E3c[i], I2c[i], I3c[i], I4c[i]);
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
   printf("\nTWINNING ANALYSIS:\n\n");
   int itwin = 0;
@@ -474,7 +596,8 @@ int main(int argc, char **argv)
 			              //double weight = 1.0/(isig[ih].sigI() + isig[jh].sigI());
 				          double weight = 1.0;
 			              double L = 0.0;
-	                      if ( I1 != 0.0 && I2 != 0.0) L = (I2-I1)/(I2+I1);
+	                      //if ( I1 != 0.0 && I2 != 0.0 && I1/isig[ih].sigI() > 0.0 && I2/isig[hkl2].sigI() > 0.0 ) L = (I2-I1)/(I2+I1);
+	                      if ( I1 != 0.0 && I2 != 0.0 ) L = (I2-I1)/(I2+I1);
 		  HKL hkl = ih.hkl();
 			              if (fabs(L) < 1){
 			                  LT += fabs(L)*weight;
@@ -499,32 +622,34 @@ int main(int argc, char **argv)
 	  printf("L test suggests data is twinned\n");
 	  printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n\n", Lav);
 	  itwin = 1;
+	  printf("All data regardless of I/sigma(I) has been included in the L test\n");
+	  printf("Anisotropy correction has not been applied before calculating L\n\n");
   }
 
   if (!itwin) printf("No twinning detected\n\n");
 
-  fprintf(floggraph,"$TABLE: L test for twinning:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": cumulative distribution function for |L|:0|1x0|1:1,2,3,4:\n");
-  fprintf(floggraph,"$$ |L| untwinned perfect_twin data $$\n$$\n");
-  fprintf(floggraph,"0.000000 0.000000 0.000000 0.000000\n");
+  printf("$TABLE: L test for twinning:\n");
+  printf("$GRAPHS");
+  printf(": cumulative distribution function for |L|:0|1x0|1:1,2,3,4:\n");
+  printf("$$ |L| untwinned perfect_twin data $$\n$$\n");
+  printf("0.000000 0.000000 0.000000 0.000000\n");
 
   for (int i=0;i<20;i++) {
 	  double x = (double(i+1))/20.0;
-	  fprintf(floggraph,"%f %f %f %f\n", x, x, 0.5*x*(3.0-x*x),  double(cdf[i])/NLT);
+	  printf("%f %f %f %f\n", x, x, 0.5*x*(3.0-x*x),  double(cdf[i])/NLT);
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
    
 
   //printf("Starting parity group analysis:\n");
 
   //Parity group analysis
 
-  fprintf(flogfile, "Analysis of mean intensity by parity for reflection classes\n\n");
-  fprintf(flogfile,"For each class, Mn(I/sig(I)) is given for even and odd parity with respect to the condition,\n");
-  fprintf(flogfile,"eg group 1: h even & odd; group 7 h+k+l even & odd; group 8 h+k=2n & h+l=2n & k+l=2n or not\n\n");
-  fprintf(flogfile, " Range    Min_S    Dmax    Nref     1           2           3           4           5           6           7           8\n");
-  fprintf(flogfile, "                                    h           k           l          h+k         h+l         k+l        h+k+l    h+k,h+l,k+l\n");
+  printf( "Analysis of mean intensity by parity for reflection classes\n\n");
+  printf("For each class, Mn(I/sig(I)) is given for even and odd parity with respect to the condition,\n");
+  printf("eg group 1: h even & odd; group 7 h+k+l even & odd; group 8 h+k=2n & h+l=2n & k+l=2n or not\n\n");
+  printf( " Range    Min_S    Dmax    Nref     1           2           3           4           5           6           7           8\n");
+  printf( "                                    h           k           l          h+k         h+l         k+l        h+k+l    h+k,h+l,k+l\n");
 
   float Iparity[8][2][60], Itot[8][2];
   int Nparity[8][2][60], Ntot[8][2];
@@ -603,14 +728,14 @@ int main(int argc, char **argv)
 			  }
 		  }
 	  }
-	  fprintf(flogfile, " %5d%10.5f%7.2f%8d%5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f\n", 
+	  printf( " %5d%10.5f%7.2f%8d%5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f\n", 
 		  i+1, res, 1.0/sqrt(res), Nparity[0][0][i]+Nparity[0][1][i], 
 		  Iparity[0][0][i], Iparity[0][1][i], Iparity[1][0][i], Iparity[1][1][i], Iparity[2][0][i], Iparity[2][1][i],
   		  Iparity[3][0][i], Iparity[3][1][i], Iparity[4][0][i], Iparity[4][1][i], Iparity[5][0][i], Iparity[5][1][i],
 	      Iparity[6][0][i], Iparity[6][1][i], Iparity[7][0][i], Iparity[7][1][i] );
 
   }
-  fprintf(flogfile, "\nTotals:                %8d%5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f\n", 
+  printf( "\nTotals:                %8d%5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f  %5.1f%5.1f\n", 
 	  Ntot[0][0]+Ntot[0][1], 
 	  Itot[0][0], Itot[0][1], Itot[1][0], Itot[1][1], Itot[2][0], Itot[2][1], Itot[3][0], Itot[3][1],
 	  Itot[4][0], Itot[4][1], Itot[5][0], Itot[5][1], Itot[6][0], Itot[6][1], Itot[7][0], Itot[7][1] );
@@ -637,14 +762,14 @@ int main(int argc, char **argv)
   
   std::vector<float> xi, yi, wi; 
   std::vector<int> flags(nbins,0);
-  float scat, totalscat; 
+  float totalscat; 
   float minres_scaling = 0.0625;   // 4 Angstroms
 
-  fprintf(floggraph,"$TABLE: Wilson plot:\n");
-  fprintf(floggraph,"$SCATTER");
-  //fprintf(floggraph,": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-  fprintf(floggraph,": Wilson plot:A:1,2:\n$$");  
-  fprintf(floggraph," 1/resol^2 ln(I/I_th) $$\n$$\n");
+  printf("$TABLE: Wilson plot:\n");
+  printf("$SCATTER");
+  //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
+  printf(": Wilson plot:A:1,2:\n$$");  
+  printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	  if ( !isig[ih].missing() ) {
@@ -667,7 +792,7 @@ int main(int argc, char **argv)
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.5 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (Wilson) illegal bin number %d\n", bin);
 	      if (flags[bin] != 1) {
-		      fprintf(floggraph,"%10.5f %10.5f\n", res, -lnS);
+		      printf("%10.5f %10.5f\n", res, -lnS);
 		      flags[bin] = 1;
 	      }
 		  if (res > minres_scaling) {  
@@ -685,7 +810,7 @@ int main(int argc, char **argv)
 		  }
 	  }
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
   int nobs = xi.size();
   //printf("%d %d %d\n", xi.size(), yi.size(), wi.size());
@@ -711,11 +836,11 @@ int main(int argc, char **argv)
 
   std::vector<float> xtr, ytr, wtr; 
 
-  fprintf(floggraph,"$TABLE: Truncate style Wilson plot:\n");
-  fprintf(floggraph,"$GRAPHS");
-  //fprintf(floggraph,": Wilson plot:A:1,2,3:\n$$");  
-  fprintf(floggraph,": Wilson plot:0|0.1111x-8|-5.5:1,2,3:\n$$");  // limits hardwired
-  fprintf(floggraph," 1/resol^2 obs all $$\n$$\n");
+  printf("$TABLE: Truncate style Wilson plot:\n");
+  printf("$GRAPHS");
+  printf(": Wilson plot:A:1,2,3:\n$$");  
+  //printf(": Wilson plot:0|0.1111x-8|-5.5:1,2,3:\n$$");  // limits hardwired
+  printf(" 1/resol^2 obs all $$\n$$\n");
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
       int bin = int( float(nbins) * ih.invresolsq() / maxres - 0.5 );
@@ -742,14 +867,14 @@ int main(int argc, char **argv)
 	  }
 	  float w1 = log( I_obs[j] / (float(N_obs[j]) * totalscat) );
 	  float w2 = log( I_obs[j] / (float(N_all[j]) * totalscat) );
-	  fprintf(floggraph, "%10.6f %10.6f %10.6f\n", res, w1, w2);
+	  printf( "%10.6f %10.6f %10.6f\n", res, w1, w2);
 	  if (res > minres_scaling) {  
 		  xtr.push_back(res);
 		  ytr.push_back(w1);
 		  wtr.push_back(1.0);
 	  }
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
   nobs = xtr.size();
   if ( wi.size() > 200 && maxres > 0.0816) {
@@ -836,7 +961,7 @@ int main(int argc, char **argv)
   for ( HRI ih = esig.first(); !ih.last(); ih.next() )
     if ( !esig[ih].missing() ) esig[ih].scale( sqrt( escale.f(ih) ) );
 
-  const int nprm2 = 60;
+  //const int nprm2 = 60; 
 
   clipper::HKL_data<clipper::data32::E_sigE> esig1 = esig;
   clipper::HKL_data<clipper::data32::E_sigE> esig2 = esig;
@@ -864,7 +989,9 @@ int main(int argc, char **argv)
     
   int nprmk = 60;
   std::vector<double> params_initk( nprmk, 1.0 );
-  clipper::BasisFn_binner basis_fn1( fs1, nprmk, 1.0 );
+  clipper::BasisFn_binner basis_fn1( fs1, nprmk, 1.5 );  // equal increments in invresolsq bins
+  //clipper::BasisFn_binner basis_fn1( fs1, nprmk, 1.0 );  // equal volume bins
+
 
   clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn1( fs1, 1.0 );
   clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn2( fs1, 2.0 );
@@ -880,27 +1007,52 @@ int main(int argc, char **argv)
   clipper::ResolutionFn f6( hklinf, basis_fn1, target_fn6, params_initk );
   clipper::ResolutionFn f8( hklinf, basis_fn1, target_fn8, params_initk );
    
-  fprintf(floggraph,"$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
-  fprintf(floggraph,": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
-  fprintf(floggraph,": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
+  printf("$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
+  printf("$GRAPHS");
+  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
+  printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
 
-  fprintf(floggraph,"$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
+  double mean1, mean3, mean4, mean6, mean8;
+  mean1 = mean3 = mean4 = mean6 = mean8 = 0.0;
   for (int i=0; i<nbins; i++) {
-	  //double res = double(i+1) * maxres / double(nbins);
-	  double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );
+	  double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
+	  //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
 	  double i1 = basis_fn1.f_s( res, f2.params() );
-	  fprintf(floggraph,"%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
+	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
               basis_fn1.f_s( res, f1.params() )/pow(i1,0.5),
               basis_fn1.f_s( res, f3.params() )/pow(i1,1.5), 
 	          basis_fn1.f_s( res, f4.params() )/pow(i1,2.0), 
               basis_fn1.f_s( res, f6.params() )/pow(i1,3.0), 
               basis_fn1.f_s( res, f8.params() )/pow(i1,4.0) ); 
-  }
 
-  fprintf(floggraph,"$$\n\n");
+	  mean1 += basis_fn1.f_s( res, f1.params() )/pow(i1,0.5);
+      mean3 += basis_fn1.f_s( res, f3.params() )/pow(i1,1.5); 
+	  mean4 += basis_fn1.f_s( res, f4.params() )/pow(i1,2.0); 
+      mean6 += basis_fn1.f_s( res, f6.params() )/pow(i1,3.0); 
+      mean8 += basis_fn1.f_s( res, f8.params() )/pow(i1,4.0);
+  }
+  mean1 /= double(nbins);
+  mean3 /= double(nbins);
+  mean4 /= double(nbins);
+  mean6 /= double(nbins);
+  mean8 /= double(nbins);
+
+  printf("\nMEAN ACENTRIC MOMENTS OF E:\n\n");
+  //printf("mean1 = %6.3f %6.3f %6.3f %6.2f %6.2f\n",mean1,mean3,mean4,mean6,mean8);
+  printf("<E> = %6.3f (Expected value = 0.886, Perfect Twin = 0.94)\n", mean1);
+  printf("<E**3> = %6.3f (Expected value = 1.329, Perfect Twin = 1.175)\n", mean3);
+  printf("<E**4> = %6.3f (Expected value = 2, Perfect Twin = 1.5)\n", mean4);
+  if (mean4 < 2.0 && mean4 > 1.5) {
+	  double alpha = 0.5 - sqrt(0.5*mean4 - 0.75);
+	  printf("(equivalent to twin fraction of %6.3f)\n",alpha);
+  }
+  printf("<E**6> = %6.2f (Expected value = 6, Perfect Twin = 3)\n", mean6);
+  printf("<E**8> = %6.2f (Expected value = 24, Perfect Twin = 7.5)\n", mean8);
+
+  printf("$$\n\n");
 
   //centrics
   clipper::HKL_data<clipper::data32::F_sigF> fs2( hklinf );
@@ -914,7 +1066,8 @@ int main(int argc, char **argv)
   }
     
   std::vector<double> params_initk2( nprmk, 1.0 );
-  clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.0 );
+  clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.5 );   // equal increments in invresolsq bins
+  //clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.0 );   // equal volume bins
 
   clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn1c( fs2, 1.0 );
   clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn2c( fs2, 2.0 );
@@ -930,21 +1083,21 @@ int main(int argc, char **argv)
   clipper::ResolutionFn f6c( hklinf, basis_fn2, target_fn6c, params_initk2 );
   clipper::ResolutionFn f8c( hklinf, basis_fn2, target_fn8c, params_initk2 );
    
-  fprintf(floggraph,"$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
-  fprintf(floggraph,": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  fprintf(floggraph,": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+  printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
+  printf("$GRAPHS");
+  printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
+  printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
 
-  fprintf(floggraph,"$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
 
 
   for (int i=0; i<nbins; i++) {
-	  //double res = double(i+1) * maxres / double(nbins);
-	  double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );
+	  double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
+	  //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
 	  double i1 = basis_fn2.f_s( res, f2c.params() );
-	  fprintf(floggraph,"%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
+	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
               basis_fn2.f_s( res, f1c.params() )/pow(i1,0.5),
               basis_fn2.f_s( res, f3c.params() )/pow(i1,1.5),
 	  	      basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0), 
@@ -952,7 +1105,7 @@ int main(int argc, char **argv)
               basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
   }
 
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
 
   // find the range of intensities
@@ -1028,17 +1181,26 @@ int main(int argc, char **argv)
 
 
 
-  fprintf(floggraph,"$TABLE: Cumulative intensity distribution:\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": Cumulative intensity distribution (Acentric and centric):N:1,2,3,4,5:\n$$");
-  fprintf(floggraph," Z Acent_theor Acent_obser Cent_theor Cent_obser $$\n$$\n");
+  printf("$TABLE: Cumulative intensity distribution:\n");
+  printf("$GRAPHS");
+  printf(": Cumulative intensity distribution (Acentric and centric):N:1,2,3,4,5:\n$$");
+  printf(" Z Acent_theor Acent_obser Cent_theor Cent_obser $$\n$$\n");
   double x = 0.0;
   double deltax=0.04;
   for (int i=0; i<=50; i++) {
-	  fprintf(floggraph,"%10.5f %8.5f %8.5f %8.5f %8.5f\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i], intensity_ord_c.ordinal(x));
+	  printf("%10.5f %8.5f %8.5f %8.5f %8.5f\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i], intensity_ord_c.ordinal(x));
 	  x += deltax;
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
+
+// count entries where acentric distribution lower than expected - sign of twinning
+  x = 0.08;
+  deltax = 0.12;
+  int ntw = 0;
+  for (int i=0;i<4; i++) {
+	  if ( (acen[3*i+2] - intensity_ord_a.ordinal(x))/acen[3*i+2] > 0.4 ) ntw ++;
+  }
+  if (ntw > 2) printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n");
 
 
   // falloff calculation (Yorgo Modis)
@@ -1145,22 +1307,22 @@ int main(int argc, char **argv)
 	  }
   }
 
-  fprintf(floggraph,"$TABLE: Anisotropy analysis (Yorgo Modis):\n");
-  fprintf(floggraph,"$GRAPHS");
-  fprintf(floggraph,": Mn(F) v resolution:N:1,2,3,4,5:\n");
-  fprintf(floggraph,": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
-  fprintf(floggraph,": No. reflections v resolution:N:1,10,11,12,13:\n");
-  fprintf(floggraph,"$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-  fprintf(floggraph," N(d1) N(d2) N(d3) N(ov) $$\n$$\n");
+  printf("$TABLE: Anisotropy analysis (Yorgo Modis):\n");
+  printf("$GRAPHS");
+  printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
+  printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
+  printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+  printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
+  printf(" N(d1) N(d2) N(d3) N(ov) $$\n$$\n");
 
 
   for(int i=0;i<nbins;i++){
 	  double res = maxres*(double(i)+0.5)/double(nbins);
-	  fprintf(floggraph,"%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
-	  fprintf(floggraph,"%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-	  fprintf(floggraph,"%8d %8d %8d %8d\n",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+	  printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
+	  printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
+	  printf("%8d %8d %8d %8d\n",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
   }
-  fprintf(floggraph,"$$\n\n");
+  printf("$$\n\n");
 
   fclose(floggraph);
 
@@ -1195,7 +1357,7 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 		  float S = Sigma.f(ih);
 		  HKL hkl = ih.hkl();
 		  float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-		  if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %d != weight %d", ih.hkl_class().epsilon(), weight);
+		  if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
 		  float sqwt = sqrt(weight);
 
 		  I /= weight;
@@ -1268,7 +1430,6 @@ int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, floa
 		  0.310,0.304};
 
   float h,x,delta;
-  float c1,c2,e2,e4;
   int n;
   
   // Bayesian statistics tells us to modify I/sigma by subtracting off sigma/S
@@ -1365,7 +1526,7 @@ int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float
   h = I/sigma - 0.5*sigma/S;
   // reject as unphysical reflections for which I < -3.7 sigma, or h < -4.0
   if (I/sigma < -3.7 || h < -4.0 ) {
-	  printf("unphys: %f %f %f %f\n",I,sigma,S,h);
+	  //printf("unphys: %f %f %f %f\n",I,sigma,S,h);
 	  return(0);
   }
   else {
