@@ -6,7 +6,13 @@
 #include "clipper/clipper-ccp4.h"
 #include "clipper/clipper-minimol.h"
 #include <map>
+#if defined (__sgi) && defined (_MIPS_ISA)
+extern "C" {
+#include <math.h>
+}
+#else
 #include <cmath>
+#endif
 
 /* extension to clipper namespace for alt_origins 
 */
