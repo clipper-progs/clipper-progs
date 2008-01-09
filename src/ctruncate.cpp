@@ -1,6 +1,6 @@
 //
 //     CTRUNCATE
-//     Copyright (C) 2006-2007 Norman Stein
+//     Copyright (C) 2006-2008 Norman Stein
 //
 //     This code is distributed under the terms and conditions of the
 //     CCP4 Program Suite Licence Agreement as a CCP4 Application.
@@ -40,7 +40,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.0.9", "$Date: 2007/12/14" );
+  CCP4Program prog( "ctruncate", "0.1.02", "$Date: 2008/01/07" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -80,6 +80,8 @@ int main(int argc, char **argv)
     } else if ( args[arg] == "-colminus" ) {
       if ( ++arg < args.size() ) minuscol = args[arg];
 	  anomalous = 1;
+    } else if ( args[arg] == "-colout" ) {
+      if ( ++arg < args.size() ) outcol = args[arg];
     } else if ( args[arg] == "-no-aniso" ) {
       aniso = false;
 	} else if ( args[arg] == "-debug" ) {
@@ -199,11 +201,15 @@ int main(int argc, char **argv)
   float ratio = next_peak/top_peak;
   float dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
   // look for peaks > 20% of origin peak and at least 0.1 distant from origin
+  printf("\n\nTRANSLATIONAL NCS:\n\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
       printf("\n\nNCS:\n\n");
 	  printf("Translational NCS has been detected\n");
       printf("Ratio = %f\n",ratio);
       printf("Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
+  }
+  else {
+	  printf("No translational NCS detected\n");
   }
 
 
@@ -403,7 +409,7 @@ int main(int argc, char **argv)
   printf("$GRAPHS");
   printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
-  printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
+  //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
   printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
   for (int i=0; i<60; i++) {
@@ -423,7 +429,7 @@ int main(int argc, char **argv)
   printf("$GRAPHS");
   printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+  //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
   printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
   for (int i=0; i<60; i++) {
@@ -1007,13 +1013,15 @@ int main(int argc, char **argv)
   clipper::ResolutionFn f6( hklinf, basis_fn1, target_fn6, params_initk );
   clipper::ResolutionFn f8( hklinf, basis_fn1, target_fn8, params_initk );
    
-  printf("$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
+  //printf("$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
+  printf("$TABLE: Acentric moments of E for k=1,3,4:\n");
   printf("$GRAPHS");
   printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
-  printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
+  //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
 
-  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> $$\n$$\n");
 
   double mean1, mean3, mean4, mean6, mean8;
   mean1 = mean3 = mean4 = mean6 = mean8 = 0.0;
@@ -1021,12 +1029,12 @@ int main(int argc, char **argv)
 	  double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
 	  //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
 	  double i1 = basis_fn1.f_s( res, f2.params() );
-	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
+	  printf("%10.6f %10.6f %10.6f %10.6f \n", res,
               basis_fn1.f_s( res, f1.params() )/pow(i1,0.5),
               basis_fn1.f_s( res, f3.params() )/pow(i1,1.5), 
-	          basis_fn1.f_s( res, f4.params() )/pow(i1,2.0), 
-              basis_fn1.f_s( res, f6.params() )/pow(i1,3.0), 
-              basis_fn1.f_s( res, f8.params() )/pow(i1,4.0) ); 
+	          basis_fn1.f_s( res, f4.params() )/pow(i1,2.0) ); 
+              //basis_fn1.f_s( res, f6.params() )/pow(i1,3.0), 
+              //basis_fn1.f_s( res, f8.params() )/pow(i1,4.0) ); 
 
 	  mean1 += basis_fn1.f_s( res, f1.params() )/pow(i1,0.5);
       mean3 += basis_fn1.f_s( res, f3.params() )/pow(i1,1.5); 
@@ -1049,8 +1057,8 @@ int main(int argc, char **argv)
 	  double alpha = 0.5 - sqrt(0.5*mean4 - 0.75);
 	  printf("(equivalent to twin fraction of %6.3f)\n",alpha);
   }
-  printf("<E**6> = %6.2f (Expected value = 6, Perfect Twin = 3)\n", mean6);
-  printf("<E**8> = %6.2f (Expected value = 24, Perfect Twin = 7.5)\n", mean8);
+  //printf("<E**6> = %6.2f (Expected value = 6, Perfect Twin = 3)\n", mean6);
+  //printf("<E**8> = %6.2f (Expected value = 24, Perfect Twin = 7.5)\n", mean8);
 
   printf("$$\n\n");
 
@@ -1083,26 +1091,27 @@ int main(int argc, char **argv)
   clipper::ResolutionFn f6c( hklinf, basis_fn2, target_fn6c, params_initk2 );
   clipper::ResolutionFn f8c( hklinf, basis_fn2, target_fn8c, params_initk2 );
    
-  printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
+  //printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
+  printf("$TABLE: Centric moments of E for k=1,3,4:\n");
   printf("$GRAPHS");
   printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+  //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
 
-  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
-
+  //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  printf("$$ 1/resol^2 <E> <E**3> <E**4> $$\n$$\n");
 
 
   for (int i=0; i<nbins; i++) {
 	  double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
 	  //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
 	  double i1 = basis_fn2.f_s( res, f2c.params() );
-	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res,
+	  printf("%10.6f %10.6f %10.6f %10.6f\n", res,
               basis_fn2.f_s( res, f1c.params() )/pow(i1,0.5),
               basis_fn2.f_s( res, f3c.params() )/pow(i1,1.5),
-	  	      basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0), 
-              basis_fn1.f_s( res, f6c.params() )/pow(i1,3.0), 
-              basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
+	  	      basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0) ); 
+              //basis_fn1.f_s( res, f6c.params() )/pow(i1,3.0), 
+              //basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
   }
 
   printf("$$\n\n");
@@ -1327,6 +1336,7 @@ int main(int argc, char **argv)
   fclose(floggraph);
 
   // output data
+
   mtzout.open_append( argv[mtzinarg], outfile );
   //mtzout.export_hkl_data( jsig, outcol );
   mtzout.export_hkl_data( fsig, outcol+"MEAN" );
@@ -1562,37 +1572,6 @@ int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float
   }
 }
 
-//void straight_line_fit(float *x, float *y, float *w, int n, float &a, float &b, float &siga, float &sigb)
-void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb)
-{
-  // fits a straight line through a set of points (yi,xi) using least squares
-	float d;
-	float sx,sy,sxx,sxy,sw;
-	int i;
-	sx = 0;
-	sy = 0;
-	sw = 0;
-	sxx = 0;
-	sxy = 0;
-	for (i=0;i<n;i++) {
-		sxx += w[i]*x[i]*x[i];
-        sx += w[i]*x[i];
-		sy += w[i]*y[i];
-		sw += w[i];
-		sxy += w[i]*x[i]*y[i];
-	}
-	d = sxx*sw - sx*sx;
-	//printf("%f %f %f %f %f %f\n", sxx,sx,sy,sw,sxy,d);
-	if (fabs(d) < 1.0e-5) {
-		Message::message( Message_fatal( "least squares fit: zero denominator" ) );
-		return;
-	}
-	a = (sxy*sw - sx*sy)/d;
-	b = (sy*sxx - sx*sxy)/d;
-	siga = sqrt(sw/d);
-	sigb = sqrt(sxx/d);
-	return;
-}
 
 void tricart(Cell cell, Mat33<float>& transf)
 {
