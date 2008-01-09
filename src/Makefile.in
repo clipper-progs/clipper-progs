@@ -112,7 +112,7 @@ caniso_SOURCES = caniso.cpp
 
 convert2mtz_SOURCES = convert2mtz.cpp
 
-ctruncate_SOURCES = ctruncate.cpp cpsf_utils.cpp
+ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp
 
 EXTRA_DIST = README
 
@@ -185,7 +185,7 @@ csigmaa_OBJECTS = $(am_csigmaa_OBJECTS)
 csigmaa_LDADD = $(LDADD)
 csigmaa_DEPENDENCIES =
 csigmaa_LDFLAGS =
-am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) cpsf_utils.$(OBJEXT)
+am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) ctruncate_utils.$(OBJEXT) cpsf_utils.$(OBJEXT)
 ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
 ctruncate_LDADD = $(LDADD)
 ctruncate_DEPENDENCIES =

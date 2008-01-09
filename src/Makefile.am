@@ -25,7 +25,7 @@ caniso_SOURCES = caniso.cpp
 
 convert2mtz_SOURCES = convert2mtz.cpp
 
-ctruncate_SOURCES = ctruncate.cpp cpsf_utils.cpp
+ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp
 
 EXTRA_DIST = README
 
