@@ -32,6 +32,8 @@ using namespace clipper;
 
 int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
 			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1);
+int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1);
 int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF);
 int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF);
 void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb);
@@ -40,14 +42,15 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.02", "$Date: 2008/01/07" );
+  CCP4Program prog( "ctruncate", "0.1.05", "$Date: 2008/01/31" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
   clipper::String outcol = "F";
-  clipper::String meancol = "IMEAN";
-  clipper::String pluscol = "I(+)";
-  clipper::String minuscol = "I(-)";
+  clipper::String meancol = "/*/*/[IMEAN,SIGIMEAN]";
+  //clipper::String meancol = "NONE";
+  clipper::String pluscol = "/*/*/[I(+),SIGI(+)]";
+  clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
   clipper::String ipfile = "NONE";
   bool aniso = true;
   bool debug = false;
@@ -61,8 +64,10 @@ int main(int argc, char **argv)
   HKL_info hklinf, hklp;
 
   // command input
+  prog.summary_beg();
   printf("\nUSER SUPPLIED INPUT:\n");
-  CCP4CommandInput args( argc, argv, true );  
+  CCP4CommandInput args( argc, argv, true ); 
+  prog.summary_end();
   int arg = 0;
   while ( ++arg < args.size() ) {
     if ( args[arg] == "-mtzin" || args[arg] == "-hklin") {
@@ -107,49 +112,73 @@ int main(int argc, char **argv)
   HKL_data<data32::I_sigI> isig(hklinf);   // raw I and sigma
   HKL_data<data32::I_sigI> jsig(hklinf);   // post-truncate I and sigma
   HKL_data<data32::F_sigF> fsig(hklinf);   // post-truncate F and sigma 
-  HKL_data<data32::I_sigI> isig_plus(hklinf);   // raw I(+) and sigma
+  HKL_data<data32::I_sigI_ano> isig_plus(hklinf);   // raw I(+) and sigma
   HKL_data<data32::I_sigI> jsig_plus(hklinf);   // post-truncate I and sigma
   HKL_data<data32::F_sigF> fsig_plus(hklinf);   // post-truncate F and sigma 
-  HKL_data<data32::I_sigI> isig_minus(hklinf);   // raw I(-) and sigma
+  HKL_data<data32::I_sigI_ano> isig_minus(hklinf);   // raw I(-) and sigma
   HKL_data<data32::I_sigI> jsig_minus(hklinf);   // post-truncate I and sigma
   HKL_data<data32::F_sigF> fsig_minus(hklinf);   // post-truncate F and sigma 
   HKL_data<data32::F_sigF> Dano(hklinf);   // anomalous difference and sigma 
   HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
-  // column labels originally hard wired  (aucn_mrg.mtz from $CEXAM used for Testing) 
-  //mtzfile.import_hkl_data( isig, "/*/*/[I(+),SIGI(+)]" );
-  meancol = "/*/*/[" + meancol + ",SIG" + meancol + "]";
-  //mtzfile.import_hkl_data( isig, "/*/*/[IMEAN,SIGIMEAN]" );
 
 //  clipper::MTZcrystal cxtl;
 //  mtzfile.import_crystal( cxtl, meancol );
 //  clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf, cxtl );  // don't seem to need crystal info
   clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
 
+  //meancol = "/*/*/[" + meancol + ",SIG" + meancol + "]";
   mtzfile.import_hkl_data( isig, meancol );
 
   if (anomalous) {
-      pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
+      //pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
 	  mtzfile.import_hkl_data( isig_plus, pluscol );
-      minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
+      //minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
 	  mtzfile.import_hkl_data( isig_minus, minuscol );
   }
 
-  //mtzfile.import_hkl_data( isig, "/*/*/[I,SIGI]" );
   // need this mumbo-jumbo in order to write to output file
   if ( outcol[0] != '/' ) outcol = mtzfile.assigned_paths()[0].notail()+"/"+outcol;
 
   mtzfile.close_read();
 
+  int Ncentric = 0;
+  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+	if ( ih.hkl_class().centric() && !isig[ih].missing()) Ncentric++;
+  }
+  printf("\nNcentric = %d\n", Ncentric);
 
-
-  // check for pseudo translation (taken from cpatterson)
+  prog.summary_beg();
+  printf("\n\nCRYSTAL INFO:\n\n");
   clipper::Spacegroup spgr = mtzfile.spacegroup();
   clipper::Cell       cell1 = mtzfile.cell();
+  printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
+	      Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
   clipper::Resolution reso;
   clipper::Grid_sampling grid;
   clipper::String opfile = "patterson.map";
   reso = mtzfile.resolution();
 
+  // can't seem to get max resolution from clipper, so use CCP4 methods
+  CMtz::MTZ *mtz1=NULL;
+  int read_refs=1;  // not sure what read_refs actually does
+  float minres,maxres;
+  mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
+  CMtz::MtzResLimits(mtz1,&minres,&maxres);
+  printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/sqrt(minres),1.0/sqrt(maxres));
+  if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
+  prog.summary_end();
+  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(CMtz::MtzSpacegroupNumber(mtz1));
+  prog.summary_beg();
+
+  std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
+  
+  char pointgroup[20];
+  strcpy(pointgroup,spg1->point_group);
+  //pointgroup = spg1->point_group;
+  printf("Pointgroup: %s\n\n",pointgroup);
+  prog.summary_end();
+
+  // check for pseudo translation (taken from cpatterson)
   // get Patterson spacegroup
   clipper::Spacegroup
     pspgr( clipper::Spgr_descr( spgr.generator_ops().patterson_ops() ) );
@@ -201,6 +230,7 @@ int main(int argc, char **argv)
   float ratio = next_peak/top_peak;
   float dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
   // look for peaks > 20% of origin peak and at least 0.1 distant from origin
+  prog.summary_beg();
   printf("\n\nTRANSLATIONAL NCS:\n\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
       printf("\n\nNCS:\n\n");
@@ -211,6 +241,7 @@ int main(int argc, char **argv)
   else {
 	  printf("No translational NCS detected\n");
   }
+  prog.summary_end();
 
 
 /*  		clipper::Map_stats pattstats( patterson );
@@ -246,6 +277,7 @@ int main(int argc, char **argv)
 
   // anisotropy correction
   if (aniso)  {
+	  prog.summary_beg();
 	  printf("\n\nANISOTROPY CORRECTION:\n");
 
       //clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
@@ -286,6 +318,8 @@ int main(int argc, char **argv)
 	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
 	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
 
+	  prog.summary_end();
+	  printf("\n");
 	  double FFtotal = 0.0;
       for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		  if ( !isig[ih].missing() ) {
@@ -330,18 +364,7 @@ int main(int argc, char **argv)
   clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_init );
 
 
-  // can't seem to get max resolution from clipper, so use CCP4 methods
-  CMtz::MTZ *mtz1=NULL;
-  int read_refs=1;  // not sure what read_refs actually does
-  float minres,maxres;
-  mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
-  CMtz::MtzResLimits(mtz1,&minres,&maxres);
-  printf("\n\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n\n",1.0/sqrt(minres),1.0/sqrt(maxres));
-  if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
-  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(CMtz::MtzSpacegroupNumber(mtz1));
-
-  std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
-
+  
   if (debug) {
       FILE *ftestfile;
       ftestfile = fopen("sigma.txt","w");
@@ -351,15 +374,6 @@ int main(int argc, char **argv)
       }
       fclose(ftestfile);
   }
-
-  char pointgroup[20];
-  strcpy(pointgroup,spg1->point_group);
-  //pointgroup = spg1->point_group;
-  printf("\npointgroup = %s\n\n",pointgroup);
-
-  FILE *floggraph, *flogfile;
-  floggraph = fopen("ctruncate.loggraph","w");
-  flogfile = fopen("ctruncate.log","w");
 
   // calculate moments of Z using truncate methods
 
@@ -407,8 +421,8 @@ int main(int argc, char **argv)
 
   printf("$TABLE: Acentric moments of E using Truncate method:\n");
   printf("$GRAPHS");
-  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
   printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
@@ -425,27 +439,30 @@ int main(int argc, char **argv)
   }
   printf("$$\n\n");
 
-  printf("$TABLE: Centric moments of E using Truncate method:\n");
-  printf("$GRAPHS");
-  printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
-  printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
-  printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+  if (Ncentric) {
+      printf("$TABLE: Centric moments of E using Truncate method:\n");
+      printf("$GRAPHS");
+      printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
+      printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
+      //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+      printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
-  for (int i=0; i<60; i++) {
-	  double res = maxres * pow((double(i) + 0.5)/double(nbins), 0.666666);
-	  if (Nc[i] > 0 && I1c[i] > 0.0) {
-		  E1c[i] /= sqrt(I1c[i]*Nc[i]);
-		  E3c[i] *= sqrt(Nc[i]) / pow(I1c[i],1.5);
-		  I2c[i] *= Nc[i] /( I1c[i]*I1c[i] );
-		  I3c[i] *= Nc[i]*Nc[i] / pow(I1c[i],3);
-		  I4c[i] *= pow(Nc[i],3) / pow(I1c[i],4);
-	  }
-	  printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1c[i], E3c[i], I2c[i], I3c[i], I4c[i]);
+      for (int i=0; i<60; i++) {
+	      double res = maxres * pow((double(i) + 0.5)/double(nbins), 0.666666);
+	      if (Nc[i] > 0 && I1c[i] > 0.0) {
+		      E1c[i] /= sqrt(I1c[i]*Nc[i]);
+		      E3c[i] *= sqrt(Nc[i]) / pow(I1c[i],1.5);
+		      I2c[i] *= Nc[i] /( I1c[i]*I1c[i] );
+		      I3c[i] *= Nc[i]*Nc[i] / pow(I1c[i],3);
+		      I4c[i] *= pow(Nc[i],3) / pow(I1c[i],4);
+	      }
+	      printf("%10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n", res, E1c[i], E3c[i], I2c[i], I3c[i], I4c[i]);
+      }
+      printf("$$\n\n");
   }
-  printf("$$\n\n");
 
-  printf("\nTWINNING ANALYSIS:\n\n");
+  prog.summary_beg();
+  printf("\n\nTWINNING ANALYSIS:\n\n");
   int itwin = 0;
 
   // H test for twinning
@@ -633,6 +650,7 @@ int main(int argc, char **argv)
   }
 
   if (!itwin) printf("No twinning detected\n\n");
+  prog.summary_end();
 
   printf("$TABLE: L test for twinning:\n");
   printf("$GRAPHS");
@@ -745,16 +763,17 @@ int main(int argc, char **argv)
 	  Ntot[0][0]+Ntot[0][1], 
 	  Itot[0][0], Itot[0][1], Itot[1][0], Itot[1][1], Itot[2][0], Itot[2][1], Itot[3][0], Itot[3][1],
 	  Itot[4][0], Itot[4][1], Itot[5][0], Itot[5][1], Itot[6][0], Itot[6][1], Itot[7][0], Itot[7][1] );
-  fclose(flogfile);
 
 
   //Wilson pre
   
+  prog.summary_beg();
   printf("\nWILSON SCALING:\n\n");
   int nsym = spg1->nsymop;
   int nresidues = int(0.5*hklinf.cell().volume()/(nsym*157));
   //nresidues /= 2.0;
   printf("Estimated number of residues = %d\n",nresidues);
+  prog.summary_end();
 
   std::string name[4] = { "C", "N", "O", "H" };
   int numatoms[4]; 
@@ -825,10 +844,12 @@ int main(int argc, char **argv)
 
   if ( wi.size() > 200 && maxres > 0.0816) {               // 3.5 Angstroms
       straight_line_fit(xi,yi,wi,nobs,a,b,siga,sigb);
+	  prog.summary_beg();
 	  printf("\nResults from Clipper style Wilson plot:\n");
       a *= 2.0;
       printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",a,b,siga,sigb);
       printf("scale factor on intensity = %10.4f\n\n",(exp(b)));
+	  prog.summary_end();
   }
   else {
 	  printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
@@ -885,9 +906,11 @@ int main(int argc, char **argv)
   nobs = xtr.size();
   if ( wi.size() > 200 && maxres > 0.0816) {
       straight_line_fit(xtr,ytr,wtr,nobs,a1,b1,siga,sigb);
+	  prog.summary_beg();
       printf("\nresults from fitting Truncate style Wilson plot\n");
       printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",-2.0*a1,-b1,siga,sigb);
       printf("scale factor on intensity = %10.4f\n\n", exp(-b1));
+	  prog.summary_end();
   }
  
   // apply the Truncate procedure
@@ -924,10 +947,10 @@ int main(int argc, char **argv)
 		   }
 	  }
   }
+
   else {
       truncate( isig, jsig, fsig, Sigma, scalef, spg1 );
   }
-
 
   
   // following code is for when truncate calc switched off - do not delete it
@@ -951,31 +974,6 @@ int main(int argc, char **argv)
 		  }
 	  }
   }*/
-
-
-  // create initial E
-  clipper::HKL_data<clipper::data32::E_sigE> esig( hklinf );
-  esig.compute( fsig, clipper::data32::Compute_EsigE_from_FsigF() );
-
-  // calc E-scaling
-  std::vector<double> params_init1( nprm, 1.0 );
-  clipper::BasisFn_spline basis_fo1( esig, nprm, 2.0 );
-  clipper::TargetFn_scaleEsq<clipper::data32::E_sigE> target_fo1( esig );
-  clipper::ResolutionFn escale( hklinf, basis_fo1, target_fo1, params_init1 );
-
-  // apply E-scaling
-  for ( HRI ih = esig.first(); !ih.last(); ih.next() )
-    if ( !esig[ih].missing() ) esig[ih].scale( sqrt( escale.f(ih) ) );
-
-  //const int nprm2 = 60; 
-
-  clipper::HKL_data<clipper::data32::E_sigE> esig1 = esig;
-  clipper::HKL_data<clipper::data32::E_sigE> esig2 = esig;
-
-  for ( HRI ih = esig.first(); !ih.last(); ih.next() ) {
-	  if( ih.hkl_class().centric() ) esig1[ih].set_null();  // esig1 is acentrics
-	  if( !ih.hkl_class().centric() ) esig2[ih].set_null(); // esig2 is centrics
-  }
 
 
   // moments of E using clipper binning
@@ -1016,8 +1014,8 @@ int main(int argc, char **argv)
   //printf("$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
   printf("$TABLE: Acentric moments of E for k=1,3,4:\n");
   printf("$GRAPHS");
-  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
+  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
   //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
 
   //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
@@ -1042,12 +1040,15 @@ int main(int argc, char **argv)
       mean6 += basis_fn1.f_s( res, f6.params() )/pow(i1,3.0); 
       mean8 += basis_fn1.f_s( res, f8.params() )/pow(i1,4.0);
   }
+  printf("$$\n\n");
+
   mean1 /= double(nbins);
   mean3 /= double(nbins);
   mean4 /= double(nbins);
   mean6 /= double(nbins);
   mean8 /= double(nbins);
-
+ 
+  prog.summary_beg();
   printf("\nMEAN ACENTRIC MOMENTS OF E:\n\n");
   //printf("mean1 = %6.3f %6.3f %6.3f %6.2f %6.2f\n",mean1,mean3,mean4,mean6,mean8);
   printf("<E> = %6.3f (Expected value = 0.886, Perfect Twin = 0.94)\n", mean1);
@@ -1059,119 +1060,92 @@ int main(int argc, char **argv)
   }
   //printf("<E**6> = %6.2f (Expected value = 6, Perfect Twin = 3)\n", mean6);
   //printf("<E**8> = %6.2f (Expected value = 24, Perfect Twin = 7.5)\n", mean8);
+  prog.summary_end();
 
-  printf("$$\n\n");
 
   //centrics
-  clipper::HKL_data<clipper::data32::F_sigF> fs2( hklinf );
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() && ih.hkl_class().centric() ) {
-	      double I = isig[ih].I();
-	      double sigI = isig[ih].sigI();
-	      if ( I > 0.0 )
-	          fs2[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
-	  }
-  }
+  if (Ncentric) {
+      clipper::HKL_data<clipper::data32::F_sigF> fs2( hklinf );
+      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+	      if ( !isig[ih].missing() && ih.hkl_class().centric() ) {
+	          double I = isig[ih].I();
+	          double sigI = isig[ih].sigI();
+	          if ( I > 0.0 )
+	              fs2[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
+	      }
+      }
     
-  std::vector<double> params_initk2( nprmk, 1.0 );
-  clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.5 );   // equal increments in invresolsq bins
-  //clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.0 );   // equal volume bins
+      std::vector<double> params_initk2( nprmk, 1.0 );
+      clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.5 );   // equal increments in invresolsq bins
+      //clipper::BasisFn_binner basis_fn2( fs2, nprmk, 1.0 );   // equal volume bins
 
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn1c( fs2, 1.0 );
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn2c( fs2, 2.0 );
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn3c( fs2, 3.0 );
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn4c( fs2, 4.0 );
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn6c( fs2, 6.0 );
-  clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn8c( fs2, 8.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn1c( fs2, 1.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn2c( fs2, 2.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn3c( fs2, 3.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn4c( fs2, 4.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn6c( fs2, 6.0 );
+      clipper::TargetFn_meanFnth<clipper::data32::F_sigF> target_fn8c( fs2, 8.0 );
 
-  clipper::ResolutionFn f1c( hklinf, basis_fn2, target_fn1c, params_initk2 );
-  clipper::ResolutionFn f2c( hklinf, basis_fn2, target_fn2c, params_initk2 );
-  clipper::ResolutionFn f3c( hklinf, basis_fn2, target_fn3c, params_initk2 );
-  clipper::ResolutionFn f4c( hklinf, basis_fn2, target_fn4c, params_initk2 );
-  clipper::ResolutionFn f6c( hklinf, basis_fn2, target_fn6c, params_initk2 );
-  clipper::ResolutionFn f8c( hklinf, basis_fn2, target_fn8c, params_initk2 );
+      clipper::ResolutionFn f1c( hklinf, basis_fn2, target_fn1c, params_initk2 );
+      clipper::ResolutionFn f2c( hklinf, basis_fn2, target_fn2c, params_initk2 );
+      clipper::ResolutionFn f3c( hklinf, basis_fn2, target_fn3c, params_initk2 );
+      clipper::ResolutionFn f4c( hklinf, basis_fn2, target_fn4c, params_initk2 );
+      clipper::ResolutionFn f6c( hklinf, basis_fn2, target_fn6c, params_initk2 );
+      clipper::ResolutionFn f8c( hklinf, basis_fn2, target_fn8c, params_initk2 );
    
-  //printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
-  printf("$TABLE: Centric moments of E for k=1,3,4:\n");
-  printf("$GRAPHS");
-  printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
-  printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-  //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
+      //printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
+      printf("$TABLE: Centric moments of E for k=1,3,4:\n");
+      printf("$GRAPHS");
+      printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
+      printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
+      //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
 
-  //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
-  printf("$$ 1/resol^2 <E> <E**3> <E**4> $$\n$$\n");
+      //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
+      printf("$$ 1/resol^2 <E> <E**3> <E**4> $$\n$$\n");
 
 
-  for (int i=0; i<nbins; i++) {
-	  double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
-	  //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
-	  double i1 = basis_fn2.f_s( res, f2c.params() );
-	  printf("%10.6f %10.6f %10.6f %10.6f\n", res,
-              basis_fn2.f_s( res, f1c.params() )/pow(i1,0.5),
-              basis_fn2.f_s( res, f3c.params() )/pow(i1,1.5),
-	  	      basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0) ); 
-              //basis_fn1.f_s( res, f6c.params() )/pow(i1,3.0), 
-              //basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
+      for (int i=0; i<nbins; i++) {
+	      double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
+	      //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
+	      double i1 = basis_fn2.f_s( res, f2c.params() );
+	      printf("%10.6f %10.6f %10.6f %10.6f\n", res,
+                  basis_fn2.f_s( res, f1c.params() )/pow(i1,0.5),
+                  basis_fn2.f_s( res, f3c.params() )/pow(i1,1.5),
+	  	          basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0) ); 
+                  //basis_fn1.f_s( res, f6c.params() )/pow(i1,3.0), 
+                  //basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
+      }
+
+      printf("$$\n\n");
   }
 
-  printf("$$\n\n");
 
-
-  // find the range of intensities
+  // construct cumulative distribution function for intensity (using Z rather than E)
   clipper::Range<double> intensity_range_centric;
   clipper::Range<double> intensity_range_acentric;
-
-  for ( HRI ih = esig.first(); !ih.last(); ih.next() ) {
-	  if ( !esig[ih].missing() ) {
-         if ( ih.hkl_class().centric() ) intensity_range_centric.include( pow(esig[ih].E(),2) );
-		 else intensity_range_acentric.include( pow(esig[ih].E(),2) );
-	  }
-  }
-  //printf("C: %20.5f %20.5f\n",intensity_range_centric.max(),intensity_range_centric.min());
-  //printf("A: %20.5f %20.5f\n",intensity_range_acentric.max(),intensity_range_acentric.min());
-
-
-  // construct cumulative distribution function for intensity
-  clipper::Generic_ordinal intensity_ord_c;
-  clipper::Generic_ordinal intensity_ord_a;
-  intensity_ord_c.init( intensity_range_centric );
-  intensity_ord_a.init( intensity_range_acentric );
-  for ( HRI ih = esig.first(); !ih.last(); ih.next() ) {
-  	  if ( !esig[ih].missing() ) {
-          if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( esig[ih].E()*esig[ih].E() );
-		  else intensity_ord_a.accumulate( esig[ih].E()*esig[ih].E() );
-	  }
-  }
-  intensity_ord_c.prep_ordinal();
-  intensity_ord_a.prep_ordinal();
-
-
-  // construct another cumulative distribution function for intensity (using Z rather than E)
-  clipper::Range<double> intensity_range_centric2;
-  clipper::Range<double> intensity_range_acentric2;
   // changed from jsig to isig
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	  if ( !isig[ih].missing() ) {
-         if ( ih.hkl_class().centric() ) intensity_range_centric2.include( isig[ih].I()/Sigma.f(ih) );
-		 else intensity_range_acentric2.include( isig[ih].I()/Sigma.f(ih) );
+         if ( ih.hkl_class().centric() ) intensity_range_centric.include( isig[ih].I()/Sigma.f(ih) );
+		 else intensity_range_acentric.include( isig[ih].I()/Sigma.f(ih) );
 	  }
   }
-  //printf("C2: %20.5f %20.5f\n",intensity_range_centric2.max(),intensity_range_centric2.min());
-  //printf("A2: %20.5f %20.5f\n",intensity_range_acentric2.max(),intensity_range_acentric2.min());
+  //printf("C2: %20.5f %20.5f\n",intensity_range_centric.max(),intensity_range_centric.min());
+  //printf("A2: %20.5f %20.5f\n",intensity_range_acentric.max(),intensity_range_acentric.min());
 
-  clipper::Generic_ordinal intensity_ord_c2;
-  clipper::Generic_ordinal intensity_ord_a2;
-  intensity_ord_c2.init( intensity_range_centric2 );
-  intensity_ord_a2.init( intensity_range_acentric2 );
+  clipper::Generic_ordinal intensity_ord_c;
+  clipper::Generic_ordinal intensity_ord_a;
+  intensity_ord_c.init( intensity_range_centric );
+  intensity_ord_a.init( intensity_range_acentric );
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
   	  if ( !isig[ih].missing() ) {
-          if ( ih.hkl_class().centric() ) intensity_ord_c2.accumulate( isig[ih].I()/Sigma.f(ih)  );
-		  else intensity_ord_a2.accumulate( isig[ih].I()/Sigma.f(ih) );
+          if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( isig[ih].I()/Sigma.f(ih)  );
+		  else intensity_ord_a.accumulate( isig[ih].I()/Sigma.f(ih) );
 	  }
   }
-  intensity_ord_c2.prep_ordinal();
-  intensity_ord_a2.prep_ordinal();
+  intensity_ord_c.prep_ordinal();
+  intensity_ord_a.prep_ordinal();
 
   // theoretical values for cumulative intensity distribution
   double acen[51] = {0.0,
@@ -1197,7 +1171,8 @@ int main(int argc, char **argv)
   double x = 0.0;
   double deltax=0.04;
   for (int i=0; i<=50; i++) {
-	  printf("%10.5f %8.5f %8.5f %8.5f %8.5f\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i], intensity_ord_c.ordinal(x));
+	  if (Ncentric) printf("%10.5f %8.5f %8.5f %8.5f %8.5f\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i], intensity_ord_c.ordinal(x));
+	  else printf("%10.5f %8.5f %8.5f %8.5f ?\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i]);
 	  x += deltax;
   }
   printf("$$\n\n");
@@ -1209,7 +1184,11 @@ int main(int argc, char **argv)
   for (int i=0;i<4; i++) {
 	  if ( (acen[3*i+2] - intensity_ord_a.ordinal(x))/acen[3*i+2] > 0.4 ) ntw ++;
   }
-  if (ntw > 2) printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n");
+  if (ntw > 2) {
+	  prog.summary_beg();
+	  printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n\n");
+	  prog.summary_end();
+  }
 
 
   // falloff calculation (Yorgo Modis)
@@ -1316,7 +1295,7 @@ int main(int argc, char **argv)
 	  }
   }
 
-  printf("$TABLE: Anisotropy analysis (Yorgo Modis):\n");
+  printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
   printf("$GRAPHS");
   printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
   printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
@@ -1333,7 +1312,6 @@ int main(int argc, char **argv)
   }
   printf("$$\n\n");
 
-  fclose(floggraph);
 
   // output data
 
@@ -1346,6 +1324,7 @@ int main(int argc, char **argv)
 	   mtzout.export_hkl_data( Dano, outcol+"_ANO" );
   }
   mtzout.close_append();
+  prog.set_termination_message( "Normal termination" );
 
   return(0);
 }
@@ -1387,6 +1366,53 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 			  //fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
 		  }
 		  HKL hkl = ih.hkl();
+  }
+  //fclose(checkfile);
+  return(1);
+}
+
+
+int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1)
+
+// takes anomalous I's as input. Would have thought outputs should also be of anomalous type, but this generates a left hand
+// side must be an l value error
+
+{
+  typedef clipper::HKL_data_base::HKL_reference_index HRI;
+  //FILE *checkfile;
+  //checkfile = fopen("checku.txt", "w");
+  float J, sigJ, F, sigF;
+  int iflag;
+
+  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+	  if ( !isig[ih].missing() ) {
+		  float I = isig[ih].I();
+		  float sigma = isig[ih].sigI();
+		  float S = Sigma.f(ih);
+		  HKL hkl = ih.hkl();
+		  float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+		  if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+		  float sqwt = sqrt(weight);
+
+		  I /= weight;
+		  sigma /= weight;
+
+		  // handle acentric and centric reflections separately
+		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I,sigma,S,J,sigJ,F,sigF);
+		  else iflag = truncate_acentric(I,sigma,S,J,sigJ,F,sigF);	
+		  //if ( !ih.hkl_class().centric()  && I < 0 ) 
+			  //fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+			  //ih.hkl_class().epsilon());
+		  if (iflag) {
+			  jsig[ih].I() = J;
+			  jsig[ih].sigI() = sigJ;
+			  //jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+			  fsig[ih].f() = F*scalef*sqwt;
+			  fsig[ih].sigf() = sigF*scalef*sqwt;
+			  //fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+		  }
+	  }
   }
   //fclose(checkfile);
   return(1);
