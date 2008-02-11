@@ -42,7 +42,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.05", "$Date: 2008/01/31" );
+  CCP4Program prog( "ctruncate", "0.1.06", "$Date: 2008/02/06" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -52,11 +52,15 @@ int main(int argc, char **argv)
   clipper::String pluscol = "/*/*/[I(+),SIGI(+)]";
   clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
   clipper::String ipfile = "NONE";
+
   bool aniso = true;
   bool debug = false;
+  bool amplitudes = false;
+  bool anomalous = false;
 
   int mtzinarg = 0;
-  int anomalous = 0;
+  int nbins = 60;
+  int ncbins = 60;
 
   // clipper seems to use its own column labels, then append yours
 
@@ -81,14 +85,18 @@ int main(int argc, char **argv)
       if ( ++arg < args.size() ) meancol = args[arg];
     } else if ( args[arg] == "-colplus" ) {
       if ( ++arg < args.size() ) pluscol = args[arg];
-	  anomalous = 1;
+	  anomalous = true;
     } else if ( args[arg] == "-colminus" ) {
       if ( ++arg < args.size() ) minuscol = args[arg];
-	  anomalous = 1;
+	  anomalous = true;
     } else if ( args[arg] == "-colout" ) {
       if ( ++arg < args.size() ) outcol = args[arg];
+    } else if ( args[arg] == "-nbins" ) {
+		if ( ++arg < args.size() ) nbins = clipper::String(args[arg]).i();
     } else if ( args[arg] == "-no-aniso" ) {
       aniso = false;
+    } else if ( args[arg] == "-amplitudes" ) {
+      amplitudes = true;
 	} else if ( args[arg] == "-debug" ) {
       debug = true;
 	} else {
@@ -126,14 +134,19 @@ int main(int argc, char **argv)
 //  clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf, cxtl );  // don't seem to need crystal info
   clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
 
-  //meancol = "/*/*/[" + meancol + ",SIG" + meancol + "]";
-  mtzfile.import_hkl_data( isig, meancol );
+  if (amplitudes) {
+      mtzfile.import_hkl_data( fsig, meancol );
+  }
+  else {
+      //meancol = "/*/*/[" + meancol + ",SIG" + meancol + "]";
+      mtzfile.import_hkl_data( isig, meancol );
 
-  if (anomalous) {
-      //pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
-	  mtzfile.import_hkl_data( isig_plus, pluscol );
-      //minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
-	  mtzfile.import_hkl_data( isig_minus, minuscol );
+      if (anomalous) {
+          //pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
+	      mtzfile.import_hkl_data( isig_plus, pluscol );
+          //minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
+	      mtzfile.import_hkl_data( isig_minus, minuscol );
+      }
   }
 
   // need this mumbo-jumbo in order to write to output file
@@ -141,11 +154,22 @@ int main(int argc, char **argv)
 
   mtzfile.close_read();
 
+  if (amplitudes) {
+	  for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+		  if ( !fsig[ih].missing() )
+		  //isig[ih] = datatypes::I_sigI<float>( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
+		  isig[ih] = clipper::data32::I_sigI( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
+		  //printf("%f %f \n",fsig[ih].f(), isig[ih].I() );
+      }
+  }
+
   int Ncentric = 0;
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	if ( ih.hkl_class().centric() && !isig[ih].missing()) Ncentric++;
   }
   printf("\nNcentric = %d\n", Ncentric);
+  ncbins = std::min( Ncentric/10, nbins);
+  printf("Number of centric bins = %d\n", ncbins);
 
   prog.summary_beg();
   printf("\n\nCRYSTAL INFO:\n\n");
@@ -377,22 +401,23 @@ int main(int argc, char **argv)
 
   // calculate moments of Z using truncate methods
 
-  int nbins = 60;
 
-  std::vector<double> Na(nbins,0.0),  Nc(nbins,0.0);
-  std::vector<double> E1a(nbins,0.0), E1c(nbins,0.0);
-  std::vector<double> E3a(nbins,0.0), E3c(nbins,0.0);
-  std::vector<double> I1a(nbins,0.0), I1c(nbins,0.0);
-  std::vector<double> I2a(nbins,0.0), I2c(nbins,0.0);
-  std::vector<double> I3a(nbins,0.0), I3c(nbins,0.0);
-  std::vector<double> I4a(nbins,0.0), I4c(nbins,0.0);
+  std::vector<double> Na(nbins,0.0),  Nc(ncbins,0.0);
+  std::vector<double> E1a(nbins,0.0), E1c(ncbins,0.0);
+  std::vector<double> E3a(nbins,0.0), E3c(ncbins,0.0);
+  std::vector<double> I1a(nbins,0.0), I1c(ncbins,0.0);
+  std::vector<double> I2a(nbins,0.0), I2c(ncbins,0.0);
+  std::vector<double> I3a(nbins,0.0), I3c(ncbins,0.0);
+  std::vector<double> I4a(nbins,0.0), I4c(ncbins,0.0);
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	  if ( !isig[ih].missing() ) {
 		  //if( ih.hkl_class().epsilon() > 1.01) printf("%d %d %d epsilon = %f\n",ih.hkl().h(), ih.hkl().k(), ih.hkl().l(), ih.hkl_class().epsilon());
 		  double I = isig[ih].I() / ih.hkl_class().epsilon();
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
+		  int cbin = int( ncbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
+		  if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
 		  //printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 		  if (!ih.hkl_class().centric()) {
 		      Na[bin]++;
@@ -406,14 +431,14 @@ int main(int argc, char **argv)
 			  }
 		  }
 		  else {
-			  Nc[bin]++;
+			  Nc[cbin]++;
 		      if (I > 0.0) {
-			      E1c[bin] += sqrt(I);
-			      I1c[bin] += I;
-			      E3c[bin] += pow(I,1.5);
-			      I2c[bin] += I*I;
-			      I3c[bin] += I*I*I;
-			      I4c[bin] += I*I*I*I;
+			      E1c[cbin] += sqrt(I);
+			      I1c[cbin] += I;
+			      E3c[cbin] += pow(I,1.5);
+			      I2c[cbin] += I*I;
+			      I3c[cbin] += I*I*I;
+			      I4c[cbin] += I*I*I*I;
 			  }
 		  }
 	  }
@@ -426,7 +451,7 @@ int main(int argc, char **argv)
   //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
   printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
-  for (int i=0; i<60; i++) {
+  for (int i=0; i<nbins; i++) {
 	  double res = maxres * pow((double(i) + 0.5)/double(nbins), 1.00000);
 	  if (Na[i] > 0 && I1a[i] > 0.0) {
 		  E1a[i] /= sqrt(I1a[i]*Na[i]);
@@ -447,8 +472,8 @@ int main(int argc, char **argv)
       //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
       printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
 
-      for (int i=0; i<60; i++) {
-	      double res = maxres * pow((double(i) + 0.5)/double(nbins), 0.666666);
+      for (int i=0; i<ncbins; i++) {
+	      double res = maxres * pow((double(i) + 0.5)/double(ncbins), 0.666666);
 	      if (Nc[i] > 0 && I1c[i] > 0.0) {
 		      E1c[i] /= sqrt(I1c[i]*Nc[i]);
 		      E3c[i] *= sqrt(Nc[i]) / pow(I1c[i],1.5);
@@ -913,43 +938,44 @@ int main(int argc, char **argv)
 	  prog.summary_end();
   }
  
-  // apply the Truncate procedure
+  // apply the Truncate procedure, unless amplitudes have been input
 
   float scalef = sqrt(exp(b));
   //float scalef = 4.66047;  //hardwired (for now) scalefactor
+  if (!amplitudes) {
+      if (anomalous) {
+	      truncate( isig_plus, jsig_plus, fsig_plus, Sigma, scalef, spg1 );
+          truncate( isig_minus, jsig_minus, fsig_minus, Sigma, scalef, spg1 );
+	      int iwarn = 0;
+	      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+	          if ( !isig_plus[ih].missing() && !isig_minus[ih].missing() ) {
+			      fsig[ih].f() = 0.5 * ( fsig_plus[ih].f() + fsig_minus[ih].f() );
+			      fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_plus[ih].sigf(), 2 ) + pow( fsig_minus[ih].sigf(), 2 ) );
+			      Dano[ih].f() = fsig_plus[ih].f() - fsig_minus[ih].f();
+			      Dano[ih].sigf() = 2.0 * fsig[ih].sigf();
+		      }
+		      else if ( !isig_plus[ih].missing() ) {
+			      fsig[ih].f() = fsig_plus[ih].f();
+			      fsig[ih].f() = fsig_plus[ih].sigf();
+		      }
+		      else if ( !isig_minus[ih].missing() ) {
+			      fsig[ih].f() = fsig_minus[ih].f();
+			      fsig[ih].f() = fsig_minus[ih].sigf();
+		      }
+		      else if ( !isig[ih].missing() && iwarn != 1 ) {
+			      printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
+			      iwarn = 1;
+		      }
+		      if ( ih.hkl_class().centric() ) {
+			      Dano[ih].f() = 0.0;
+			      Dano[ih].sigf() = 0.0;
+		      }
+	      }
+      }
 
-  if (anomalous) {
-	  truncate( isig_plus, jsig_plus, fsig_plus, Sigma, scalef, spg1 );
-      truncate( isig_minus, jsig_minus, fsig_minus, Sigma, scalef, spg1 );
-	  int iwarn = 0;
-	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	       if ( !isig_plus[ih].missing() && !isig_minus[ih].missing() ) {
-			   fsig[ih].f() = 0.5 * ( fsig_plus[ih].f() + fsig_minus[ih].f() );
-			   fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_plus[ih].sigf(), 2 ) + pow( fsig_minus[ih].sigf(), 2 ) );
-			   Dano[ih].f() = fsig_plus[ih].f() - fsig_minus[ih].f();
-			   Dano[ih].sigf() = 2.0 * fsig[ih].sigf();
-		   }
-		   else if ( !isig_plus[ih].missing() ) {
-			   fsig[ih].f() = fsig_plus[ih].f();
-			   fsig[ih].f() = fsig_plus[ih].sigf();
-		   }
-		   else if ( !isig_minus[ih].missing() ) {
-			   fsig[ih].f() = fsig_minus[ih].f();
-			   fsig[ih].f() = fsig_minus[ih].sigf();
-		   }
-		   else if ( !isig[ih].missing() && iwarn != 1 ) {
-			   printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
-			   iwarn = 1;
-		   }
-		   if ( ih.hkl_class().centric() ) {
-			   Dano[ih].f() = 0.0;
-			   Dano[ih].sigf() = 0.0;
-		   }
-	  }
-  }
-
-  else {
-      truncate( isig, jsig, fsig, Sigma, scalef, spg1 );
+      else {
+          truncate( isig, jsig, fsig, Sigma, scalef, spg1 );
+      }
   }
 
   
@@ -991,7 +1017,7 @@ int main(int argc, char **argv)
 
   //printf("%d observations with I > 0\n\n", fs1.num_obs());
     
-  int nprmk = 60;
+  int nprmk = nbins;
   std::vector<double> params_initk( nprmk, 1.0 );
   clipper::BasisFn_binner basis_fn1( fs1, nprmk, 1.5 );  // equal increments in invresolsq bins
   //clipper::BasisFn_binner basis_fn1( fs1, nprmk, 1.0 );  // equal volume bins
@@ -1062,7 +1088,7 @@ int main(int argc, char **argv)
   //printf("<E**8> = %6.2f (Expected value = 24, Perfect Twin = 7.5)\n", mean8);
   prog.summary_end();
 
-
+  nprmk = ncbins;
   //centrics
   if (Ncentric) {
       clipper::HKL_data<clipper::data32::F_sigF> fs2( hklinf );
@@ -1104,16 +1130,16 @@ int main(int argc, char **argv)
       printf("$$ 1/resol^2 <E> <E**3> <E**4> $$\n$$\n");
 
 
-      for (int i=0; i<nbins; i++) {
-	      double res = double(i+1) * maxres / double(nbins);   // equal increments in invresolsq bins
-	      //double res = maxres * pow( double(i+1)/double(nbins), 0.666666 );  // equal volume bins
+      for (int i=0; i<ncbins; i++) {
+	      double res = double(i+1) * maxres / double(ncbins);   // equal increments in invresolsq bins
+	      //double res = maxres * pow( double(i+1)/double(ncbins), 0.666666 );  // equal volume bins
 	      double i1 = basis_fn2.f_s( res, f2c.params() );
 	      printf("%10.6f %10.6f %10.6f %10.6f\n", res,
                   basis_fn2.f_s( res, f1c.params() )/pow(i1,0.5),
                   basis_fn2.f_s( res, f3c.params() )/pow(i1,1.5),
-	  	          basis_fn1.f_s( res, f4c.params() )/pow(i1,2.0) ); 
-                  //basis_fn1.f_s( res, f6c.params() )/pow(i1,3.0), 
-                  //basis_fn1.f_s( res, f8c.params() )/pow(i1,4.0) ); 
+	  	          basis_fn2.f_s( res, f4c.params() )/pow(i1,2.0) ); 
+                  //basis_fn2.f_s( res, f6c.params() )/pow(i1,3.0), 
+                  //basis_fn2.f_s( res, f8c.params() )/pow(i1,4.0) ); 
       }
 
       printf("$$\n\n");
@@ -1314,16 +1340,17 @@ int main(int argc, char **argv)
 
 
   // output data
-
-  mtzout.open_append( argv[mtzinarg], outfile );
-  //mtzout.export_hkl_data( jsig, outcol );
-  mtzout.export_hkl_data( fsig, outcol+"MEAN" );
-  if (anomalous) {
-	   mtzout.export_hkl_data( fsig_plus, outcol+"(+)" );
-	   mtzout.export_hkl_data( fsig_minus, outcol+"(-)" );
-	   mtzout.export_hkl_data( Dano, outcol+"_ANO" );
+  if (!amplitudes) {
+      mtzout.open_append( argv[mtzinarg], outfile );
+      //mtzout.export_hkl_data( jsig, outcol );
+      mtzout.export_hkl_data( fsig, outcol+"MEAN" );
+      if (anomalous) {
+	      mtzout.export_hkl_data( fsig_plus, outcol+"(+)" );
+	      mtzout.export_hkl_data( fsig_minus, outcol+"(-)" );
+	      mtzout.export_hkl_data( Dano, outcol+"_ANO" );
+      }
+      mtzout.close_append();
   }
-  mtzout.close_append();
   prog.set_termination_message( "Normal termination" );
 
   return(0);
