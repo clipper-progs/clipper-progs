@@ -1,7 +1,7 @@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -26,6 +26,8 @@ caniso_SOURCES = caniso.cpp
 convert2mtz_SOURCES = convert2mtz.cpp
 
 ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp
+
+csymmatch_SOURCES = csymmatch.cpp
 
 EXTRA_DIST = README
 
