@@ -88,7 +88,7 @@ install_sh = @install_sh@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -114,6 +114,8 @@ convert2mtz_SOURCES = convert2mtz.cpp
 
 ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp
 
+csymmatch_SOURCES = csymmatch.cpp
+
 EXTRA_DIST = README
 
 INCLUDES = $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
@@ -127,7 +129,7 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cfft$(EXEEXT) cinvfft$(EXEEXT) csigmaa$(EXEEXT) cecalc$(EXEEXT) \
 	cphasecombine$(EXEEXT) cpatterson$(EXEEXT) caniso$(EXEEXT) \
-	convert2mtz$(EXEEXT) ctruncate$(EXEEXT)
+	convert2mtz$(EXEEXT) ctruncate$(EXEEXT) csymmatch$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_caniso_OBJECTS = caniso.$(OBJEXT)
@@ -190,6 +192,12 @@ ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
 ctruncate_LDADD = $(LDADD)
 ctruncate_DEPENDENCIES =
 ctruncate_LDFLAGS =
+am_csymmatch_OBJECTS = csymmatch.$(OBJEXT)
+csymmatch_OBJECTS = $(am_csymmatch_OBJECTS)
+csymmatch_LDADD = $(LDADD)
+csymmatch_DEPENDENCIES =
+csymmatch_LDFLAGS =
+
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
@@ -203,7 +211,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/csfcalc.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po ./$(DEPDIR)/ctruncate.Po
+@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po ./$(DEPDIR)/ctruncate.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/csymmatch.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -214,14 +223,14 @@ DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
 	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
 	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
 	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
-	$(ctruncate_SOURCES)
+	$(ctruncate_SOURCES) $(csymmatch_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README Makefile.am Makefile.in
-SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(ctruncate_SOURCES)
+SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(ctruncate_SOURCES) $(csymmatch_SOURCES)
 
 all: all-recursive
 
@@ -292,6 +301,9 @@ csigmaa$(EXEEXT): $(csigmaa_OBJECTS) $(csigmaa_DEPENDENCIES)
 ctruncate$(EXEEXT): $(ctruncate_OBJECTS) $(ctruncate_DEPENDENCIES) 
 	@rm -f ctruncate$(EXEEXT)
 	$(CXXLINK) $(ctruncate_LDFLAGS) $(ctruncate_OBJECTS) $(ctruncate_LDADD) $(LIBS)
+csymmatch$(EXEEXT): $(csymmatch_OBJECTS) $(csymmatch_DEPENDENCIES)
+	@rm -f csymmatch$(EXEEXT)
+	$(CXXLINK) $(csymmatch_LDFLAGS) $(csymmatch_OBJECTS) $(csymmatch_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -311,6 +323,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csfcalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csigmaa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csymmatch.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
