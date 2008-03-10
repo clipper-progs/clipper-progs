@@ -1,0 +1,127 @@
+<!DOCTYPE html
+                     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                     "DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+   <meta name="Author" content="Norman stein" />
+   <meta name="GENERATOR" content="manual" />
+<title>CCP4 Program Suite</title></head>
+<body>
+
+<!-- ::INDEX_INFO::CTRUNCATE::Supported::Intensity to amplitude conversion:::::::: -->
+
+<h1>CTRUNCATE (CCP4: Supported Program)</h1>
+<h2>NAME</h2>
+<p><b>ctruncate</b>
+- Intensity to amplitude conversion and data statistics.</p><html>
+
+
+<h2>SYNOPSIS</h2>
+<p>
+<b>ctruncate</b>
+<b>-hklin </b><i>filename</i>
+<b>-hklout </b><i>filename</i>
+<b>-colin </b><i>column label</i>
+<b>-colplus </b><i>column label</i>
+<b>-colminus </b><i>column label</i>
+<b>-colout </b><i>column label</i>
+<b>-no-aniso </b>
+<b>-amplitudes </b>
+<br />
+[<a href="#keywords">Keyworded input</a>]</p>
+
+<h2><a name="description"></a>DESCRIPTION</h2>
+
+<p>
+Conversion of measured intensities to structure factors is complicated by the
+fact that background subtraction can result in negative intensities for weak
+reflections. CTRUNCATE is a new CCP4 program, intended ultimately to replace
+the original TRUNCATE program, which uses Bayesian statistics to calculate
+positive structure factors from negative input intensities. Small positive
+intensities are also boosted by the conversion process. The algorithm used is
+that of French and Wilson.
+</p>
+<p>
+In addition, CTRUNCATE calculates a number of statistics from the intensity
+data, such as moments, cumulative intensity distributions and the Wilson
+plot. When output in graphical form, these can be used to assess data quality
+and to check for possible twinning.
+</p>
+CTRUNCATE looks for anisotropy in the data and performs anisotropy
+correction. A test for translational NCS is also performed. Two methods are
+used to test for twinning: Yeates' H test and Padilla and Yeates L test. The
+twinning tests, as well as the moments and cumulative intensity plots are done
+using data which has been corrected for anisotropy. However the output
+structure factors and the Wilson plot use uncorrected data.   
+<p>
+ 
+
+
+<h2><a name="files"></a>INPUT/OUTPUT FILES</h2>
+
+<blockquote>
+<h3><a name="hklin"></a>-hklin <i>filename</i></h3>
+
+<p>(Compulsory) Input mtz file name. '-mtzin' is accepted as an alternative to
+'-hklin'.</p>
+
+<h3><a name="hklout"></a>-hklout <i>filename</i></h3>
+
+<p>Output mtz file name. Default 'ctruncate_out.mtz'. '-mtzout' is accepted as 
+an alternative to '-hklout'.</p>
+
+</blockquote>
+
+
+<h2><a name="keywords"></a>KEYWORDED INPUT</h2>
+
+<blockquote>
+<h3><a name="colin"></a>-colin <i>column label</i></h3>
+
+<p> Column names for mean intensity data. Default '/*/*/[IMEAN,SIGIMEAN]'.</p>
+
+<h3><a name="colplus"></a>-colplus <i>column label</i></h3>
+
+<p> Column names for positive anomalous data. Default '/*/*/[I(+),SIGI(+)]'. </p>
+
+<h3><a name="colminus"></a>-colminus <i>column label</i></h3>
+
+<p> Column names for negative anomalous data.  Default '/*/*/[I(-),SIGI(-)]'. 
+If column names for anomalous data are not specified, the program will only
+consider mean data.</p>
+
+<h3><a name="colout"></a>-colout <i>column label</i></h3>
+
+<p> Identifier to be appended to output column names.</p>
+
+<h3><a name="noaniso"></a>-no-aniso</h3>
+
+<p>Anisotropy correction will not be performed.</p>
+
+<h3><a name="amplitudes"></a>-amplitudes </h3>
+
+<p> Input data is structure factors rather than intensities.</p>
+
+</blockquote>
+
+
+<h2><a name="references"></a>REFERENCES</h2>
+
+<ol>
+<p><!-- KEEP startreferencelist --></p>
+
+<li>S. French S. and K. Wilson,  Acta Cryst. A34, 517-525 (1978).</li>
+
+<li>T. O. Yeates, Acta Cryst. A44, 142-144 (1980). </li>
+
+<li>J. E. Padilla and T. O. Yeates, Acta Cryst. D59, 1124-1130 (2003).
+
+<!-- KEEP endreferencelist -->
+</ol>
+
+
+<h2>AUTHOR</h2>
+<p>Norman Stein, Daresbury Laboratory.</p>
+</body>
+</html>
