@@ -133,6 +133,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/pirate/Makefile
                  src/buccaneer/Makefile
+                 html/Makefile
                  ])
 
 AC_OUTPUT

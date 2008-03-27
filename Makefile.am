@@ -1,2 +1,2 @@
-DIST_SUBDIRS = src macros
+DIST_SUBDIRS = src macros html
 SUBDIRS = src
