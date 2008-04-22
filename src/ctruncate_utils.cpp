@@ -64,8 +64,8 @@ void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<f
 		sxy += w[i]*x[i]*y[i];
 	}
 	d = sxx*sw - sx*sx;
-	//printf("%f %f %f %f %f %f\n", sxx,sx,sy,sw,sxy,d);
-	if (fabs(d) < 1.0e-5) {
+	//printf("%e %e %e %e %e %e\n", sxx,sx,sy,sw,sxy,d);
+	if ( fabs(d) < 1.0e-3 * fabs(sxx*sw) ) {
 		clipper::Message::message( clipper::Message_fatal( "least squares fit: zero denominator" ) );
 		return;
 	}
