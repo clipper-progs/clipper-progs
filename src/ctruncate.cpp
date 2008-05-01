@@ -42,7 +42,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.06", "$Date: 2008/02/06" );
+  CCP4Program prog( "ctruncate", "0.1.08", "$Date: 2008/05/01" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -188,6 +188,8 @@ int main(int argc, char **argv)
   float minres,maxres;
   mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
   CMtz::MtzResLimits(mtz1,&minres,&maxres);
+  float invopt = maxres;
+  float resopt = 1.0/sqrt(invopt);
   printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/sqrt(minres),1.0/sqrt(maxres));
   if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
   prog.summary_end();
@@ -342,6 +344,24 @@ int main(int argc, char **argv)
 	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
 	  printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
 
+	  // Eigenvalue calculation
+	  Matrix<> mat( 3, 3, 0.0 );
+	  for (int i=0; i<3; i++) {
+		  for (int j=0; j<3; j++) {
+              mat(i,j) = sfscl.u_aniso_orth()(i,j);
+		  }
+	  }
+	  // add the isotropic part
+	  for (int i=0; i<3; i++) {
+          mat(i,i) += 1.0;
+	  }
+      std::vector<ftype> v = mat.eigen( true );
+	  printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
+	  printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/v[2], v[1]/v[2], v[2]/v[2]); 
+	  invopt = maxres*v[0]/v[2];
+	  resopt = 1.0/sqrt(invopt);
+	  printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
+
 	  prog.summary_end();
 	  printf("\n");
 	  double FFtotal = 0.0;
@@ -377,14 +397,19 @@ int main(int argc, char **argv)
 	  }
   }
 
+  // truncate anisotropically corrected data at resolution limit in weakest direction
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	  if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
+  }
 
 
-  // calculate Sigma (mean intensity in resolution shell)
+  // calculate Sigma (mean intensity in resolution shell) 
+  // use intensities uncorrected for anisotropy
   const int nprm = 12;
 
   std::vector<double> params_init( nprm, 1.0 );
-  clipper::BasisFn_spline basis_fo( ianiso, nprm );
-  TargetFn_meanInth<clipper::data32::I_sigI> target_fo( ianiso, 1 );
+  clipper::BasisFn_spline basis_fo( isig, nprm );
+  TargetFn_meanInth<clipper::data32::I_sigI> target_fo( isig, 1 );
   clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_init );
 
 
@@ -504,26 +529,26 @@ int main(int argc, char **argv)
 	  //twinop(0,0) = 1;
 	  //twinop(1,0) = -1;
 	  //twinop(1,1) = -1;
-	  Htest(isig,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,debug);
   }
   else if( sg >= 149 && sg <= 154 ) {
 	  printf("twinning operator -h, -k, l\n");
 	  twinop(0,0) = -1;
 	  twinop(1,1) = -1;
 	  twinop(2,2) = 1;
-	  Htest(isig,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,debug);
   }
   else if( sg >= 143 && sg <= 145 ) {
 	  printf("twinning operator k, h, -l\n");
 	  twinop(0,1) = 1;
 	  twinop(1,0) = 1;
 	  twinop(2,2) = -1;
-	  Htest(isig,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,debug);
 
 	  printf("twinning operator -k, -h, -l\n");
 	  twinop(0,1) = -1;
 	  twinop(1,0) = -1;
-	  Htest(isig,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,debug);
 
 	  printf("twinning operator -h, -k, l\n");
       twinop(0,1) = 0;
@@ -531,7 +556,7 @@ int main(int argc, char **argv)
 	  twinop(0,0) = -1;
 	  twinop(1,1) = -1;
 	  twinop(2,2) = 1;
-	  Htest(isig,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,debug);
   }
   else if( !strcmp(pointgroup, "PG222") ) {
 	  //printf("PG222\n");
@@ -541,7 +566,7 @@ int main(int argc, char **argv)
 	      twinop(0,1) = 1;
 	      twinop(1,0) = 1;
 	      twinop(2,2) = -1;
-	      Htest(isig,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,debug);
 	  }
 	  if ( fabs( 1.0 - cell.c()/cell.b() ) < 0.02 ) { 
 	      printf("twinning operator -h, l, k\n");
@@ -551,7 +576,7 @@ int main(int argc, char **argv)
 		  twinop(0,0) = -1;
 		  twinop(1,2) = 1;
 		  twinop(2,1) = 1;
-	      Htest(isig,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,debug);
 	  }
 	  if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02 ) {
 	      printf("twinning operator l, -k, h\n");
@@ -561,7 +586,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(0,2) = 1;
 		  twinop(2,0) = 1;
-	      Htest(isig,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,debug);
 	  }
   }
   else if( !strcmp(pointgroup, "PG2") ) {
@@ -575,7 +600,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(0,2) = 1;
 		  twinop(2,0) = 1;
-	      Htest(isig,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,debug);
 	  }
 
 	  if ( cell.beta() < Util::d2rad(93.0) ) {
@@ -585,7 +610,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = 1;
-		  Htest(isig,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,debug);
 	  }	 
 
 	  if ( fabs( cos(cell.beta()) + 0.5*cell.a()/cell.c() ) < 0.02 ) { 
@@ -595,7 +620,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 1;
 		  twinop(2,2) = 1;
-		  Htest(isig,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,debug);
 	  }	  
 
 	  if ( fabs( cos(cell.beta()) + 0.5*cell.c()/cell.a() ) < 0.02 ) { 
@@ -605,7 +630,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = -1;
-		  Htest(isig,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,debug);
 	  }	  
 	  if ( fabs( cos(cell.beta()) + cell.c()/cell.a() ) < 0.02 ) { 
 		  printf("twinning operator h+2l, -k, -l\n");
@@ -614,8 +639,13 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = -1;
-		  Htest(isig,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,debug);
 	  }
+  }
+  if (itwin) {
+	  printf("\nData has been truncated at %6.2f A resolution\n",resopt);
+  	  if (aniso) printf("Anisotropy correction has been applied before calculating H\n\n");
+	  else printf("Anisotropy correction has not been applied before calculating H\n\n");
   }
 
   // L test for twinning
@@ -625,8 +655,8 @@ int main(int argc, char **argv)
   double NLT=0.0;
   std::vector<int> cdf(20,0);
 
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	  if ( !ianiso[ih].missing() && !ih.hkl_class().centric() ) {
 		  HKL hkl = ih.hkl();
 		  int h = hkl.h();
 		  int k = hkl.k();
@@ -639,8 +669,8 @@ int main(int argc, char **argv)
 					  hkl2.k() = k+delta2;
 					  hkl2.l() = l+delta3;
 					  if ( !(delta1==0 && delta2==0 && delta3==0) ) {
-  				          double I1 = isig[ih].I();
-		                  double I2 = isig[hkl2].I();
+  				          double I1 = ianiso[ih].I();
+		                  double I2 = ianiso[hkl2].I();
 			              //double weight = 1.0/(isig[ih].sigI() + isig[jh].sigI());
 				          double weight = 1.0;
 			              double L = 0.0;
@@ -671,7 +701,9 @@ int main(int argc, char **argv)
 	  printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n\n", Lav);
 	  itwin = 1;
 	  printf("All data regardless of I/sigma(I) has been included in the L test\n");
-	  printf("Anisotropy correction has not been applied before calculating L\n\n");
+	  printf("Data has been truncated at %6.2f A resolution\n",resopt);
+	  if (aniso) printf("Anisotropy correction has been applied before calculating L\n\n");
+	  else printf("Anisotropy correction has not been applied before calculating L\n\n");
   }
 
   if (!itwin) printf("No twinning detected\n\n");
@@ -680,12 +712,12 @@ int main(int argc, char **argv)
   printf("$TABLE: L test for twinning:\n");
   printf("$GRAPHS");
   printf(": cumulative distribution function for |L|:0|1x0|1:1,2,3,4:\n");
-  printf("$$ |L| untwinned perfect_twin data $$\n$$\n");
+  printf("$$ |L| Observed Expected_untwinned Expected_twinned $$\n$$\n");
   printf("0.000000 0.000000 0.000000 0.000000\n");
 
   for (int i=0;i<20;i++) {
 	  double x = (double(i+1))/20.0;
-	  printf("%f %f %f %f\n", x, x, 0.5*x*(3.0-x*x),  double(cdf[i])/NLT);
+	  printf("%f %f %f %f\n", x, double(cdf[i])/NLT, x, 0.5*x*(3.0-x*x)  );
   }
   printf("$$\n\n");
    
@@ -1006,10 +1038,10 @@ int main(int argc, char **argv)
 
   //acentrics
   clipper::HKL_data<clipper::data32::F_sigF> fs1( hklinf );
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-	      double I = isig[ih].I();
-	      double sigI = isig[ih].sigI();
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	  if ( !ianiso[ih].missing() && !ih.hkl_class().centric() ) {
+	      double I = ianiso[ih].I();
+	      double sigI = ianiso[ih].sigI();
 	      if ( I > 0.0 )
 	          fs1[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
 	  }
@@ -1040,8 +1072,8 @@ int main(int argc, char **argv)
   //printf("$TABLE: Acentric moments of E for k=1,3,4,6,8:\n");
   printf("$TABLE: Acentric moments of E for k=1,3,4:\n");
   printf("$GRAPHS");
-  printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
-  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
+  printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", invopt);
+  printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", invopt);
   //printf(": 6th & 8th moments of E (Expected value = 6, 24, Perfect Twin 3, 7.5):0|%5.3fx0|48:1,5,6:\n", maxres);
 
   //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
@@ -1092,10 +1124,10 @@ int main(int argc, char **argv)
   //centrics
   if (Ncentric) {
       clipper::HKL_data<clipper::data32::F_sigF> fs2( hklinf );
-      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	      if ( !isig[ih].missing() && ih.hkl_class().centric() ) {
-	          double I = isig[ih].I();
-	          double sigI = isig[ih].sigI();
+      for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	      if ( !ianiso[ih].missing() && ih.hkl_class().centric() ) {
+	          double I = ianiso[ih].I();
+	          double sigI = ianiso[ih].sigI();
 	          if ( I > 0.0 )
 	              fs2[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
 	      }
@@ -1122,8 +1154,8 @@ int main(int argc, char **argv)
       //printf("$TABLE: Centric moments of E for k=1,3,4,6,8:\n");
       printf("$TABLE: Centric moments of E for k=1,3,4:\n");
       printf("$GRAPHS");
-      printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
-      printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
+      printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", invopt);
+      printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", invopt);
       //printf(": 6th & 8th moments of E (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|120:1,5,6:\n", maxres);
 
       //printf("$$ 1/resol^2 <E> <E**3> <E**4> <E**6> <E**8> $$\n$$\n");
@@ -1151,10 +1183,10 @@ int main(int argc, char **argv)
   clipper::Range<double> intensity_range_acentric;
   // changed from jsig to isig
 
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() ) {
-         if ( ih.hkl_class().centric() ) intensity_range_centric.include( isig[ih].I()/Sigma.f(ih) );
-		 else intensity_range_acentric.include( isig[ih].I()/Sigma.f(ih) );
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	  if ( !ianiso[ih].missing() ) {
+         if ( ih.hkl_class().centric() ) intensity_range_centric.include( ianiso[ih].I()/Sigma.f(ih) );
+		 else intensity_range_acentric.include( ianiso[ih].I()/Sigma.f(ih) );
 	  }
   }
   //printf("C2: %20.5f %20.5f\n",intensity_range_centric.max(),intensity_range_centric.min());
@@ -1164,10 +1196,10 @@ int main(int argc, char **argv)
   clipper::Generic_ordinal intensity_ord_a;
   intensity_ord_c.init( intensity_range_centric );
   intensity_ord_a.init( intensity_range_acentric );
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-  	  if ( !isig[ih].missing() ) {
-          if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( isig[ih].I()/Sigma.f(ih)  );
-		  else intensity_ord_a.accumulate( isig[ih].I()/Sigma.f(ih) );
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+  	  if ( !ianiso[ih].missing() ) {
+          if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( ianiso[ih].I()/Sigma.f(ih)  );
+		  else intensity_ord_a.accumulate( ianiso[ih].I()/Sigma.f(ih) );
 	  }
   }
   intensity_ord_c.prep_ordinal();
@@ -1321,20 +1353,38 @@ int main(int argc, char **argv)
 	  }
   }
 
+
+  std::vector<float> sumov(nbins,0.0);
+  std::vector<float> summeas(nbins,0.0);
+  std::vector<float> completeness(nbins,0.0);
+  for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+	  // bin number different in C because arrays start at zero
+	  int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+	  //if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+	  if ( bin < nbins && bin >= 0 ) sumov[bin] += 1.0;
+	  if ( !fsig[ih].missing() && bin < nbins && bin >= 0) summeas[bin] += 1.0;
+  }
+  for (int i=1; i<nbins; i++) {
+      if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
+  }
+
+
   printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
   printf("$GRAPHS");
   printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
   printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
   printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+  printf(": Completeness v resolution:N:1,14:\n");
   printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-  printf(" N(d1) N(d2) N(d3) N(ov) $$\n$$\n");
+  printf(" N(d1) N(d2) N(d3) N(ov) completeness$$\n$$\n");
 
 
   for(int i=0;i<nbins;i++){
 	  double res = maxres*(double(i)+0.5)/double(nbins);
 	  printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
 	  printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-	  printf("%8d %8d %8d %8d\n",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+	  printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+	  printf("%8.4f\n",completeness[i]);
   }
   printf("$$\n\n");
 
@@ -1402,8 +1452,8 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
 			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1)
 
-// takes anomalous I's as input. Would have thought outputs should also be of anomalous type, but this generates a left hand
-// side must be an l value error
+// takes anomalous I's as input. Would have thought outputs should also be of anomalous type, but this generates a 'left hand
+// side must be an l value' error
 
 {
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -1673,6 +1723,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
     double HT2=0.0;
     double NT=0.0;
 	std::vector<int> pdf(50,0);
+    std::vector<int> cdf(20,0);
     Vec3<int> jhkl, jhkl2;
     for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	    if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
@@ -1699,6 +1750,9 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 			        HT2 += H*H*weight;
 			        NT += weight;
 			        //fprintf(newfileout,"%10.4f %10.4f %10.4f %10.4f %8d\n",I1,I2,H,HT,NT);
+					for (int i=0;i<20;i++) {
+						if ( fabs(H) < (double(i+1))/20.0 ) cdf[i]++;
+					}
 			    }
 				// Britton test
 				if ( I1 > 0.0 && I2 > 0.0 && I2 < I1 ) {
@@ -1718,6 +1772,19 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 		printf("H test suggests data is twinned\n");
 		printf("Twinning fraction = %5.2f\n",alpha);
 		itwin = 1;
+        //prog.summary_end();
+		printf("$TABLE: H test for twinning:\n");
+        printf("$GRAPHS");
+        printf(": cumulative distribution function for |H|:0|1x0|1:1,2:\n");
+        printf("$$ |H| Observed  $$\n$$\n");
+        printf("0.000000 0.000000 \n");
+
+        for (int i=0;i<20;i++) {
+	        double x = (double(i+1))/20.0;
+	        printf("%f %f \n", x, double(cdf[i])/NT  );
+        }
+        printf("$$\n\n");
+		//prog.summary_begin();
 	}
 	else {
 		printf("No twinning detected for this twinning operator\n");
