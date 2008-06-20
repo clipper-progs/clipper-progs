@@ -274,7 +274,7 @@ PACKAGE_STRING='clipper_progs 0.1.0'
 PACKAGE_BUGREPORT='ccb@dl.ac.uk'
 
 ac_unique_file="src/buccaneer"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE CC CFLAGS ac_ct_CC CCDEPMODE CXXCPP EGREP FFTW_CXXFLAGS FFTW_LIBS MMDB_CXXFLAGS MMDB_LIBS CCP4_CXXFLAGS CCP4_LIBS CLIPPER_CXXFLAGS CLIPPER_LIBS AR_FLAGS DEBUG_TRUE DEBUG_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO AMTAR install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM AWK SET_MAKE MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE CC CFLAGS ac_ct_CC CCDEPMODE CXXCPP EGREP FFTW_CXXFLAGS FFTW_LIBS MMDB_CXXFLAGS MMDB_LIBS CCP4_CXXFLAGS CCP4_LIBS CLIPPER_CXXFLAGS CLIPPER_LIBS AR_FLAGS DEBUG_TRUE DEBUG_FALSE chltofom_LDFLAGS cphasematch_LDFLAGS csfcalc_LDFLAGS cfft_LDFLAGS cinvfft_LDFLAGS csigmaa_LDFLAGS cecalc_LDFLAGS cphasecombine_LDFLAGS cpatterson_LDFLAGS caniso_LDFLAGS convert2mtz_LDFLAGS ctruncate_LDFLAGS csymmatch_LDFLAGS cpirate_LDFLAGS cbuccaneer_LDFLAGS csequins_LDFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -4578,7 +4578,24 @@ else
 fi
 
 
-                                        ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/buccaneer/Makefile html/Makefile"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                  ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/buccaneer/Makefile html/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -5311,6 +5328,22 @@ s,@CLIPPER_LIBS@,$CLIPPER_LIBS,;t t
 s,@AR_FLAGS@,$AR_FLAGS,;t t
 s,@DEBUG_TRUE@,$DEBUG_TRUE,;t t
 s,@DEBUG_FALSE@,$DEBUG_FALSE,;t t
+s,@chltofom_LDFLAGS@,$chltofom_LDFLAGS,;t t
+s,@cphasematch_LDFLAGS@,$cphasematch_LDFLAGS,;t t
+s,@csfcalc_LDFLAGS@,$csfcalc_LDFLAGS,;t t
+s,@cfft_LDFLAGS@,$cfft_LDFLAGS,;t t
+s,@cinvfft_LDFLAGS@,$cinvfft_LDFLAGS,;t t
+s,@csigmaa_LDFLAGS@,$csigmaa_LDFLAGS,;t t
+s,@cecalc_LDFLAGS@,$cecalc_LDFLAGS,;t t
+s,@cphasecombine_LDFLAGS@,$cphasecombine_LDFLAGS,;t t
+s,@cpatterson_LDFLAGS@,$cpatterson_LDFLAGS,;t t
+s,@caniso_LDFLAGS@,$caniso_LDFLAGS,;t t
+s,@convert2mtz_LDFLAGS@,$convert2mtz_LDFLAGS,;t t
+s,@ctruncate_LDFLAGS@,$ctruncate_LDFLAGS,;t t
+s,@csymmatch_LDFLAGS@,$csymmatch_LDFLAGS,;t t
+s,@cpirate_LDFLAGS@,$cpirate_LDFLAGS,;t t
+s,@cbuccaneer_LDFLAGS@,$cbuccaneer_LDFLAGS,;t t
+s,@csequins_LDFLAGS@,$csequins_LDFLAGS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

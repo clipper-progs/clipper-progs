@@ -133,9 +133,9 @@ int main( int argc, char** argv )
       for ( double du = 0.0; du <= 1.01; du += 1.0 )
 	for ( double dv = 0.0; dv < 1.01; dv += 1.0 )
 	  for ( double dw = 0.0; dw < 1.01; dw += 1.0 ) {
-	    clipper::Coord_frac off( round( off0.u() ) + du,
-				     round( off0.v() ) + dv,
-				     round( off0.w() ) + dw );
+	    clipper::Coord_frac off( rint( off0.u() ) + du,
+				     rint( off0.v() ) + dv,
+				     rint( off0.w() ) + dw );
 	    clipper::Coord_orth ofo = off.coord_orth( cell );
 	    double scr = 0.0;
 	    for ( int a = 0; a < atomw.size(); a++ ) {

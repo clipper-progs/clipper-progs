@@ -129,6 +129,23 @@ AC_SUBST(AR_FLAGS)
 AM_CONDITIONAL(DEBUG, test "$ac_cv_enable_debug" = yes)
 AM_CONDITIONAL(AMDEP, test "x$enable_dependency_tracking" != xno)
 
+AC_SUBST(chltofom_LDFLAGS)
+AC_SUBST(cphasematch_LDFLAGS)
+AC_SUBST(csfcalc_LDFLAGS)
+AC_SUBST(cfft_LDFLAGS)
+AC_SUBST(cinvfft_LDFLAGS)
+AC_SUBST(csigmaa_LDFLAGS)
+AC_SUBST(cecalc_LDFLAGS)
+AC_SUBST(cphasecombine_LDFLAGS)
+AC_SUBST(cpatterson_LDFLAGS)
+AC_SUBST(caniso_LDFLAGS)
+AC_SUBST(convert2mtz_LDFLAGS)
+AC_SUBST(ctruncate_LDFLAGS)
+AC_SUBST(csymmatch_LDFLAGS)
+AC_SUBST(cpirate_LDFLAGS)
+AC_SUBST(cbuccaneer_LDFLAGS)
+AC_SUBST(csequins_LDFLAGS)
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/pirate/Makefile

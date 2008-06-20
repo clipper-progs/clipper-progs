@@ -84,6 +84,22 @@ STRIP = @STRIP@
 VERSION = @VERSION@
 am__include = @am__include@
 am__quote = @am__quote@
+caniso_LDFLAGS = @caniso_LDFLAGS@
+cbuccaneer_LDFLAGS = @cbuccaneer_LDFLAGS@
+cecalc_LDFLAGS = @cecalc_LDFLAGS@
+cfft_LDFLAGS = @cfft_LDFLAGS@
+chltofom_LDFLAGS = @chltofom_LDFLAGS@
+cinvfft_LDFLAGS = @cinvfft_LDFLAGS@
+convert2mtz_LDFLAGS = @convert2mtz_LDFLAGS@
+cpatterson_LDFLAGS = @cpatterson_LDFLAGS@
+cphasecombine_LDFLAGS = @cphasecombine_LDFLAGS@
+cphasematch_LDFLAGS = @cphasematch_LDFLAGS@
+cpirate_LDFLAGS = @cpirate_LDFLAGS@
+csequins_LDFLAGS = @csequins_LDFLAGS@
+csfcalc_LDFLAGS = @csfcalc_LDFLAGS@
+csigmaa_LDFLAGS = @csigmaa_LDFLAGS@
+csymmatch_LDFLAGS = @csymmatch_LDFLAGS@
+ctruncate_LDFLAGS = @ctruncate_LDFLAGS@
 install_sh = @install_sh@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
@@ -136,68 +152,55 @@ am_caniso_OBJECTS = caniso.$(OBJEXT)
 caniso_OBJECTS = $(am_caniso_OBJECTS)
 caniso_LDADD = $(LDADD)
 caniso_DEPENDENCIES =
-caniso_LDFLAGS =
 am_cecalc_OBJECTS = cecalc.$(OBJEXT)
 cecalc_OBJECTS = $(am_cecalc_OBJECTS)
 cecalc_LDADD = $(LDADD)
 cecalc_DEPENDENCIES =
-cecalc_LDFLAGS =
 am_cfft_OBJECTS = cfft.$(OBJEXT)
 cfft_OBJECTS = $(am_cfft_OBJECTS)
 cfft_LDADD = $(LDADD)
 cfft_DEPENDENCIES =
-cfft_LDFLAGS =
 am_chltofom_OBJECTS = chltofom.$(OBJEXT)
 chltofom_OBJECTS = $(am_chltofom_OBJECTS)
 chltofom_LDADD = $(LDADD)
 chltofom_DEPENDENCIES =
-chltofom_LDFLAGS =
 am_cinvfft_OBJECTS = cinvfft.$(OBJEXT)
 cinvfft_OBJECTS = $(am_cinvfft_OBJECTS)
 cinvfft_LDADD = $(LDADD)
 cinvfft_DEPENDENCIES =
-cinvfft_LDFLAGS =
 am_convert2mtz_OBJECTS = convert2mtz.$(OBJEXT)
 convert2mtz_OBJECTS = $(am_convert2mtz_OBJECTS)
 convert2mtz_LDADD = $(LDADD)
 convert2mtz_DEPENDENCIES =
-convert2mtz_LDFLAGS =
 am_cpatterson_OBJECTS = cpatterson.$(OBJEXT)
 cpatterson_OBJECTS = $(am_cpatterson_OBJECTS)
 cpatterson_LDADD = $(LDADD)
 cpatterson_DEPENDENCIES =
-cpatterson_LDFLAGS =
 am_cphasecombine_OBJECTS = cphasecombine.$(OBJEXT)
 cphasecombine_OBJECTS = $(am_cphasecombine_OBJECTS)
 cphasecombine_LDADD = $(LDADD)
 cphasecombine_DEPENDENCIES =
-cphasecombine_LDFLAGS =
 am_cphasematch_OBJECTS = cphasematch.$(OBJEXT)
 cphasematch_OBJECTS = $(am_cphasematch_OBJECTS)
 cphasematch_LDADD = $(LDADD)
 cphasematch_DEPENDENCIES =
-cphasematch_LDFLAGS =
 am_csfcalc_OBJECTS = csfcalc.$(OBJEXT)
 csfcalc_OBJECTS = $(am_csfcalc_OBJECTS)
 csfcalc_LDADD = $(LDADD)
 csfcalc_DEPENDENCIES =
-csfcalc_LDFLAGS =
 am_csigmaa_OBJECTS = csigmaa.$(OBJEXT)
 csigmaa_OBJECTS = $(am_csigmaa_OBJECTS)
 csigmaa_LDADD = $(LDADD)
 csigmaa_DEPENDENCIES =
-csigmaa_LDFLAGS =
-am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) ctruncate_utils.$(OBJEXT) cpsf_utils.$(OBJEXT)
-ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
-ctruncate_LDADD = $(LDADD)
-ctruncate_DEPENDENCIES =
-ctruncate_LDFLAGS =
 am_csymmatch_OBJECTS = csymmatch.$(OBJEXT)
 csymmatch_OBJECTS = $(am_csymmatch_OBJECTS)
 csymmatch_LDADD = $(LDADD)
 csymmatch_DEPENDENCIES =
-csymmatch_LDFLAGS =
-
+am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) ctruncate_utils.$(OBJEXT) \
+	cpsf_utils.$(OBJEXT)
+ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
+ctruncate_LDADD = $(LDADD)
+ctruncate_DEPENDENCIES =
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir)
@@ -210,9 +213,11 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/cinvfft.Po ./$(DEPDIR)/convert2mtz.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po ./$(DEPDIR)/csfcalc.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po ./$(DEPDIR)/ctruncate.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/csymmatch.Po
+@AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cpsf_utils.Po ./$(DEPDIR)/csfcalc.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/csigmaa.Po ./$(DEPDIR)/csymmatch.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/ctruncate.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/ctruncate_utils.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -223,14 +228,14 @@ DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
 	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
 	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
 	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
-	$(ctruncate_SOURCES) $(csymmatch_SOURCES)
+	$(csymmatch_SOURCES) $(ctruncate_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README Makefile.am Makefile.in
-SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(ctruncate_SOURCES) $(csymmatch_SOURCES)
+SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) $(ctruncate_SOURCES)
 
 all: all-recursive
 
@@ -298,12 +303,12 @@ csfcalc$(EXEEXT): $(csfcalc_OBJECTS) $(csfcalc_DEPENDENCIES)
 csigmaa$(EXEEXT): $(csigmaa_OBJECTS) $(csigmaa_DEPENDENCIES) 
 	@rm -f csigmaa$(EXEEXT)
 	$(CXXLINK) $(csigmaa_LDFLAGS) $(csigmaa_OBJECTS) $(csigmaa_LDADD) $(LIBS)
+csymmatch$(EXEEXT): $(csymmatch_OBJECTS) $(csymmatch_DEPENDENCIES) 
+	@rm -f csymmatch$(EXEEXT)
+	$(CXXLINK) $(csymmatch_LDFLAGS) $(csymmatch_OBJECTS) $(csymmatch_LDADD) $(LIBS)
 ctruncate$(EXEEXT): $(ctruncate_OBJECTS) $(ctruncate_DEPENDENCIES) 
 	@rm -f ctruncate$(EXEEXT)
 	$(CXXLINK) $(ctruncate_LDFLAGS) $(ctruncate_OBJECTS) $(ctruncate_LDADD) $(LIBS)
-csymmatch$(EXEEXT): $(csymmatch_OBJECTS) $(csymmatch_DEPENDENCIES)
-	@rm -f csymmatch$(EXEEXT)
-	$(CXXLINK) $(csymmatch_LDFLAGS) $(csymmatch_OBJECTS) $(csymmatch_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -320,10 +325,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasecombine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasematch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpsf_utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csfcalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csigmaa.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csymmatch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_utils.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)

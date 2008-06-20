@@ -59,63 +59,52 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-host_alias = @host_alias@
-host_triplet = @host@
 
 EXEEXT = @EXEEXT@
 OBJEXT = @OBJEXT@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 AMTAR = @AMTAR@
-AR = @AR@
 AR_FLAGS = @AR_FLAGS@
-AS = @AS@
 AWK = @AWK@
 CC = @CC@
 CCP4_CXXFLAGS = @CCP4_CXXFLAGS@
 CCP4_LIBS = @CCP4_LIBS@
-CCTBX_CXXFLAGS = @CCTBX_CXXFLAGS@
-CCTBX_LIBS = @CCTBX_LIBS@
-CLIPPER_CCP4_DIR = @CLIPPER_CCP4_DIR@
-CLIPPER_CCTBX_DIR = @CLIPPER_CCTBX_DIR@
-CLIPPER_CIF_DIR = @CLIPPER_CIF_DIR@
-CLIPPER_CNS_DIR = @CLIPPER_CNS_DIR@
-CLIPPER_CONTRIB_DIR = @CLIPPER_CONTRIB_DIR@
-CLIPPER_FORTRAN_DIR = @CLIPPER_FORTRAN_DIR@
-CLIPPER_MINIMOL_DIR = @CLIPPER_MINIMOL_DIR@
-CLIPPER_MMDBOLD_DIR = @CLIPPER_MMDBOLD_DIR@
-CLIPPER_MMDB_DIR = @CLIPPER_MMDB_DIR@
-CLIPPER_PHS_DIR = @CLIPPER_PHS_DIR@
+CLIPPER_CXXFLAGS = @CLIPPER_CXXFLAGS@
+CLIPPER_LIBS = @CLIPPER_LIBS@
 CXX = @CXX@
-CXXCPP = @CXXCPP@
 DEPDIR = @DEPDIR@
-DLLTOOL = @DLLTOOL@
-ECHO = @ECHO@
-EGREP = @EGREP@
-F77 = @F77@
 FFTW_CXXFLAGS = @FFTW_CXXFLAGS@
 FFTW_LIBS = @FFTW_LIBS@
-GCJ = @GCJ@
-GCJFLAGS = @GCJFLAGS@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-LIBTOOL = @LIBTOOL@
-LN_S = @LN_S@
 MAINT = @MAINT@
 MMDB_CXXFLAGS = @MMDB_CXXFLAGS@
 MMDB_LIBS = @MMDB_LIBS@
-OBJDUMP = @OBJDUMP@
 PACKAGE = @PACKAGE@
-RANLIB = @RANLIB@
-RC = @RC@
 STRIP = @STRIP@
 VERSION = @VERSION@
 am__include = @am__include@
 am__quote = @am__quote@
+caniso_LDFLAGS = @caniso_LDFLAGS@
+cbuccaneer_LDFLAGS = @cbuccaneer_LDFLAGS@
+cecalc_LDFLAGS = @cecalc_LDFLAGS@
+cfft_LDFLAGS = @cfft_LDFLAGS@
+chltofom_LDFLAGS = @chltofom_LDFLAGS@
+cinvfft_LDFLAGS = @cinvfft_LDFLAGS@
+convert2mtz_LDFLAGS = @convert2mtz_LDFLAGS@
+cpatterson_LDFLAGS = @cpatterson_LDFLAGS@
+cphasecombine_LDFLAGS = @cphasecombine_LDFLAGS@
+cphasematch_LDFLAGS = @cphasematch_LDFLAGS@
+cpirate_LDFLAGS = @cpirate_LDFLAGS@
+csequins_LDFLAGS = @csequins_LDFLAGS@
+csfcalc_LDFLAGS = @csfcalc_LDFLAGS@
+csigmaa_LDFLAGS = @csigmaa_LDFLAGS@
+csymmatch_LDFLAGS = @csymmatch_LDFLAGS@
+ctruncate_LDFLAGS = @ctruncate_LDFLAGS@
 install_sh = @install_sh@
 htmldir = ${prefix}/html
 html_DATA = cpirate.html chltofom.html cbuccaneer.html
 subdir = html
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
 DATA = $(html_DATA)
@@ -129,15 +118,6 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configu
 	  $(AUTOMAKE) --gnu  html/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
-
-mostlyclean-libtool:
-	-rm -f *.lo
-
-clean-libtool:
-	-rm -rf .libs _libs
-
-distclean-libtool:
-	-rm -f libtool
 uninstall-info-am:
 htmlDATA_INSTALL = $(INSTALL_DATA)
 install-htmlDATA: $(html_DATA)
@@ -219,11 +199,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic mostlyclean-am
 
 distclean: distclean-am
 
-distclean-am: clean-am distclean-generic distclean-libtool
+distclean-am: clean-am distclean-generic
 
 dvi: dvi-am
 
@@ -249,19 +229,18 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-generic
 
 uninstall-am: uninstall-htmlDATA uninstall-info-am
 
-.PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	distclean distclean-generic distclean-libtool distdir dvi \
-	dvi-am info info-am install install-am install-data \
-	install-data-am install-exec install-exec-am install-htmlDATA \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool uninstall uninstall-am uninstall-htmlDATA \
-	uninstall-info-am
+.PHONY: all all-am check check-am clean clean-generic distclean \
+	distclean-generic distdir dvi dvi-am info info-am install \
+	install-am install-data install-data-am install-exec \
+	install-exec-am install-htmlDATA install-info install-info-am \
+	install-man install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic uninstall uninstall-am \
+	uninstall-htmlDATA uninstall-info-am
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

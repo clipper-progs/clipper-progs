@@ -38,7 +38,7 @@ int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, floa
 int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF);
 void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb);
 void tricart(Cell cell, Mat33<float>& transf);
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool debug );
+void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Program& prog, bool debug );
 
 int main(int argc, char **argv)
 {
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
   printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/sqrt(minres),1.0/sqrt(maxres));
   if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
   prog.summary_end();
-  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_standard_num(CMtz::MtzSpacegroupNumber(mtz1));
+  CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
   prog.summary_beg();
 
   std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  int cbin = int( ncbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
-		  if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
+
 		  //printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 		  if (!ih.hkl_class().centric()) {
 		      Na[bin]++;
@@ -455,8 +455,9 @@ int main(int argc, char **argv)
 			      I4a[bin] += I*I*I*I;
 			  }
 		  }
-		  else {
+		  else if (Ncentric) {
 			  Nc[cbin]++;
+		  if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
 		      if (I > 0.0) {
 			      E1c[cbin] += sqrt(I);
 			      I1c[cbin] += I;
@@ -529,26 +530,26 @@ int main(int argc, char **argv)
 	  //twinop(0,0) = 1;
 	  //twinop(1,0) = -1;
 	  //twinop(1,1) = -1;
-	  Htest(ianiso,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,prog,debug);
   }
   else if( sg >= 149 && sg <= 154 ) {
 	  printf("twinning operator -h, -k, l\n");
 	  twinop(0,0) = -1;
 	  twinop(1,1) = -1;
 	  twinop(2,2) = 1;
-	  Htest(ianiso,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,prog,debug);
   }
   else if( sg >= 143 && sg <= 145 ) {
 	  printf("twinning operator k, h, -l\n");
 	  twinop(0,1) = 1;
 	  twinop(1,0) = 1;
 	  twinop(2,2) = -1;
-	  Htest(ianiso,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,prog,debug);
 
 	  printf("twinning operator -k, -h, -l\n");
 	  twinop(0,1) = -1;
 	  twinop(1,0) = -1;
-	  Htest(ianiso,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,prog,debug);
 
 	  printf("twinning operator -h, -k, l\n");
       twinop(0,1) = 0;
@@ -556,7 +557,7 @@ int main(int argc, char **argv)
 	  twinop(0,0) = -1;
 	  twinop(1,1) = -1;
 	  twinop(2,2) = 1;
-	  Htest(ianiso,twinop,itwin,debug);
+	  Htest(ianiso,twinop,itwin,prog,debug);
   }
   else if( !strcmp(pointgroup, "PG222") ) {
 	  //printf("PG222\n");
@@ -566,7 +567,7 @@ int main(int argc, char **argv)
 	      twinop(0,1) = 1;
 	      twinop(1,0) = 1;
 	      twinop(2,2) = -1;
-	      Htest(ianiso,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,prog,debug);
 	  }
 	  if ( fabs( 1.0 - cell.c()/cell.b() ) < 0.02 ) { 
 	      printf("twinning operator -h, l, k\n");
@@ -576,7 +577,7 @@ int main(int argc, char **argv)
 		  twinop(0,0) = -1;
 		  twinop(1,2) = 1;
 		  twinop(2,1) = 1;
-	      Htest(ianiso,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,prog,debug);
 	  }
 	  if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02 ) {
 	      printf("twinning operator l, -k, h\n");
@@ -586,7 +587,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(0,2) = 1;
 		  twinop(2,0) = 1;
-	      Htest(ianiso,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,prog,debug);
 	  }
   }
   else if( !strcmp(pointgroup, "PG2") ) {
@@ -600,7 +601,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(0,2) = 1;
 		  twinop(2,0) = 1;
-	      Htest(ianiso,twinop,itwin,debug);
+	      Htest(ianiso,twinop,itwin,prog,debug);
 	  }
 
 	  if ( cell.beta() < Util::d2rad(93.0) ) {
@@ -610,7 +611,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = 1;
-		  Htest(ianiso,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,prog,debug);
 	  }	 
 
 	  if ( fabs( cos(cell.beta()) + 0.5*cell.a()/cell.c() ) < 0.02 ) { 
@@ -620,7 +621,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 1;
 		  twinop(2,2) = 1;
-		  Htest(ianiso,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,prog,debug);
 	  }	  
 
 	  if ( fabs( cos(cell.beta()) + 0.5*cell.c()/cell.a() ) < 0.02 ) { 
@@ -630,7 +631,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = -1;
-		  Htest(ianiso,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,prog,debug);
 	  }	  
 	  if ( fabs( cos(cell.beta()) + cell.c()/cell.a() ) < 0.02 ) { 
 		  printf("twinning operator h+2l, -k, -l\n");
@@ -639,7 +640,7 @@ int main(int argc, char **argv)
 		  twinop(1,1) = -1;
 		  twinop(2,0) = 0;
 		  twinop(2,2) = -1;
-		  Htest(ianiso,twinop,itwin,debug);
+		  Htest(ianiso,twinop,itwin,prog,debug);
 	  }
   }
   if (itwin) {
@@ -1716,7 +1717,7 @@ void tricart(Cell cell, Mat33<float>& transf)
 	return;
 }
 
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool debug )
+void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Program& prog, bool debug )
 {
 	typedef clipper::HKL_data_base::HKL_reference_index HRI;
     double HT=0.0;
@@ -1772,7 +1773,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 		printf("H test suggests data is twinned\n");
 		printf("Twinning fraction = %5.2f\n",alpha);
 		itwin = 1;
-        //prog.summary_end();
+                prog.summary_end();
 		printf("$TABLE: H test for twinning:\n");
         printf("$GRAPHS");
         printf(": cumulative distribution function for |H|:0|1x0|1:1,2:\n");
@@ -1784,7 +1785,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, bool d
 	        printf("%f %f \n", x, double(cdf[i])/NT  );
         }
         printf("$$\n\n");
-		//prog.summary_begin();
+		prog.summary_beg();
 	}
 	else {
 		printf("No twinning detected for this twinning operator\n");

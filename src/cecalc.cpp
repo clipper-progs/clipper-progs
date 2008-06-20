@@ -3,7 +3,7 @@
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
-
+#include <cstdlib>
 
 int main( int argc, char** argv )
 {
