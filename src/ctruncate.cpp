@@ -179,7 +179,6 @@ int main(int argc, char **argv)
 	      Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
   clipper::Resolution reso;
   clipper::Grid_sampling grid;
-  clipper::String opfile = "patterson.map";
   reso = mtzfile.resolution();
 
   // can't seem to get max resolution from clipper, so use CCP4 methods
@@ -226,12 +225,6 @@ int main(int argc, char **argv)
   // make xmap
   clipper::Xmap<float> patterson( pspgr, cell1, grid );
   patterson.fft_from( fphi );
-
-  // write map
-  clipper::CCP4MAPfile mapout;
-  mapout.open_write( opfile );
-  mapout.export_xmap( patterson );
-  mapout.close_write();
 
 
   // use Charles's stuff to find peaks
