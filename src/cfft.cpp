@@ -89,9 +89,9 @@ int main( int argc, char** argv )
   mtzin.open_read( ipfile );
   clipper::Spacegroup spgr = mtzin.spacegroup();
   clipper::Cell       cell = mtzin.cell();
-  if ( ipcolf != "NONE" ) mtzin.import_crystal( cxtl, ipcolf );
-  if ( ipcola != "NONE" ) mtzin.import_crystal( cxtl, ipcola );
-  if ( ipcolm != "NONE" ) mtzin.import_crystal( cxtl, ipcolm );
+  if ( ipcolf != "NONE" ) mtzin.import_crystal( cxtl, ipcolf+".F_sigF.F" );
+  if ( ipcola != "NONE" ) mtzin.import_crystal( cxtl, ipcola+".F_sigF_ano.F+");
+  if ( ipcolm != "NONE" ) mtzin.import_crystal( cxtl, ipcolm+".F_phi.F" );
   if ( !cxtl.is_null() ) cell = cxtl;
   if ( reso.is_null() ) reso = mtzin.resolution();
   hkls.init( spgr, cell, reso, true );
