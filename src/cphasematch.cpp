@@ -137,14 +137,17 @@ int main( int argc, char** argv )
   bool invert( false );
   clipper::Coord_frac x( 0.0, 0.0, 0.0 );
   if ( omatch ) clipper::OriginMatch<float>( invert, x, fphi1, fphi2 );
-  if ( invert ) std::cout << "\n Change of hand  : YES";
-  else          std::cout << "\n Change of hand  : NO";
-  std::cout << "\n Change or origin: " << x.format() << "\n";
+  if ( invert ) std::cout << std::endl << " Change of hand  : YES" << std::endl;
+  else          std::cout << std::endl << " Change of hand  : NO" << std::endl;
+  std::cout << " Change or origin: " << x.format() << std::endl
+	    << "  (Shift is applied to second set of phases to match first)"
+	    << std::endl << std::endl;
 
   // shift phases
   for ( ih = hkls.first(); !ih.last(); ih.next() ) {
     clipper::Coord_reci_frac h( ih.hkl() );
-    double dphi = clipper::Util::twopi() * ( h * x );
+    const double hx = h * x;
+    const double dphi = clipper::Util::twopi() * ( hx - floor(hx) );
     if ( invert ) fphi2[ih].friedel();
     if ( invert ) phiw2[ih].friedel();
     if ( invert ) abcd2[ih].friedel();
@@ -163,8 +166,8 @@ int main( int argc, char** argv )
     }
 
   // verify the origin shift with crude stats
-  std::cout << "\n Mean phase error before origin fixing: " << clipper::Util::rad2d( sd1/sw1 );
-  std::cout << "\n Mean phase error after  origin fixing: " << clipper::Util::rad2d( sd2/sw2 ) << "\n";
+  std::cout << " Mean phase error before origin fixing: " << clipper::Util::rad2d( sd1/sw1 ) << std::endl;
+  std::cout << " Mean phase error after  origin fixing: " << clipper::Util::rad2d( sd2/sw2 ) << std::endl;
 
   // output shifted phases if required
   if ( opfile != "NONE" ) {

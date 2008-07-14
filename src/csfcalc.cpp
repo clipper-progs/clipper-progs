@@ -91,7 +91,8 @@ int main( int argc, char** argv )
 
   // atomic model
   clipper::MMDBManager mmdb;
-  mmdb.SetFlag( MMDBF_AutoSerials | MMDBF_IgnoreDuplSeqNum );
+  const int mmdbflags = MMDBF_IgnoreBlankLines | MMDBF_IgnoreDuplSeqNum | MMDBF_IgnoreNonCoorPDBErrors | MMDBF_IgnoreRemarks;
+  mmdb.SetFlag( mmdbflags );
   mmdb.ReadPDBASCII( (char*)ippdb.c_str() );
 
   // get a list of all the atoms
