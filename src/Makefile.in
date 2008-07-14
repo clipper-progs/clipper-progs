@@ -104,7 +104,7 @@ install_sh = @install_sh@
 DIST_SUBDIRS = pirate buccaneer
 SUBDIRS = pirate buccaneer
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch cmaplocal
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -132,6 +132,8 @@ ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp
 
 csymmatch_SOURCES = csymmatch.cpp
 
+cmaplocal_SOURCES = cmaplocal.cpp
+
 EXTRA_DIST = README
 
 INCLUDES = $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
@@ -145,7 +147,8 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cfft$(EXEEXT) cinvfft$(EXEEXT) csigmaa$(EXEEXT) cecalc$(EXEEXT) \
 	cphasecombine$(EXEEXT) cpatterson$(EXEEXT) caniso$(EXEEXT) \
-	convert2mtz$(EXEEXT) ctruncate$(EXEEXT) csymmatch$(EXEEXT)
+	convert2mtz$(EXEEXT) ctruncate$(EXEEXT) csymmatch$(EXEEXT) \
+	cmaplocal$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
 am_caniso_OBJECTS = caniso.$(OBJEXT)
@@ -168,6 +171,11 @@ am_cinvfft_OBJECTS = cinvfft.$(OBJEXT)
 cinvfft_OBJECTS = $(am_cinvfft_OBJECTS)
 cinvfft_LDADD = $(LDADD)
 cinvfft_DEPENDENCIES =
+am_cmaplocal_OBJECTS = cmaplocal.$(OBJEXT)
+cmaplocal_OBJECTS = $(am_cmaplocal_OBJECTS)
+cmaplocal_LDADD = $(LDADD)
+cmaplocal_DEPENDENCIES =
+cmaplocal_LDFLAGS =
 am_convert2mtz_OBJECTS = convert2mtz.$(OBJEXT)
 convert2mtz_OBJECTS = $(am_convert2mtz_OBJECTS)
 convert2mtz_LDADD = $(LDADD)
@@ -210,7 +218,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/caniso.Po ./$(DEPDIR)/cecalc.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cfft.Po ./$(DEPDIR)/chltofom.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/cinvfft.Po ./$(DEPDIR)/convert2mtz.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cinvfft.Po ./$(DEPDIR)/cmaplocal.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/convert2mtz.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cpatterson.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasecombine.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cphasematch.Po \
@@ -225,17 +234,18 @@ CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 CXXFLAGS = @CXXFLAGS@
 DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
-	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) \
-	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
-	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
-	$(csymmatch_SOURCES) $(ctruncate_SOURCES)
+	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmaplocal_SOURCES) \
+	$(convert2mtz_SOURCES) $(cpatterson_SOURCES) \
+	$(cphasecombine_SOURCES) $(cphasematch_SOURCES) \
+	$(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) \
+	$(ctruncate_SOURCES)
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
 DIST_COMMON = README Makefile.am Makefile.in
-SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) $(ctruncate_SOURCES)
+SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) $(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmaplocal_SOURCES) $(convert2mtz_SOURCES) $(cpatterson_SOURCES) $(cphasecombine_SOURCES) $(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) $(ctruncate_SOURCES)
 
 all: all-recursive
 
@@ -285,6 +295,9 @@ chltofom$(EXEEXT): $(chltofom_OBJECTS) $(chltofom_DEPENDENCIES)
 cinvfft$(EXEEXT): $(cinvfft_OBJECTS) $(cinvfft_DEPENDENCIES) 
 	@rm -f cinvfft$(EXEEXT)
 	$(CXXLINK) $(cinvfft_LDFLAGS) $(cinvfft_OBJECTS) $(cinvfft_LDADD) $(LIBS)
+cmaplocal$(EXEEXT): $(cmaplocal_OBJECTS) $(cmaplocal_DEPENDENCIES) 
+	@rm -f cmaplocal$(EXEEXT)
+	$(CXXLINK) $(cmaplocal_LDFLAGS) $(cmaplocal_OBJECTS) $(cmaplocal_LDADD) $(LIBS)
 convert2mtz$(EXEEXT): $(convert2mtz_OBJECTS) $(convert2mtz_DEPENDENCIES) 
 	@rm -f convert2mtz$(EXEEXT)
 	$(CXXLINK) $(convert2mtz_LDFLAGS) $(convert2mtz_OBJECTS) $(convert2mtz_LDADD) $(LIBS)
@@ -321,6 +334,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cinvfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cmaplocal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/convert2mtz.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cphasecombine.Po@am__quote@
