@@ -49,7 +49,7 @@ int main( int argc, char** argv )
   clipper::Xmap<float> lmom2( xmap );
   for ( clipper::Xmap<float>::Map_reference_index ix = lmom2.first();
 	!ix.last(); ix.next() )
-    lmom2[ix] = pow( lmom2[ix], 2.0 );
+    lmom2[ix] = clipper::Util::sqr( lmom2[ix] );
 
   // now calculate local mom1, local mom1 squared
   clipper::MapFilterFn_step fn( statsrad );
@@ -60,7 +60,7 @@ int main( int argc, char** argv )
   // calculate std deviation
   for ( clipper::Xmap<float>::Map_reference_index ix = lmom1.first();
 	!ix.last(); ix.next() )
-    lmom2[ix] = sqrt( lmom2[ix] - pow( lmom1[ix], 2.0 ) );
+    lmom2[ix] = sqrt( lmom2[ix] - clipper::Util::sqr( lmom1[ix] ) );
 
   // output map
   file.open_write( opfile1 );
