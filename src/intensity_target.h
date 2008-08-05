@@ -1,3 +1,6 @@
+/*! \file lib/resol_targetfn.h
+    Header file for resolution function generator
+*/
 //C Copyright (C) 2000-2006 Kevin Cowtan and University of York
 //L
 //L  This library is free software and is distributed under the terms
@@ -63,6 +66,21 @@ using namespace clipper;
     const HKL_data<T>* hkl_data;
   };
 
+  template<class T1, class T2> class TargetFn_scaleLogI1I2 : public TargetFn_base
+  {
+  public:
+    //! constructor: takes the datalist against which to calc target
+    TargetFn_scaleLogI1I2( const HKL_data<T1>& hkl_data1_, const HKL_data<T2>& hkl_data2_ );
+    //! return the value and derivatives of the target function
+    Rderiv rderiv( const HKL_info::HKL_reference_index& ih, const ftype& intensityh ) const;
+    //! the type of the function: optionally used to improve convergence
+    FNtype type() const { return QUADRATIC; }
+  private:
+    const HKL_data<T1>* hkl_data1;
+    const HKL_data<T2>* hkl_data2;
+  };
+
+
 
 
   // implementations for template functions
@@ -80,13 +98,41 @@ using namespace clipper;
     Rderiv result;
     const HKL_data<T>& data = *hkl_data;
     if ( !data[ih].missing() ) {
-      ftype d = fh - pow( ftype(data[ih].I()) / ih.hkl_class().epsilon(),  
+      ftype d = fh - pow( ftype(data[ih].I()) / ih.hkl_class().epsilon(),  // do we want sqrt / epsilon here?
 			  power );
       result.r = d * d;
       result.dr = 2.0 * d;
       result.dr2 = 2.0;
     } else {
       result.r = result.dr = result.dr2 = 0.0;
+    }
+    return result;
+  }
+
+  // Log I1-I2 scaling
+
+  template<class T1, class T2> TargetFn_scaleLogI1I2<T1,T2>::TargetFn_scaleLogI1I2( const HKL_data<T1>& hkl_data1_, const HKL_data<T2>& hkl_data2_ )
+  {
+    hkl_data1 = &hkl_data1_;
+    hkl_data2 = &hkl_data2_;
+  }
+
+  template<class T1, class T2> TargetFn_base::Rderiv TargetFn_scaleLogI1I2<T1,T2>::rderiv( const HKL_info::HKL_reference_index& ih, const ftype& intensityh ) const
+  {
+    Rderiv result;
+    result.r = result.dr = result.dr2 = 0.0;
+    const T1& it1 = (*hkl_data1)[ih];
+    const T2& it2 = (*hkl_data2)[ih];
+    if ( !it1.missing() && !it2.missing() )
+      if ( it1.I() > 1.0e-6 && it2.I() > 1.0e-6 ) {
+	const ftype eps = ih.hkl_class().epsilon();
+	const ftype i1 = it1.I() / eps;
+	const ftype i2 = it2.I() / eps;
+	const ftype w = sqrt( i1 * i2 );    
+	const ftype d = intensityh + log(i1) - log(i2);
+	result.r   =       w * d * d;
+	result.dr  = 2.0 * w * d;
+	result.dr2 = 2.0 * w;
     }
     return result;
   }

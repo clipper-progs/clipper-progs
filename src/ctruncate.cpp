@@ -21,7 +21,10 @@
 #include "csymlib.h"
 #include <iostream>
 #include <math.h>
+#include "ccp4_fortran.h"
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
+#include "intensity_scale.h"   // contains additions to sfscale.cpp, sfscale.h, function_object_bases.h
+#include "alt_hkl_datatypes.h"
 
 #include "cpsf_utils.h"
 
@@ -31,27 +34,40 @@ using namespace clipper;
 // replacement for Wilson/Truncate
 
 int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1);
-int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1);
-int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF);
-int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF);
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
+int truncate(  HKL_data<data32::J_sigJ_ano> isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
+int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug);
+int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug);
 void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb);
 void tricart(Cell cell, Mat33<float>& transf);
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Program& prog, bool debug );
+void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug );
+void MatrixToString( Mat33<int> twinoper, String &s );
+/*
+extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
+	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
+		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
+	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
+		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
+	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
+		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ));
+*/
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.08", "$Date: 2008/05/01" );
+  CCP4Program prog( "ctruncate", "0.1.13", "$Date: 2008/07/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
-  clipper::String outcol = "F";
+  clipper::String outcol = "";
+  clipper::String appendcol = "";
   clipper::String meancol = "/*/*/[IMEAN,SIGIMEAN]";
   //clipper::String meancol = "NONE";
   clipper::String pluscol = "/*/*/[I(+),SIGI(+)]";
   clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
+  clipper::String anocols = "/*/*/[I(+),SIGI(+),I(-),SIGI(-)]";
   clipper::String ipfile = "NONE";
+  clipper::String twintest = "table";
 
   bool aniso = true;
   bool debug = false;
@@ -61,6 +77,7 @@ int main(int argc, char **argv)
   int mtzinarg = 0;
   int nbins = 60;
   int ncbins = 60;
+  int nresidues = 0;
 
   // clipper seems to use its own column labels, then append yours
 
@@ -86,13 +103,26 @@ int main(int argc, char **argv)
     } else if ( args[arg] == "-colplus" ) {
       if ( ++arg < args.size() ) pluscol = args[arg];
 	  anomalous = true;
+	  printf("obsolete argument - use -colano instead\n");
+	  printf("e.g. -colano /*/*/[I(+),SIGI(+),I(-),SIGI(-)]\n");
+      return(0);
     } else if ( args[arg] == "-colminus" ) {
       if ( ++arg < args.size() ) minuscol = args[arg];
 	  anomalous = true;
+	  printf("obsolete argument - use -colano instead\n");
+	  printf("e.g. -colano /*/*/[I(+),SIGI(+),I(-),SIGI(-)]\n");
+      return(0);
+    } else if ( args[arg] == "-colano" ) {
+      if ( ++arg < args.size() ) anocols = args[arg];
+	  anomalous = true;
     } else if ( args[arg] == "-colout" ) {
-      if ( ++arg < args.size() ) outcol = args[arg];
+      if ( ++arg < args.size() ) appendcol = args[arg];
     } else if ( args[arg] == "-nbins" ) {
 		if ( ++arg < args.size() ) nbins = clipper::String(args[arg]).i();
+    } else if ( args[arg] == "-nres" ) {
+		if ( ++arg < args.size() ) nresidues = clipper::String(args[arg]).i();
+    } else if ( args[arg] == "-twintest" ) {
+      if ( ++arg < args.size() ) twintest = args[arg];
     } else if ( args[arg] == "-no-aniso" ) {
       aniso = false;
     } else if ( args[arg] == "-amplitudes" ) {
@@ -106,7 +136,7 @@ int main(int argc, char **argv)
 
   }
   if ( args.size() <= 1 ) {
-	  CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colplus <colpath> -colminus <colpath>");
+	  CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
   }
 
   if (mtzinarg == 0) CCP4::ccperror(1, "No input mtz file");
@@ -120,12 +150,9 @@ int main(int argc, char **argv)
   HKL_data<data32::I_sigI> isig(hklinf);   // raw I and sigma
   HKL_data<data32::I_sigI> jsig(hklinf);   // post-truncate I and sigma
   HKL_data<data32::F_sigF> fsig(hklinf);   // post-truncate F and sigma 
-  HKL_data<data32::I_sigI_ano> isig_plus(hklinf);   // raw I(+) and sigma
-  HKL_data<data32::I_sigI> jsig_plus(hklinf);   // post-truncate I and sigma
-  HKL_data<data32::F_sigF> fsig_plus(hklinf);   // post-truncate F and sigma 
-  HKL_data<data32::I_sigI_ano> isig_minus(hklinf);   // raw I(-) and sigma
-  HKL_data<data32::I_sigI> jsig_minus(hklinf);   // post-truncate I and sigma
-  HKL_data<data32::F_sigF> fsig_minus(hklinf);   // post-truncate F and sigma 
+  HKL_data<data32::J_sigJ_ano> isig_ano(hklinf);   // raw I(+) and sigma and I(-) and sigma
+  HKL_data<data32::J_sigJ_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
+  HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
   HKL_data<data32::F_sigF> Dano(hklinf);   // anomalous difference and sigma 
   HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
 
@@ -142,15 +169,32 @@ int main(int argc, char **argv)
       mtzfile.import_hkl_data( isig, meancol );
 
       if (anomalous) {
+          mtzfile.import_hkl_data( isig_ano, anocols );
           //pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
-	      mtzfile.import_hkl_data( isig_plus, pluscol );
+	      //mtzfile.import_hkl_data( isig_plus, pluscol );
           //minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
-	      mtzfile.import_hkl_data( isig_minus, minuscol );
+	      //mtzfile.import_hkl_data( isig_minus, minuscol );
       }
   }
 
+  prog.summary_beg();
+  printf("\n\nCRYSTAL INFO:\n\n");
+  std::cout << "Crystal/dataset names: " << mtzfile.assigned_paths()[0].notail() << "\n"; 
+  prog.summary_end();
   // need this mumbo-jumbo in order to write to output file
+
   if ( outcol[0] != '/' ) outcol = mtzfile.assigned_paths()[0].notail()+"/"+outcol;
+
+  // hkl_list contains only those (h,k,l) for which at least data column is not NaN.
+  // hkl_info contains all (h,k,l) out to the resolution limit regardless of whether there is any measured data.
+  // will need hkl_list when writing to output file.
+  clipper::Spacegroup spgr = mtzfile.spacegroup();
+  clipper::Cell      cell1 = mtzfile.cell();
+  clipper::Resolution reso = mtzfile.resolution();
+
+  HKL_info hkl_list;
+  hkl_list.init( spgr, cell1, reso );
+  mtzfile.import_hkl_list(hkl_list);
 
   mtzfile.close_read();
 
@@ -164,7 +208,9 @@ int main(int argc, char **argv)
   }
 
   int Ncentric = 0;
+  int Nreflections = 0;
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+    if ( !isig[ih].missing() ) Nreflections++;
 	if ( ih.hkl_class().centric() && !isig[ih].missing()) Ncentric++;
   }
   printf("\nNcentric = %d\n", Ncentric);
@@ -172,14 +218,12 @@ int main(int argc, char **argv)
   printf("Number of centric bins = %d\n", ncbins);
 
   prog.summary_beg();
-  printf("\n\nCRYSTAL INFO:\n\n");
-  clipper::Spacegroup spgr = mtzfile.spacegroup();
-  clipper::Cell       cell1 = mtzfile.cell();
+
   printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
 	      Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
-  clipper::Resolution reso;
+  printf("\nNumber of reflections: %d\n", Nreflections);
   clipper::Grid_sampling grid;
-  reso = mtzfile.resolution();
+  //clipper::String opfile = "patterson.map";
 
   // can't seem to get max resolution from clipper, so use CCP4 methods
   CMtz::MTZ *mtz1=NULL;
@@ -295,12 +339,15 @@ int main(int argc, char **argv)
 
 
   // anisotropy correction
-  if (aniso)  {
-	  prog.summary_beg();
-	  printf("\n\nANISOTROPY CORRECTION:\n");
 
-      //clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
+  if (aniso)  {
 	  double Itotal = 0.0;
+      double FFtotal = 0.0;
+	  prog.summary_beg();
+	  printf("\n\nANISOTROPY CORRECTION (using intensities:\n");
+
+/*
+      clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
       for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		  if ( !isig[ih].missing() ) {
 	          double I = isig[ih].I();
@@ -310,11 +357,25 @@ int main(int argc, char **argv)
 	              faniso[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
 			  }
           }
-	  }
+	  }  
 
       // scale structure factors
       clipper::SFscale_aniso<float> sfscl( 3.0 );
-      sfscl( faniso );
+      sfscl( faniso );  
+*/
+	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  //NEW
+	  	  double I = isig[ih].I();
+	      double sigI = isig[ih].sigI();
+	      if ( I > 0.0 ) Itotal += I;
+     	  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+	  }
+
+      // scale intensities 
+	  clipper::Iscale_aniso<float> sfscl( 3.0 );     
+	  sfscl( ianiso );                                        // NEW
+
+      
+
       //std::cout << "\nAnisotropic scaling:\n" << sfscl.u_aniso_orth().format() << "\n";
 	  printf("\nAnisotropic scaling (orthogonal coords):\n\n");
 
@@ -357,7 +418,8 @@ int main(int argc, char **argv)
 
 	  prog.summary_end();
 	  printf("\n");
-	  double FFtotal = 0.0;
+
+/*
       for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		  if ( !isig[ih].missing() ) {
 			  double I = isig[ih].I();
@@ -373,8 +435,16 @@ int main(int argc, char **argv)
 			  }
 		  }
       }
+*/
+
+      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {    //NEW
+		  if ( !isig[ih].missing() ) {
+		      FFtotal += ianiso[ih].I();
+		  }
+	  }                                                         //NEW 
+	  
 	  double scalefac = Itotal/FFtotal;
-	  if (debug) printf("\nscalefactor = %6.3f %6.3f %6.3f\n",scalefac,Itotal,FFtotal);
+	  if (debug) printf("\nscalefactor = %6.3f %8.3f %8.3f\n\n",scalefac,Itotal,FFtotal);
 	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		  if ( !isig[ih].missing() ) {
 		      ianiso[ih].I() *= scalefac;
@@ -435,7 +505,6 @@ int main(int argc, char **argv)
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  int cbin = int( ncbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
-
 		  //printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 		  if (!ih.hkl_class().centric()) {
 		      Na[bin]++;
@@ -450,7 +519,7 @@ int main(int argc, char **argv)
 		  }
 		  else if (Ncentric) {
 			  Nc[cbin]++;
-		  if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
+  		      if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
 		      if (I > 0.0) {
 			      E1c[cbin] += sqrt(I);
 			      I1c[cbin] += I;
@@ -508,133 +577,213 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\n\nTWINNING ANALYSIS:\n\n");
   int itwin = 0;
+  int scalefac;
+  Cell cell = hklinf.cell();
 
   // H test for twinning
+/*
+  if (twintest != "table") {
 
-  Cell cell = hklinf.cell();
-  Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
-  int sg = CMtz::MtzSpacegroupNumber(mtz1);
-  if ( (sg >= 75 && sg <= 80) || sg == 146 || (sg >= 168 && sg <= 173) || (sg >= 195 && sg <= 199) ) { 
-	  printf("twinning operator k, h, -l\n");
-	  //printf("twinning operator h, -h-k, -l\n");
-	  twinop(0,1) = 1;
-	  twinop(1,0) = 1;
-	  twinop(2,2) = -1;
-	  //twinop(0,0) = 1;
-	  //twinop(1,0) = -1;
-	  //twinop(1,1) = -1;
-	  Htest(ianiso,twinop,itwin,prog,debug);
-  }
-  else if( sg >= 149 && sg <= 154 ) {
-	  printf("twinning operator -h, -k, l\n");
-	  twinop(0,0) = -1;
-	  twinop(1,1) = -1;
-	  twinop(2,2) = 1;
-	  Htest(ianiso,twinop,itwin,prog,debug);
-  }
-  else if( sg >= 143 && sg <= 145 ) {
-	  printf("twinning operator k, h, -l\n");
-	  twinop(0,1) = 1;
-	  twinop(1,0) = 1;
-	  twinop(2,2) = -1;
-	  Htest(ianiso,twinop,itwin,prog,debug);
+      scalefac = 12;           // scale factor for integer symops
+      double sc_tol = 0.05;    // tolerance for determining candidate twinops
+      int lc = 48;             // maximum number of twinops that can be stored
+      int nc = 0;
+      int ivb = 0;
+      int ierr = 0;
+      int nc2;
 
-	  printf("twinning operator -k, -h, -l\n");
-	  twinop(0,1) = -1;
-	  twinop(1,0) = -1;
-	  Htest(ianiso,twinop,itwin,prog,debug);
+      std::vector< Vec3<int> > trans;
+      std::vector< Mat33<int> > rot;
+      std::vector< Mat33<int> > twin(lc);   // NB need to dimension these o/w output from fortran corrupted
+      std::vector<double> score(lc);
 
-	  printf("twinning operator -h, -k, l\n");
-      twinop(0,1) = 0;
-	  twinop(1,0) = 0;
-	  twinop(0,0) = -1;
-	  twinop(1,1) = -1;
-	  twinop(2,2) = 1;
-	  Htest(ianiso,twinop,itwin,prog,debug);
+      int nsymops = spgr.num_symops();
+      //printf("nsymops = %d\n",nsymops);
+      Grid g( 12, 12, 12 );
+      for (int i=0; i<nsymops; i++) {
+	      Isymop isymop( spgr.symop(i), g );
+	      for (int j=0; j<3; j++) {
+		      printf("%6d %6d %6d   %6d\n", isymop.rot()(j,0), isymop.rot()(j,1), isymop.rot()(j,2), isymop.trn()[j] );
+	      }
+	      printf("\n");
+	      trans.push_back( isymop.trn() );
+	      // need to transpose matrix before passing to fortran
+	      rot.push_back( isymop.rot().transpose() );
+      }
+
+      int *vv = &trans[0][0];
+      int *ww = &rot[0](0,0);
+      int *uu_c = &twin[0](0,0);
+      double *sc_c = &score[0];
+
+
+      FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
+                 (cell1, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr),
+				 (cell1, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr),
+				 (cell1, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr));
+
+      //printf("nc = %d  ierr = %d\n",nc,ierr);
+	  printf("First principles calculation of potential twinning operators using code by Andrey Lebedev:\n");
+	  printf("First principles calculation has found %d potential twinning operators\n\n", nc-1);
+
+
+      if (nc > 1) {
+	      for (int k=1; k<nc; k++) {
+			  // Transpose matrix once because passed from Fortran to C, then a second time because Andrey's
+			  // convention is that (h,k,l) is postmultiplied by the twinning operator, whereas mine is that
+			  // (h,k,l) is premultiplied by the the twinning operator. Net result: don't do anything!
+              Mat33<int> twinoper = twin[k];
+			  String s;
+			  MatrixToString(twinoper,s);
+			  std::cout << "Twinning operator: " << s << "\n";
+	          for (int i=0; i<3; i++) {
+		          // Divide by 12 (scale factor for integer syops)
+		          printf("%7.4f %7.4f %7.4f\n",double(twinoper(i,0))/12.0, double(twinoper(i,1))/12.0, double(twinoper(i,2))/12.0 );
+		      }
+			  printf("\n");
+	          Htest(ianiso, twinoper, itwin, scalefac, s, prog, debug);
+	      }
+      }
   }
-  else if( !strcmp(pointgroup, "PG222") ) {
-	  //printf("PG222\n");
-	  // Can have pseudo-merohedral twinning in PG222 (orthorhombic) if a=b, b=c or c=a
-	  if ( fabs( 1.0 - cell.b()/cell.a() ) < 0.02 ) { 
-	      printf("twinning operator k, h, -l\n");
+
+*/
+  if (twintest != "first_principles") {
+	  printf("\n   Potential twinning operators found from tables:\n\n");
+      Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
+      int sg = CMtz::MtzSpacegroupNumber(mtz1);
+      scalefac = 1;
+	  String s;
+      if ( (sg >= 75 && sg <= 80) || sg == 146 || (sg >= 168 && sg <= 173) || (sg >= 195 && sg <= 199) ) { 
+	      printf("Twinning operator k, h, -l\n");
+		  s = "k, h, -l";
 	      twinop(0,1) = 1;
 	      twinop(1,0) = 1;
 	      twinop(2,2) = -1;
-	      Htest(ianiso,twinop,itwin,prog,debug);
-	  }
-	  if ( fabs( 1.0 - cell.c()/cell.b() ) < 0.02 ) { 
-	      printf("twinning operator -h, l, k\n");
-	      twinop(0,1) = 0;
+	      Htest ( ianiso, twinop, itwin, scalefac, s, prog, debug );
+      }
+      else if( sg >= 149 && sg <= 154 ) {
+	      printf("Twinning operator -h, -k, l\n");
+		  s = "-h, -k, l";
+	      twinop(0,0) = -1;
+	      twinop(1,1) = -1;
+	      twinop(2,2) = 1;
+	      Htest ( ianiso, twinop, itwin, scalefac, s, prog, debug );
+      }
+      else if( sg >= 143 && sg <= 145 ) {
+	      printf("Twinning operator k, h, -l\n");
+		  s = "k, h, -l";
+	      twinop(0,1) = 1;
+	      twinop(1,0) = 1;
+	      twinop(2,2) = -1;
+	      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+
+	      printf("Twinning operator -k, -h, -l\n");
+		  s = "-k, -h, -l";
+	      twinop(0,1) = -1;
+	      twinop(1,0) = -1;
+	      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+
+	      printf("Twinning operator -h, -k, l\n");
+		  s = "-h, -k, l";
+          twinop(0,1) = 0;
 	      twinop(1,0) = 0;
-	      twinop(2,2) = 0;
-		  twinop(0,0) = -1;
-		  twinop(1,2) = 1;
-		  twinop(2,1) = 1;
-	      Htest(ianiso,twinop,itwin,prog,debug);
-	  }
-	  if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02 ) {
-	      printf("twinning operator l, -k, h\n");
-	      twinop(0,0) = 0;
-	      twinop(1,2) = 0;
-	      twinop(2,1) = 0;
-		  twinop(1,1) = -1;
-		  twinop(0,2) = 1;
-		  twinop(2,0) = 1;
-	      Htest(ianiso,twinop,itwin,prog,debug);
-	  }
-  }
-  else if( !strcmp(pointgroup, "PG2") ) {
-      // can have pseudomerohedral twinning in PG2 (monoclinic) if
-	  // beta = 90
-	  // a=c
-	  // cos(beta) = -a/2c, -c/a, -c/2a
-	  // sin(beta) = a/c
-	  if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02  || fabs( sin(cell.beta()) - cell.a()/cell.c() ) < 0.02 ) {
-	      printf("twinning operator l, -k, h\n");
-		  twinop(1,1) = -1;
-		  twinop(0,2) = 1;
-		  twinop(2,0) = 1;
-	      Htest(ianiso,twinop,itwin,prog,debug);
-	  }
+	      twinop(0,0) = -1;
+	      twinop(1,1) = -1;
+	      twinop(2,2) = 1;
+	      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+      }
+      else if( !strcmp(pointgroup, "PG222") ) {
+	      //printf("PG222\n");
+	      // Can have pseudo-merohedral twinning in PG222 (orthorhombic) if a=b, b=c or c=a
+	      if ( fabs( 1.0 - cell.b()/cell.a() ) < 0.02 ) { 
+	          printf("Twinning operator k, h, -l\n");
+			  s = "k, h, -l";
+	          twinop(0,1) = 1;
+	          twinop(1,0) = 1;
+	          twinop(2,2) = -1;
+	          Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }
+	      if ( fabs( 1.0 - cell.c()/cell.b() ) < 0.02 ) { 
+	          printf("Twinning operator -h, l, k\n");
+			  s = "-h, l, k";
+	          twinop(0,1) = 0;
+	          twinop(1,0) = 0;
+	          twinop(2,2) = 0;
+		      twinop(0,0) = -1;
+		      twinop(1,2) = 1;
+		      twinop(2,1) = 1;
+	          Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }
+	      if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02 ) {
+	          printf("Twinning operator l, -k, h\n");
+			  s = "l, -k, h";
+	          twinop(0,0) = 0;
+	          twinop(1,2) = 0;
+	          twinop(2,1) = 0;
+		      twinop(1,1) = -1;
+		      twinop(0,2) = 1;
+		      twinop(2,0) = 1;
+	          Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }
+      }
+      else if( !strcmp(pointgroup, "PG2") ) {
+          // can have pseudomerohedral twinning in PG2 (monoclinic) if
+	      // beta = 90
+	      // a=c
+	      // cos(beta) = -a/2c, -c/a, -c/2a
+	      // sin(beta) = a/c
+	      if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02  || fabs( sin(cell.beta()) - cell.a()/cell.c() ) < 0.02 ) {
+	          printf("Twinning operator l, -k, h\n");
+			  s = "l, -k, h";
+		      twinop(1,1) = -1;
+		      twinop(0,2) = 1;
+		      twinop(2,0) = 1;
+	          Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }
 
-	  if ( cell.beta() < Util::d2rad(93.0) ) {
-		  printf("twinning operator h, -k, l\n");
-		  twinop(0,0) = 1;
-		  twinop(0,2) = 0;
-		  twinop(1,1) = -1;
-		  twinop(2,0) = 0;
-		  twinop(2,2) = 1;
-		  Htest(ianiso,twinop,itwin,prog,debug);
-	  }	 
+	      if ( cell.beta() < Util::d2rad(93.0) ) {
+		      printf("Twinning operator h, -k, l\n");
+			  s = "h, -k, l";
+		      twinop(0,0) = 1;
+		      twinop(0,2) = 0;
+		      twinop(1,1) = -1;
+		      twinop(2,0) = 0;
+		      twinop(2,2) = 1;
+		      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }	 
 
-	  if ( fabs( cos(cell.beta()) + 0.5*cell.a()/cell.c() ) < 0.02 ) { 
-		  printf("twinning operator -h, -k, h+l\n");
-		  twinop(0,0) = -1;
-		  twinop(0,2) = 0;
-		  twinop(1,1) = -1;
-		  twinop(2,0) = 1;
-		  twinop(2,2) = 1;
-		  Htest(ianiso,twinop,itwin,prog,debug);
-	  }	  
+	      if ( fabs( cos(cell.beta()) + 0.5*cell.a()/cell.c() ) < 0.02 ) { 
+		      printf("Twinning operator -h, -k, h+l\n");
+			  s = "-h, -k, h+l";
+		      twinop(0,0) = -1;
+		      twinop(0,2) = 0;
+		      twinop(1,1) = -1;
+		      twinop(2,0) = 1;
+		      twinop(2,2) = 1;
+		      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }	  
 
-	  if ( fabs( cos(cell.beta()) + 0.5*cell.c()/cell.a() ) < 0.02 ) { 
-		  printf("twinning operator h+l, -k, -l\n");
-		  twinop(0,0) = 1;
-		  twinop(0,2) = 1;
-		  twinop(1,1) = -1;
-		  twinop(2,0) = 0;
-		  twinop(2,2) = -1;
-		  Htest(ianiso,twinop,itwin,prog,debug);
-	  }	  
-	  if ( fabs( cos(cell.beta()) + cell.c()/cell.a() ) < 0.02 ) { 
-		  printf("twinning operator h+2l, -k, -l\n");
-		  twinop(0,0) = 1;
-		  twinop(0,2) = 2;
-		  twinop(1,1) = -1;
-		  twinop(2,0) = 0;
-		  twinop(2,2) = -1;
-		  Htest(ianiso,twinop,itwin,prog,debug);
-	  }
+	      if ( fabs( cos(cell.beta()) + 0.5*cell.c()/cell.a() ) < 0.02 ) { 
+		      printf("Twinning operator h+l, -k, -l\n");
+			  s = "h+l, -k, -l";
+		      twinop(0,0) = 1;
+		      twinop(0,2) = 1;
+		      twinop(1,1) = -1;
+		      twinop(2,0) = 0;
+		      twinop(2,2) = -1;
+		      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }	  
+	      if ( fabs( cos(cell.beta()) + cell.c()/cell.a() ) < 0.02 ) { 
+		      printf("Twinning operator h+2l, -k, -l\n");
+			  s = "h+2l, -k, -l";
+		      twinop(0,0) = 1;
+		      twinop(0,2) = 2;
+		      twinop(1,1) = -1;
+		      twinop(2,0) = 0;
+		      twinop(2,2) = -1;
+		      Htest( ianiso, twinop, itwin, scalefac, s, prog, debug );
+	      }
+      }
   }
   if (itwin) {
 	  printf("\nData has been truncated at %6.2f A resolution\n",resopt);
@@ -690,7 +839,7 @@ int main(int argc, char **argv)
   //printf("Lav = %f  Untwinned 0.5 Perfect Twin 0.375\n",Lav);
   //printf("L2av = %f  Untwinned 0.333 Perfect Twin 0.200\n",L2av);
   if (Lav < 0.48) {
-	  printf("\nApplying the L test for twinning: (Padilla and Yeates Acta D59 1124 (2003))\n");
+	  printf("\nApplying the L test for twinning: (Padilla and Yeates Acta Cryst. D59 1124 (2003))\n");
 	  printf("L test suggests data is twinned\n");
 	  printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n\n", Lav);
 	  itwin = 1;
@@ -821,9 +970,13 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\nWILSON SCALING:\n\n");
   int nsym = spg1->nsymop;
-  int nresidues = int(0.5*hklinf.cell().volume()/(nsym*157));
-  //nresidues /= 2.0;
-  printf("Estimated number of residues = %d\n",nresidues);
+  if (nresidues > 0) {
+	  printf("User supplied number of residues = %d\n",nresidues);
+  }
+  else {
+      nresidues = int(0.5*hklinf.cell().volume()/(nsym*157));
+      printf("Estimated number of residues = %d\n",nresidues);
+  }
   prog.summary_end();
 
   std::string name[4] = { "C", "N", "O", "H" };
@@ -836,16 +989,10 @@ int main(int argc, char **argv)
 
   // Wilson plot
   
-  std::vector<float> xi, yi, wi; 
+  std::vector<float> xi, yi, wi, xxi, yyi, yy2i; 
   std::vector<int> flags(nbins,0);
   float totalscat; 
   float minres_scaling = 0.0625;   // 4 Angstroms
-
-  printf("$TABLE: Wilson plot:\n");
-  printf("$SCATTER");
-  //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-  printf(": Wilson plot:A:1,2:\n$$");  
-  printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 	  if ( !isig[ih].missing() ) {
@@ -868,7 +1015,8 @@ int main(int argc, char **argv)
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.5 ) - 0.5  );
 		  if (bin >= nbins || bin < 0) printf("Warning: (Wilson) illegal bin number %d\n", bin);
 	      if (flags[bin] != 1) {
-		      printf("%10.5f %10.5f\n", res, -lnS);
+			  xxi.push_back(res);
+			  yyi.push_back(-lnS);
 		      flags[bin] = 1;
 	      }
 		  if (res > minres_scaling) {  
@@ -886,7 +1034,6 @@ int main(int argc, char **argv)
 		  }
 	  }
   }
-  printf("$$\n\n");
 
   int nobs = xi.size();
   //printf("%d %d %d\n", xi.size(), yi.size(), wi.size());
@@ -906,6 +1053,20 @@ int main(int argc, char **argv)
 	  printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
   }
 
+  printf("$TABLE: Wilson plot:\n");
+  printf("$SCATTER");
+  //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
+  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2:\n$$", a);  
+  printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
+
+  for ( int i=0; i<xxi.size(); i++ ) {
+	  printf("%10.5f %10.5f\n", xxi[i], yyi[i]);
+  }
+
+  printf("$$\n\n");
+
+
+
   // Truncate style Wilson plot
 
   std::vector<int> N_all(nbins,0);
@@ -914,11 +1075,9 @@ int main(int argc, char **argv)
 
   std::vector<float> xtr, ytr, wtr; 
 
-  printf("$TABLE: Truncate style Wilson plot:\n");
-  printf("$GRAPHS");
-  printf(": Wilson plot:A:1,2,3:\n$$");  
-  //printf(": Wilson plot:0|0.1111x-8|-5.5:1,2,3:\n$$");  // limits hardwired
-  printf(" 1/resol^2 obs all $$\n$$\n");
+  xxi.clear();
+  yyi.clear();
+
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
       int bin = int( float(nbins) * ih.invresolsq() / maxres - 0.5 );
@@ -945,14 +1104,17 @@ int main(int argc, char **argv)
 	  }
 	  float w1 = log( I_obs[j] / (float(N_obs[j]) * totalscat) );
 	  float w2 = log( I_obs[j] / (float(N_all[j]) * totalscat) );
-	  printf( "%10.6f %10.6f %10.6f\n", res, w1, w2);
+
+	  xxi.push_back(res);
+	  yyi.push_back(w1);
+	  yy2i.push_back(w2);
+
 	  if (res > minres_scaling) {  
 		  xtr.push_back(res);
 		  ytr.push_back(w1);
 		  wtr.push_back(1.0);
 	  }
   }
-  printf("$$\n\n");
 
   nobs = xtr.size();
   if ( wi.size() > 200 && maxres > 0.0816) {
@@ -963,30 +1125,42 @@ int main(int argc, char **argv)
       printf("scale factor on intensity = %10.4f\n\n", exp(-b1));
 	  prog.summary_end();
   }
+
+  printf("$TABLE: Truncate style Wilson plot:\n");
+  printf("$GRAPHS");
+  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3:\n$$", -2.0*a1);  
+  //printf(": Wilson plot:0|0.1111x-8|-5.5:1,2,3:\n$$");  // limits hardwired
+  printf(" 1/resol^2 obs all $$\n$$\n");
+  for ( int i=0; i<xxi.size(); i++ ) {
+      printf( "%10.6f %10.6f %10.6f\n", xxi[i], yyi[i], yy2i[i]);
+  }
+  printf("$$\n\n");
+
  
   // apply the Truncate procedure, unless amplitudes have been input
 
   float scalef = sqrt(exp(b));
   //float scalef = 4.66047;  //hardwired (for now) scalefactor
+  int nrej = 0; 
+
   if (!amplitudes) {
       if (anomalous) {
-	      truncate( isig_plus, jsig_plus, fsig_plus, Sigma, scalef, spg1 );
-          truncate( isig_minus, jsig_minus, fsig_minus, Sigma, scalef, spg1 );
+	      truncate( isig_ano, jsig_ano, fsig_ano, Sigma, scalef, spg1, nrej, debug );
 	      int iwarn = 0;
 	      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	          if ( !isig_plus[ih].missing() && !isig_minus[ih].missing() ) {
-			      fsig[ih].f() = 0.5 * ( fsig_plus[ih].f() + fsig_minus[ih].f() );
-			      fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_plus[ih].sigf(), 2 ) + pow( fsig_minus[ih].sigf(), 2 ) );
-			      Dano[ih].f() = fsig_plus[ih].f() - fsig_minus[ih].f();
+			  if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
+			      fsig[ih].f() = 0.5 * ( fsig_ano[ih].f_pl() + fsig_ano[ih].f_mi() );
+			      fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_ano[ih].sigf_pl(), 2 ) + pow( fsig_ano[ih].sigf_mi(), 2 ) );
+			      Dano[ih].f() = fsig_ano[ih].f_pl() - fsig_ano[ih].f_mi();
 			      Dano[ih].sigf() = 2.0 * fsig[ih].sigf();
 		      }
-		      else if ( !isig_plus[ih].missing() ) {
-			      fsig[ih].f() = fsig_plus[ih].f();
-			      fsig[ih].f() = fsig_plus[ih].sigf();
+		      else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
+			      fsig[ih].f() = fsig_ano[ih].f_pl();
+			      fsig[ih].sigf() = fsig_ano[ih].sigf_pl();
 		      }
-		      else if ( !isig_minus[ih].missing() ) {
-			      fsig[ih].f() = fsig_minus[ih].f();
-			      fsig[ih].f() = fsig_minus[ih].sigf();
+		      else if ( !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
+			      fsig[ih].f() = fsig_ano[ih].f_mi();
+			      fsig[ih].sigf() = fsig_ano[ih].sigf_mi();
 		      }
 		      else if ( !isig[ih].missing() && iwarn != 1 ) {
 			      printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
@@ -1000,9 +1174,14 @@ int main(int argc, char **argv)
       }
 
       else {
-          truncate( isig, jsig, fsig, Sigma, scalef, spg1 );
+          truncate( isig, jsig, fsig, Sigma, scalef, spg1, nrej, debug );
       }
   }
+  prog.summary_beg();
+  printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
+  printf("%d intensities have been rejected as unphysical\n", nrej);
+  prog.summary_end();
+
 
   
   // following code is for when truncate calc switched off - do not delete it
@@ -1101,7 +1280,7 @@ int main(int argc, char **argv)
   mean8 /= double(nbins);
  
   prog.summary_beg();
-  printf("\nMEAN ACENTRIC MOMENTS OF E:\n\n");
+  printf("\n\nMEAN ACENTRIC MOMENTS OF E:\n\n");
   //printf("mean1 = %6.3f %6.3f %6.3f %6.2f %6.2f\n",mean1,mean3,mean4,mean6,mean8);
   printf("<E> = %6.3f (Expected value = 0.886, Perfect Twin = 0.94)\n", mean1);
   printf("<E**3> = %6.3f (Expected value = 1.329, Perfect Twin = 1.175)\n", mean3);
@@ -1224,7 +1403,7 @@ int main(int argc, char **argv)
   double deltax=0.04;
   for (int i=0; i<=50; i++) {
 	  if (Ncentric) printf("%10.5f %8.5f %8.5f %8.5f %8.5f\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i], intensity_ord_c.ordinal(x));
-	  else printf("%10.5f %8.5f %8.5f %8.5f ?\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i]);
+	  else printf("%10.5f %8.5f %8.5f %8.5f -\n", x, acen[i], intensity_ord_a.ordinal(x), cen[i]);
 	  x += deltax;
   }
   printf("$$\n\n");
@@ -1278,6 +1457,7 @@ int main(int argc, char **argv)
 	  }
   }
 
+  int nzerosigma = 0;
   float cone = 30.0; //hardwired for now
   float ang[3];
   float cosang;
@@ -1313,13 +1493,14 @@ int main(int argc, char **argv)
                   ang[j] = acos(cosang);
 				  if ( ang[j] < Util::d2rad(cone) ) {
                       somdir[j][bin] += fsig[ih].f()*epsiln;
-					  somsddir[j][bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
+					  if ( fsig[ih].sigf() > 0.0 ) somsddir[j][bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
                       enumdir[j][bin] += epsiln;
                       numdir[j][bin]++;
 			      }
 			  }
               somov[bin] += fsig[ih].f()*epsiln;
-              somsdov[bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
+              if ( fsig[ih].sigf() > 0.0 ) somsdov[bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
+			  else nzerosigma++;
               enumov[bin] += epsiln;
               numov[bin]++;
 		  }
@@ -1347,7 +1528,13 @@ int main(int argc, char **argv)
 	  }
   }
 
+  if (nzerosigma > 0) {
+	  prog.summary_beg();
+	  printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
+	  prog.summary_end();
+  }
 
+  // calculate completeness
   std::vector<float> sumov(nbins,0.0);
   std::vector<float> summeas(nbins,0.0);
   std::vector<float> completeness(nbins,0.0);
@@ -1385,15 +1572,49 @@ int main(int argc, char **argv)
 
   // output data
   if (!amplitudes) {
-      mtzout.open_append( argv[mtzinarg], outfile );
+      //mtzout.open_append( argv[mtzinarg], outfile );
+	  mtzout.open_write( outfile );
+      mtzout.export_hkl_info( hkl_list );
       //mtzout.export_hkl_data( jsig, outcol );
-      mtzout.export_hkl_data( fsig, outcol+"MEAN" );
+	  clipper::String labels;
+	  if (appendcol == "") labels = "/*/*/[F,SIGF]";
+	  else labels = "/*/*/[F_" + appendcol + ",SIGF_" + appendcol + "]";
+	  mtzout.export_hkl_data( fsig, labels );
       if (anomalous) {
-	      mtzout.export_hkl_data( fsig_plus, outcol+"(+)" );
-	      mtzout.export_hkl_data( fsig_minus, outcol+"(-)" );
-	      mtzout.export_hkl_data( Dano, outcol+"_ANO" );
+	      if (appendcol == "") labels = "/*/*/[F(+),SIGF(+),F(-),SIGF(-)]";
+	      else labels = "/*/*/[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
+	      mtzout.export_hkl_data( fsig_ano, labels );
+	      if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
+	      else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+		  mtzout.export_hkl_data( Dano, labels );
       }
-      mtzout.close_append();
+	  if (appendcol != "") {
+		  String::size_type loc = meancol.find(",",0);
+          meancol.insert(loc,"_"+appendcol);
+		  loc = meancol.find("]",0);
+		  meancol.insert(loc,"_"+appendcol);
+	  }
+	  mtzout.export_hkl_data( isig, meancol );
+
+	  if (anomalous) {
+		  if (appendcol != "") {
+		      String::size_type loc = anocols.find("+",0);
+              anocols.insert(loc-1,"_"+appendcol);
+			  loc = anocols.find(",",0);
+		      loc = anocols.find("+",loc+1);
+		      anocols.insert(loc-1,"_"+appendcol);
+			  loc = anocols.find("-",0);
+              anocols.insert(loc-1,"_"+appendcol);
+			  loc = anocols.find(",",loc);
+		      loc = anocols.find("-",loc+1);
+		      anocols.insert(loc-1,"_"+appendcol);
+	      }
+		  mtzout.export_hkl_data( isig_ano, anocols );
+	  }
+
+      //mtzout.close_append();
+	  mtzout.close_write();
+
   }
   prog.set_termination_message( "Normal termination" );
 
@@ -1402,7 +1623,7 @@ int main(int argc, char **argv)
 
 
 int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1)
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
 {
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
   //FILE *checkfile;
@@ -1424,8 +1645,8 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 		  sigma /= weight;
 
 		  // handle acentric and centric reflections separately
-		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I,sigma,S,J,sigJ,F,sigF);
-		  else iflag = truncate_acentric(I,sigma,S,J,sigJ,F,sigF);	
+		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+		  else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
 		  //if ( !ih.hkl_class().centric()  && I < 0 ) 
 			  //fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 			  //ih.hkl_class().epsilon());
@@ -1443,11 +1664,10 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 }
 
 
-int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1)
+int truncate(  HKL_data<data32::J_sigJ_ano> isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
+			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
 
-// takes anomalous I's as input. Would have thought outputs should also be of anomalous type, but this generates a 'left hand
-// side must be an l value' error
+// takes anomalous I's as input. 
 
 {
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -1457,9 +1677,37 @@ int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& js
   int iflag;
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() ) {
-		  float I = isig[ih].I();
-		  float sigma = isig[ih].sigI();
+	  if ( !Util::is_nan(isig[ih].I_pl() ) ) {
+		  float I = isig[ih].I_pl();
+		  float sigma = isig[ih].sigI_pl();
+		  float S = Sigma.f(ih);
+		  HKL hkl = ih.hkl();
+		  float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+		  if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+		  float sqwt = sqrt(weight);
+		  HKL hkl = ih.hkl();
+		  I /= weight;
+		  sigma /= weight;
+
+		  // handle acentric and centric reflections separately
+		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+		  else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+		  //if ( !ih.hkl_class().centric()  && I < 0 ) 
+			  //fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+			  //ih.hkl_class().epsilon());
+		  if (iflag) {
+			  jsig[ih].I_pl() = J;
+			  jsig[ih].sigI_pl() = sigJ;
+			  //jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+			  fsig[ih].f_pl() = F*scalef*sqwt;
+			  fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+			  //fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+		  }
+	  }
+
+	  if ( !Util::is_nan(isig[ih].I_mi() ) ) {
+		  float I = isig[ih].I_mi();
+		  float sigma = isig[ih].sigI_mi();
 		  float S = Sigma.f(ih);
 		  HKL hkl = ih.hkl();
 		  float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
@@ -1470,17 +1718,17 @@ int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& js
 		  sigma /= weight;
 
 		  // handle acentric and centric reflections separately
-		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I,sigma,S,J,sigJ,F,sigF);
-		  else iflag = truncate_acentric(I,sigma,S,J,sigJ,F,sigF);	
+		  if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+		  else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
 		  //if ( !ih.hkl_class().centric()  && I < 0 ) 
 			  //fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 			  //ih.hkl_class().epsilon());
 		  if (iflag) {
-			  jsig[ih].I() = J;
-			  jsig[ih].sigI() = sigJ;
+			  jsig[ih].I_mi() = J;
+			  jsig[ih].sigI_mi() = sigJ;
 			  //jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
-			  fsig[ih].f() = F*scalef*sqwt;
-			  fsig[ih].sigf() = sigF*scalef*sqwt;
+			  fsig[ih].f_mi() = F*scalef*sqwt;
+			  fsig[ih].sigf_mi() = sigF*scalef*sqwt;
 			  //fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
 		  }
 	  }
@@ -1490,7 +1738,7 @@ int truncate(  HKL_data<data32::I_sigI_ano> isig,   HKL_data<data32::I_sigI>& js
 }
 
 
-int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF)
+int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
 {
   // look up tables taken from truncate.f 
   // tables give values from h = -4.0 to h = 3.0 in steps of 0.1
@@ -1544,7 +1792,8 @@ int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, floa
   h = I/sigma - sigma/S;
   // reject as unphysical reflections for which I < -3.7 sigma, or h < -4.0
   if (I/sigma < -3.7 || h < -4.0 ) {
-	  printf("unphys: %f %f %f %f\n",I,sigma,S,h);
+	  nrej++;
+	  if (debug) printf("unphys: %f %f %f %f\n",I,sigma,S,h);
 	  return(0);
   }
   else {
@@ -1576,7 +1825,7 @@ int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, floa
 }
 
 
-int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF)
+int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
 {
   // look up tables taken from truncate.f 
   // tables give values from h = -4.0 to h = 4.0 in steps of 0.1
@@ -1633,7 +1882,8 @@ int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float
   h = I/sigma - 0.5*sigma/S;
   // reject as unphysical reflections for which I < -3.7 sigma, or h < -4.0
   if (I/sigma < -3.7 || h < -4.0 ) {
-	  //printf("unphys: %f %f %f %f\n",I,sigma,S,h);
+	  nrej++;
+	  if (debug) printf("unphys: %f %f %f %f\n",I,sigma,S,h);
 	  return(0);
   }
   else {
@@ -1710,7 +1960,7 @@ void tricart(Cell cell, Mat33<float>& transf)
 	return;
 }
 
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Program& prog, bool debug )
+void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug )
 {
 	typedef clipper::HKL_data_base::HKL_reference_index HRI;
     double HT=0.0;
@@ -1727,9 +1977,9 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Pr
 		    jhkl[2] = hkl.l();
 		    HKL twin;
 		    jhkl2 = twinop*jhkl;
-		    twin.h() = jhkl2[0];
-		    twin.k() = jhkl2[1];
-		    twin.l() = jhkl2[2];
+		    twin.h() = jhkl2[0]/scalefac;
+		    twin.k() = jhkl2[1]/scalefac;
+		    twin.l() = jhkl2[2]/scalefac;
 		    //printf("%d %d %d %d %d %d\n",hkl.h(),hkl.k(),hkl.l(),twin.h(),twin.k(),twin.l());
 		    //printf("%d %d %d %d %d %d\n",jhkl[0],jhkl[1],jhkl[2],jhkl2[0],jhkl2[1],jhkl2[2]);
 		    if (!isig[twin].missing()) {
@@ -1761,27 +2011,29 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Pr
     double H2av = HT2/NT;
     double alpha = 0.5-Hav;
     //printf("alpha = %f\n",alpha);
-	printf("Applying the H test for twinning: (Yeates Acta A44 142 (1980))\n");
+	printf("Applying the H test for twinning: (Yeates Acta Cryst. A44 142 (1980))\n");
 	if (alpha > 0.05) {
 		printf("H test suggests data is twinned\n");
-		printf("Twinning fraction = %5.2f\n",alpha);
+		printf("Twinning fraction = %5.2f\n\n",alpha);
 		itwin = 1;
-                prog.summary_end();
-		printf("$TABLE: H test for twinning:\n");
+        prog.summary_end();
+		printf("$TABLE: H test for twinning (operator %s):\n", s.c_str() );
         printf("$GRAPHS");
-        printf(": cumulative distribution function for |H|:0|1x0|1:1,2:\n");
-        printf("$$ |H| Observed  $$\n$$\n");
-        printf("0.000000 0.000000 \n");
+        printf(": cumulative distribution function for |H|:0|1x0|1:1,2,3,4,5,6,7:\n");
+        printf("$$ |H| 0.4 0.3 0.2 0.1 0.0 Observed $$\n$$\n");
+        printf("0.000000 0.0 0.0 0.0 0.0 0.0 0.000000\n");
 
-        for (int i=0;i<20;i++) {
+        for (int i=0;i<19;i++) {
 	        double x = (double(i+1))/20.0;
-	        printf("%f %f \n", x, double(cdf[i])/NT  );
+	        //printf("%f %f %f %f %f %f %f\n", x, double(cdf[i])/NT, 5.0*x, 2.5*x, 1.667*x, 1.25*x, x  );
+			printf("%f  -   -   -   -   -  %f\n", x, double(cdf[i])/NT);
         }
+		printf("1.000000 5.0 2.5 1.667 1.25 1.0 1.0\n");
         printf("$$\n\n");
 		prog.summary_beg();
 	}
 	else {
-		printf("No twinning detected for this twinning operator\n");
+		printf("No twinning detected for this twinning operator\n\n");
 	}
     alpha = 0.5*(1.0 - sqrt(3.0*H2av));
     //printf("alpha = %f\n",alpha);
@@ -1796,3 +2048,24 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, CCP4Pr
     return;
 }
 
+
+// convert twinning operator from a matrix to a string
+// code modified from Symop::format
+
+void MatrixToString( Mat33<int> op, String &s )
+{
+  String t, hkl="hkl";
+  for ( int i = 0; i < 3; i++ ) {
+    t = "";
+	for ( int j = 0; j < 3; j++ ) {
+      if ( op(i,j) != 0 ) {
+	    t += ( op(i,j) > 0 ) ? "+" : "-";
+	    if ( abs( op(i,j) ) != 12 )
+	      t += String::rational( fabs( float( op(i,j) )/12.0 ), 24 );
+	    t += hkl[j];
+      }
+    }
+    s += t.substr( ( t[0] == '+' ) ? 1 : 0 );
+    if ( i < 2 ) s+= ", ";
+  }
+}
