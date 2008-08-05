@@ -23,8 +23,7 @@
 <b>-hklin </b><i>filename</i>
 <b>-hklout </b><i>filename</i>
 <b>-colin </b><i>column label</i>
-<b>-colplus </b><i>column label</i>
-<b>-colminus </b><i>column label</i>
+<b>-colano </b><i>column label</i>
 <b>-colout </b><i>column label</i>
 <b>-no-aniso </b>
 <b>-amplitudes </b>
@@ -81,13 +80,11 @@ an alternative to '-hklout'.</p>
 
 <p> Column names for mean intensity data. Default '/*/*/[IMEAN,SIGIMEAN]'.</p>
 
-<h3><a name="colplus"></a>-colplus <i>column label</i></h3>
 
-<p> Column names for positive anomalous data. Default '/*/*/[I(+),SIGI(+)]'. </p>
+<h3><a name="colano"></a>-colano <i>column label</i></h3>
 
-<h3><a name="colminus"></a>-colminus <i>column label</i></h3>
-
-<p> Column names for negative anomalous data.  Default '/*/*/[I(-),SIGI(-)]'. 
+<p> Column names for anomalous data. Both positive and negative names need to
+be specified e.g. '/*/*/[I(+),SIGI(+),I(-),SIGI(-)]'. 
 If column names for anomalous data are not specified, the program will only
 consider mean data.</p>
 
