@@ -74,7 +74,7 @@ AM_PATH_CCP4(,
         AC_MSG_WARN([assuming library $CCP4_LIBS headers $CCP4_CXXFLAGS])
         have_ccp4=yes
       else
-        CCP4_CXXFLAGS="-I$ccp4_prefix/lib/src"
+        CCP4_CXXFLAGS="-I$ccp4_prefix/lib/src -I$ccp4_prefix/include/ccp4"
         CCP4_LIBS="-L$ccp4_prefix/lib/src -L$ccp4_prefix/lib -lccp4c"
         AC_MSG_WARN([assuming library $CCP4_LIBS headers $CCP4_CXXFLAGS])
         have_ccp4=yes
