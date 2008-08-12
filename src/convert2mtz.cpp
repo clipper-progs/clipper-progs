@@ -541,6 +541,12 @@ int main( int argc, char** argv )
       datafree[ih] = dataFlag( rand()%nfree );
   }
 
+  // tidy phases
+  for ( int i = 0; i < dataphi.size(); i++ )
+    for ( HRI ih = dataphi[i].first(); !ih.last(); ih.next() )
+      dataphi[i][ih].phi() = clipper::Util::mod( dataphi[i][ih].phi(),
+                                               clipper::Util::twopi() );
+
   // export
   clipper::CCP4MTZfile mtzout;
   mtzout.open_write( opfile );
