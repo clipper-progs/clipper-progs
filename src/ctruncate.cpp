@@ -1358,8 +1358,8 @@ int main(int argc, char **argv)
 
   for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
 	  if ( !ianiso[ih].missing() ) {
-         if ( ih.hkl_class().centric() ) intensity_range_centric.include( ianiso[ih].I()/Sigma.f(ih) );
-		 else intensity_range_acentric.include( ianiso[ih].I()/Sigma.f(ih) );
+         if ( ih.hkl_class().centric() ) intensity_range_centric.include( (ianiso[ih].I()/ih.hkl_class().epsilon() )/Sigma.f(ih) );
+		 else intensity_range_acentric.include( (ianiso[ih].I()/ih.hkl_class().epsilon() ) /Sigma.f(ih) );
 	  }
   }
   //printf("C2: %20.5f %20.5f\n",intensity_range_centric.max(),intensity_range_centric.min());
@@ -1371,8 +1371,8 @@ int main(int argc, char **argv)
   intensity_ord_a.init( intensity_range_acentric );
   for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
   	  if ( !ianiso[ih].missing() ) {
-          if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( ianiso[ih].I()/Sigma.f(ih)  );
-		  else intensity_ord_a.accumulate( ianiso[ih].I()/Sigma.f(ih) );
+		  if ( ih.hkl_class().centric() ) intensity_ord_c.accumulate( ( ianiso[ih].I()/ih.hkl_class().epsilon() )/Sigma.f(ih)  );
+		  else intensity_ord_a.accumulate( ( ianiso[ih].I()/ih.hkl_class().epsilon() )/Sigma.f(ih) );
 	  }
   }
   intensity_ord_c.prep_ordinal();
