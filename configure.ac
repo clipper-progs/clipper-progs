@@ -17,6 +17,7 @@ AC_LANG(C++)
 # Checks for programs.
 AC_PROG_CXX(xlc++ CC cxx c++ icc g++)
 AC_PROG_CC(xlc cc icc gcc)
+AC_PROG_F77
 AC_HEADER_STDC
 AC_PROG_INSTALL
 #AC_PROG_RANLIB
