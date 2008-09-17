@@ -43,7 +43,7 @@ void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<f
 void tricart(Cell cell, Mat33<float>& transf);
 void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug );
 void MatrixToString( Mat33<int> twinoper, String &s );
-/*
+
 extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
 		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
@@ -51,11 +51,11 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
 	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
 		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ));
-*/
+
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.13", "$Date: 2008/07/30" );
+  CCP4Program prog( "ctruncate", "0.1.15", "$Date: 2008/09/17" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
   clipper::String anocols = "/*/*/[I(+),SIGI(+),I(-),SIGI(-)]";
   clipper::String ipfile = "NONE";
-  clipper::String twintest = "table";
+  clipper::String twintest = "all";
 
   bool aniso = true;
   bool debug = false;
@@ -581,7 +581,7 @@ int main(int argc, char **argv)
   Cell cell = hklinf.cell();
 
   // H test for twinning
-/*
+
   if (twintest != "table") {
 
       scalefac = 12;           // scale factor for integer symops
@@ -602,10 +602,10 @@ int main(int argc, char **argv)
       Grid g( 12, 12, 12 );
       for (int i=0; i<nsymops; i++) {
 	      Isymop isymop( spgr.symop(i), g );
-	      for (int j=0; j<3; j++) {
+	      /*for (int j=0; j<3; j++) {
 		      printf("%6d %6d %6d   %6d\n", isymop.rot()(j,0), isymop.rot()(j,1), isymop.rot()(j,2), isymop.trn()[j] );
 	      }
-	      printf("\n");
+	      printf("\n");*/
 	      trans.push_back( isymop.trn() );
 	      // need to transpose matrix before passing to fortran
 	      rot.push_back( isymop.rot().transpose() );
@@ -636,17 +636,17 @@ int main(int argc, char **argv)
 			  String s;
 			  MatrixToString(twinoper,s);
 			  std::cout << "Twinning operator: " << s << "\n";
-	          for (int i=0; i<3; i++) {
+	          /*for (int i=0; i<3; i++) {
 		          // Divide by 12 (scale factor for integer syops)
 		          printf("%7.4f %7.4f %7.4f\n",double(twinoper(i,0))/12.0, double(twinoper(i,1))/12.0, double(twinoper(i,2))/12.0 );
 		      }
-			  printf("\n");
+			  printf("\n");*/
 	          Htest(ianiso, twinoper, itwin, scalefac, s, prog, debug);
 	      }
       }
   }
 
-*/
+
   if (twintest != "first_principles") {
 	  printf("\n   Potential twinning operators found from tables:\n\n");
       Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
