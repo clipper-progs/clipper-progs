@@ -75,6 +75,7 @@ int main(int argc, char **argv)
   bool anomalous = false;
 
   int mtzinarg = 0;
+  int mtzoutarg = 0;
   int nbins = 60;
   int ncbins = 60;
   int nresidues = 0;
@@ -97,7 +98,10 @@ int main(int argc, char **argv)
 			mtzinarg = arg;
 		}
     } else if ( args[arg] == "-mtzout" || args[arg] == "-hklout") {
-      if ( ++arg < args.size() ) outfile = args[arg];
+		if ( ++arg < args.size() ) {
+			outfile = args[arg];
+			mtzoutarg = arg;
+		}
     } else if ( args[arg] == "-colin" ) {
       if ( ++arg < args.size() ) meancol = args[arg];
     } else if ( args[arg] == "-colplus" ) {
@@ -227,7 +231,7 @@ int main(int argc, char **argv)
 
   // can't seem to get max resolution from clipper, so use CCP4 methods
   CMtz::MTZ *mtz1=NULL;
-  int read_refs=1;  // not sure what read_refs actually does
+  int read_refs=1;  // not sure what read_refs actually does - reads reflections presumably
   float minres,maxres;
   mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
   CMtz::MtzResLimits(mtz1,&minres,&maxres);
@@ -239,11 +243,15 @@ int main(int argc, char **argv)
   CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
   prog.summary_beg();
 
-  std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
+  // Clipper changes H3 to R3 so print out old spacegroup symbol instead
+  //std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
   
+  char spacegroup[20];
+  strcpy(spacegroup,spg1->symbol_old);
+  printf("\nSpacegroup: %s (number %4d)\n", spg1->symbol_old, spg1->spg_ccp4_num);
+
   char pointgroup[20];
   strcpy(pointgroup,spg1->point_group);
-  //pointgroup = spg1->point_group;
   printf("Pointgroup: %s\n\n",pointgroup);
   prog.summary_end();
 
@@ -1614,6 +1622,16 @@ int main(int argc, char **argv)
 
       //mtzout.close_append();
 	  mtzout.close_write();
+
+	  // Clipper will change H3 to R3, so change it back
+	  if (spacegroup[0] == 'H') {
+	      CMtz::MTZ *mtz2=NULL;
+          read_refs=1;  // need to read in reflections, otherwise they won't be written out
+          mtz2 = CMtz::MtzGet(argv[mtzoutarg], read_refs);
+	      strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
+	      CMtz::MtzPut( mtz2, outfile.c_str() );
+          CMtz::MtzFree( mtz2 );
+	  }
 
   }
   prog.set_termination_message( "Normal termination" );
