@@ -79,36 +79,16 @@ c --------------------------------------------------------------------
       nc     = 0
       nc2    = 0
       
-c      write(88,*) 'ng = ', ng
-c      write(88,*) ' '
-      do i=1,ng
-c        write(88,'(3(i6,2x))') u_g(1,i), u_g(2,i), u_g(3,i)
-      enddo
-c      write(88,*) ' '
-      do i=1,ng
-         do j=1,3
-c            write(88,'(3(i6,2x))') uu_g(j,1,i), uu_g(j,2,i), uu_g(j,3,i)
-         enddo
-c         write(88,*) ' '
-      enddo
-
-c      write(88,*) cell(1), cell(2), cell(3), cell(4), cell(5), cell(6)
       call yyy_cell2met( cell, muu, ierr )
       if(ierr.ne.0) return
-      !write(88,*) 'pt 1'
       call yyy_met2cell( celt, muu, ierr )
-      !write(88,*) 'pt 2'
       if(ierr.ne.0) return
-      !write(88,*) 'pt 3'
       call yyy_find_base( ng, uu_g, u_g, uSv, ierr )
-      !write(88,*) 'pt 4'
       if(ierr.ne.0) return
       call yyy_short_base( muu, uSv, mvv, vSu, ierr )
-      !write(88,*) 'pt 5'
       if(ierr.ne.0) return
 
       call yyy_cell_group( ivb, sc_tol, mvv, nh, vv_h, sc_h, ierr )
-      !write(88,*) 'pt 6'
       if(ierr.ne.0) return
       call yyy_test_group( nh, vv_h, h_hh, h_h, tr_h, ok )
 
@@ -117,32 +97,25 @@ c        stop'yyy_cell2tg:a'
         ierr = 1
         return
       endif
-      !write(88,*) 'pt 7'
 
       if( ivb .ge. 2 )then
          call yyy_write_group( 'vv_h', nh, vv_h, h_hh, h_h, tr_h )
       endif
-            !write(88,*) 'pt 8'
 
       call yyy_transform_u_to_v( vSu, uSv, nh, vv_h, uu_h )
       call yyy_test_group12( nh, uu_h, h_hh, h_h, tr_h, ok )
-                  !write(88,*) 'pt 9'
 
       if( .not. ok ) then
 c        stop'yyy_cell2tg:b'
         ierr = 1
         return
       endif
-                  !write(88,*) 'pt 10 ',ok
-
 
       if( ivb .ge. 2 )then
          call yyy_write_group( 'uu_h', nh, uu_h, h_hh, h_h, tr_h )
       endif
-                  !write(88,*) 'pt 11'
 
       call yyy_map_subgroup( ng, uu_g, nh, uu_h, p_h, np, h_pc, ok )
-                  !write(88,*) 'pt 12 ',ok
 
       if( .not. ok )                                            return
 
@@ -150,9 +123,7 @@ c        stop'yyy_cell2tg:b'
      +   nh, h_hh, p_h, tr_h, sc_h, sc_eps,
      +   nc, h_c,
      +   np, h_pc, nc2, ok , ierr)
-      !write(88,*) 'pt 13 ',ierr
       if(ierr.ne.0) return
-      !write(88,*) 'pt W'
 
       if( .not. ok )                                            return
       if( ivb .ge. 1 )then
@@ -164,28 +135,16 @@ c        stop'yyy_cell2tg:c'
         ierr = 1
         return
       endif
-      !write(88,*) 'pt X nc = ',nc
 
       do ic = 1,nc
-         !write(88,*) 'ic', ic
          sc_c(ic) = sc_h(h_c(ic))
          do i = 1,3
             do j = 1,3
-               !write(88,*) i,j
                uu_c(j,i,ic) = uu_h(j,i,h_c(ic))
             enddo
          enddo
       enddo
-c     write(88,*) ' '
-c     write(88,*) 'lc = ',lc,' nc = ',nc,'sc_tol = ',sc_tol
-      do i=1,nc
-c        write(88,*) 'score = ', sc_c(i)
-         do j=1,3
-c           write(88,'(3(i6,2x))') uu_c(j,1,i), uu_c(j,2,i), uu_c(j,3,i)
-         enddo
-c        write(88,*) ' '
-      enddo
-      !write(88,*), 'exiting twinlaws, nc = ',nc
+
       end
 
 c ====================================================================
