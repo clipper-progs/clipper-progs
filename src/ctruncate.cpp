@@ -1422,6 +1422,7 @@ int main(int argc, char **argv)
   int ntw = 0;
   for (int i=0;i<4; i++) {
 	  if ( (acen[3*i+2] - intensity_ord_a.ordinal(x))/acen[3*i+2] > 0.4 ) ntw ++;
+	  x += deltax;
   }
   if (ntw > 2) {
 	  prog.summary_beg();
