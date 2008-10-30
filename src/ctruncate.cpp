@@ -55,7 +55,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.15", "$Date: 2008/09/17" );
+  CCP4Program prog( "ctruncate", "0.1.16", "$Date: 2008/10/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -1593,9 +1593,10 @@ int main(int argc, char **argv)
 	      if (appendcol == "") labels = "/*/*/[F(+),SIGF(+),F(-),SIGF(-)]";
 	      else labels = "/*/*/[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
 	      mtzout.export_hkl_data( fsig_ano, labels );
-	      if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
-	      else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
-		  mtzout.export_hkl_data( Dano, labels );
+		  // clipper has no column type D for DANO
+	      //if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
+	      //else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+		  //mtzout.export_hkl_data( Dano, labels );
       }
 	  if (appendcol != "") {
 		  String::size_type loc = meancol.find(",",0);
