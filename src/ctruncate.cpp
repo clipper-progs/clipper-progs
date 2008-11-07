@@ -157,7 +157,7 @@ int main(int argc, char **argv)
   HKL_data<data32::J_sigJ_ano> isig_ano(hklinf);   // raw I(+) and sigma and I(-) and sigma
   HKL_data<data32::J_sigJ_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
   HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
-  HKL_data<data32::F_sigF> Dano(hklinf);   // anomalous difference and sigma 
+  HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
   HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
 
 //  clipper::MTZcrystal cxtl;
@@ -1159,8 +1159,8 @@ int main(int argc, char **argv)
 			  if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
 			      fsig[ih].f() = 0.5 * ( fsig_ano[ih].f_pl() + fsig_ano[ih].f_mi() );
 			      fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_ano[ih].sigf_pl(), 2 ) + pow( fsig_ano[ih].sigf_mi(), 2 ) );
-			      Dano[ih].f() = fsig_ano[ih].f_pl() - fsig_ano[ih].f_mi();
-			      Dano[ih].sigf() = 2.0 * fsig[ih].sigf();
+			      Dano[ih].d() = fsig_ano[ih].f_pl() - fsig_ano[ih].f_mi();
+			      Dano[ih].sigd() = 2.0 * fsig[ih].sigf();
 		      }
 		      else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
 			      fsig[ih].f() = fsig_ano[ih].f_pl();
@@ -1175,8 +1175,8 @@ int main(int argc, char **argv)
 			      iwarn = 1;
 		      }
 		      if ( ih.hkl_class().centric() ) {
-			      Dano[ih].f() = 0.0;
-			      Dano[ih].sigf() = 0.0;
+			      Dano[ih].d() = 0.0;
+		  HKL hkl = ih.hkl();
 		      }
 	      }
       }
@@ -1594,9 +1594,9 @@ int main(int argc, char **argv)
 	      else labels = "/*/*/[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
 	      mtzout.export_hkl_data( fsig_ano, labels );
 		  // clipper has no column type D for DANO
-	      //if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
-	      //else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
-		  //mtzout.export_hkl_data( Dano, labels );
+	      if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
+	      else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+		  mtzout.export_hkl_data( Dano, labels );
       }
 	  if (appendcol != "") {
 		  String::size_type loc = meancol.find(",",0);
