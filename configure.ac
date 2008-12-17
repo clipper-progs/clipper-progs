@@ -144,6 +144,7 @@ AC_SUBST(convert2mtz_LDFLAGS)
 AC_SUBST(ctruncate_LDFLAGS)
 AC_SUBST(csymmatch_LDFLAGS)
 AC_SUBST(cpirate_LDFLAGS)
+AC_SUBST(cparrot_LDFLAGS)
 AC_SUBST(cbuccaneer_LDFLAGS)
 AC_SUBST(csequins_LDFLAGS)
 AC_SUBST(cmaplocal_LDFLAGS)
@@ -152,6 +153,7 @@ AC_SUBST(cmakereference_LDFLAGS)
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/pirate/Makefile
+                 src/parrot/Makefile
                  src/buccaneer/Makefile
                  html/Makefile
                  ])
