@@ -55,7 +55,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "0.1.16", "$Date: 2008/10/30" );
+  CCP4Program prog( "ctruncate", "1.0.0", "$Date: 2008/10/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -184,6 +184,10 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\n\nCRYSTAL INFO:\n\n");
   std::cout << "Crystal/dataset names: " << mtzfile.assigned_paths()[0].notail() << "\n"; 
+  /*std::cout << mtzfile.assigned_paths()[0].notail().notail().tail() << "\n";  // crystal name
+  std::cout << mtzfile.assigned_paths()[0].notail().tail() << "\n";  //dataset name
+  String xtlname = mtzfile.assigned_paths()[0].notail().notail().tail();
+  String setname = mtzfile.assigned_paths()[0].notail().tail();*/
   prog.summary_end();
   // need this mumbo-jumbo in order to write to output file
 
@@ -199,6 +203,11 @@ int main(int argc, char **argv)
   HKL_info hkl_list;
   hkl_list.init( spgr, cell1, reso );
   mtzfile.import_hkl_list(hkl_list);
+
+  MTZdataset cset; 
+  MTZcrystal cxtl; 
+  mtzfile.import_crystal ( cxtl, meancol );
+  mtzfile.import_dataset ( cset, meancol);
 
   mtzfile.close_read();
 
@@ -234,6 +243,12 @@ int main(int argc, char **argv)
   int read_refs=1;  // not sure what read_refs actually does - reads reflections presumably
   float minres,maxres;
   mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
+
+  // read title
+  char title[72];
+  CMtz::ccp4_lrtitl(mtz1, title);
+  //std::cout << title;
+
   CMtz::MtzResLimits(mtz1,&minres,&maxres);
   float invopt = maxres;
   float resopt = 1.0/sqrt(invopt);
@@ -1583,19 +1598,21 @@ int main(int argc, char **argv)
   if (!amplitudes) {
       //mtzout.open_append( argv[mtzinarg], outfile );
 	  mtzout.open_write( outfile );
+	  mtzout.export_crystal ( cxtl, outcol );
+      mtzout.export_dataset ( cset, outcol );
       mtzout.export_hkl_info( hkl_list );
       //mtzout.export_hkl_data( jsig, outcol );
 	  clipper::String labels;
-	  if (appendcol == "") labels = "/*/*/[F,SIGF]";
-	  else labels = "/*/*/[F_" + appendcol + ",SIGF_" + appendcol + "]";
+	  if (appendcol == "") labels = outcol + "[F,SIGF]";
+	  else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
 	  mtzout.export_hkl_data( fsig, labels );
       if (anomalous) {
-	      if (appendcol == "") labels = "/*/*/[F(+),SIGF(+),F(-),SIGF(-)]";
-	      else labels = "/*/*/[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
+	      if (appendcol == "") labels = outcol + "[F(+),SIGF(+),F(-),SIGF(-)]";
+	      else labels = outcol + "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
 	      mtzout.export_hkl_data( fsig_ano, labels );
 		  // clipper has no column type D for DANO
-	      if (appendcol == "") labels = "/*/*/[DANO,SIGDANO]";
-	      else labels = "/*/*/[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+	      if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
+	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
 		  mtzout.export_hkl_data( Dano, labels );
       }
 	  if (appendcol != "") {
@@ -1604,7 +1621,7 @@ int main(int argc, char **argv)
 		  loc = meancol.find("]",0);
 		  meancol.insert(loc,"_"+appendcol);
 	  }
-	  mtzout.export_hkl_data( isig, meancol );
+	  mtzout.export_hkl_data( isig, outcol + meancol.tail() );
 
 	  if (anomalous) {
 		  if (appendcol != "") {
@@ -1619,23 +1636,26 @@ int main(int argc, char **argv)
 		      loc = anocols.find("-",loc+1);
 		      anocols.insert(loc-1,"_"+appendcol);
 	      }
-		  mtzout.export_hkl_data( isig_ano, anocols );
+		  mtzout.export_hkl_data( isig_ano, outcol + anocols.tail() );
 	  }
 
       //mtzout.close_append();
 	  mtzout.close_write();
 
 	  // Clipper will change H3 to R3, so change it back
-	  if (spacegroup[0] == 'H') {
-	      CMtz::MTZ *mtz2=NULL;
-          read_refs=1;  // need to read in reflections, otherwise they won't be written out
-          mtz2 = CMtz::MtzGet(argv[mtzoutarg], read_refs);
-	      strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
-	      CMtz::MtzPut( mtz2, outfile.c_str() );
-          CMtz::MtzFree( mtz2 );
-	  }
 
+	  CMtz::MTZ *mtz2=NULL;
+      read_refs=1;  // need to read in reflections, otherwise they won't be written out
+      mtz2 = CMtz::MtzGet(argv[mtzoutarg], read_refs);
+	  // write title to output file
+	  strncpy( mtz2->title, title, 71 );
+	  if (spacegroup[0] == 'H') {
+	      strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
+	  }
+		  HKL hkl = ih.hkl();
+      CMtz::MtzFree( mtz2 );
   }
+  CMtz::MtzFree( mtz1 );
   prog.set_termination_message( "Normal termination" );
 
   return(0);
