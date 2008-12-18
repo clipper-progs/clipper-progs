@@ -185,10 +185,10 @@ int main( int argc, char** argv )
 
   // Get coordinate models
   clipper::MiniMol mol_ref, mol_wrk, mol_wrk_ha, mol_wrk_mr;
-  ParrotUtil::read_model( mol_ref, ippdb_ref );
-  ParrotUtil::read_model( mol_wrk, ippdb_wrk );
-  ParrotUtil::read_model( mol_wrk_ha, ippdb_wrk_ha );
-  ParrotUtil::read_model( mol_wrk_mr, ippdb_wrk_mr );
+  ParrotUtil::read_model( mol_ref, ippdb_ref, verbose>1 );
+  ParrotUtil::read_model( mol_wrk, ippdb_wrk, verbose>1 );
+  ParrotUtil::read_model( mol_wrk_ha, ippdb_wrk_ha, verbose>1 );
+  ParrotUtil::read_model( mol_wrk_mr, ippdb_wrk_mr, verbose>1 );
   if ( mol_wrk.size() == 0 ) domask = true;
   std::cout << std::endl;
 
@@ -348,16 +348,19 @@ int main( int argc, char** argv )
   // get NCS operators
   if ( doncsa && mol_wrk_ha.size() > 0 ) {
     std::cout << std::endl << "NCS from heavy atoms: " << std::endl;
+    std::vector<Local_rtop> atmops, newops;
     const double tol_dst = 3.0;
     const double tol_ang = 0.1;
     NCSfind ncsatom( tol_dst, tol_ang );
     NCSaver ncsaver;
-    nxops = ncsatom.find_ncs_candidates( mol_wrk_ha.atom_list(),
-					 spgr_wrk, cell_wrk );
-    nxops = ncsaver.filter_ncs_candidates( nxops, map_wrk, ncs_radius,
-					   ncs_level, ncs_asufrc, 3 );
-    for ( int r = 0; r < nxops.size(); r++ ) {
-      clipper::Rotation rot( nxops[r].rot() );
+    atmops = ncsatom.find_ncs_candidates( mol_wrk_ha.atom_list(),
+					  spgr_wrk, cell_wrk );
+    newops = ncsaver.filter_ncs_candidates( atmops, map_wrk, ncs_radius,
+					    ncs_level, ncs_asufrc, 3 );
+    if ( verbose > 0 ) Local_rtop::print_nxops( "from heavy atoms", atmops );
+    if ( verbose > 0 ) Local_rtop::print_nxops( "density filtered", newops );
+    for ( int r = 0; r < newops.size(); r++ ) {
+      clipper::Rotation rot( newops[r].rot() );
       clipper::Polar_ccp4 polar = rot.polar_ccp4();
       clipper::Euler_ccp4 euler = rot.euler_ccp4();
       std::cout << std::endl << "NCS operator found relating heavy atoms: "
@@ -370,13 +373,16 @@ int main( int argc, char** argv )
 		<< clipper::Util::rad2d(euler.alpha()) << ","
 		<< clipper::Util::rad2d(euler.beta() ) << ","
 		<< clipper::Util::rad2d(euler.gamma()) << std::endl;
-      std::cout << " Source: " << nxops[r].src().format() << std::endl;
-      std::cout << " Target: " << nxops[r].tgt().format() << std::endl;
+      std::cout << " Source: " << newops[r].src().format() << std::endl;
+      std::cout << " Target: " << newops[r].tgt().format() << std::endl;
     }
+    if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from heavy atoms.\n$$" << std::endl;
+    nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
   }
   if ( doncsa && mol_wrk_mr.size() > 0 ) {
     std::cout << std::endl << "NCS from atomic model: " << std::endl;
+    std::vector<Local_rtop> newops;
     for ( int c1 = 0; c1 < mol_wrk_mr.size(); c1++ )
       for ( int c2 = 0; c2 < mol_wrk_mr.size(); c2++ )
 	if ( c1 != c2 ) {
@@ -384,7 +390,7 @@ int main( int argc, char** argv )
 	  Local_rtop nxop =
 	    NCSfind::local_rtop( mol_wrk_mr[c1], mol_wrk_mr[c2], rmsd, 16 );
 	  if ( !nxop.is_null() ) {
-	    nxops.push_back( nxop );
+	    newops.push_back( nxop );
 	    clipper::Rotation rot( nxop.rot() );
 	    clipper::Polar_ccp4 polar = rot.polar_ccp4();
 	    clipper::Euler_ccp4 euler = rot.euler_ccp4();
@@ -403,7 +409,9 @@ int main( int argc, char** argv )
 	    std::cout << " Target: " << nxop.tgt().format() << std::endl;
 	  }
 	}
-    std::cout << std::endl << std::endl;
+    if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from atomic model.\n$$" << std::endl;
+    nxops.insert( nxops.end(), newops.begin(), newops.end() );
+    std::cout << std::endl;
   }
 
   // Main program loop

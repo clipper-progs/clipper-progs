@@ -1,11 +1,11 @@
-/*! \file parrot-ncs.cpp parrot library */
+/*! \file parrot-ncsfind.cpp parrot library */
 /* Copyright 2008 Kevin Cowtan & University of York all rights reserved */
 
 #include "parrot-ncsfind.h"
-
 extern "C" {
 #include <string.h>
 }
+
 
 clipper::String NCSfind::chain_sequence( const clipper::MPolymer& mp )
 {

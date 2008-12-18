@@ -59,7 +59,7 @@ double ParrotUtil::effective_resolution( const clipper::HKL_data<clipper::data32
 }
 
 
-void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file )
+void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file, bool verbose )
 {
   const int mmdbflags = ( MMDBF_IgnoreBlankLines |
 			  MMDBF_IgnoreDuplSeqNum |
@@ -72,6 +72,11 @@ void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file )
       mmdb.read_file( file );
       mmdb.import_minimol( mol );
       std::cout << "Read PDB file: " << file << std::endl;
+      if ( verbose ) {
+	clipper::Atom_list atoms = mol.atom_list();
+	std::cout << "Number of atoms read: " << atoms.size() << std::endl;
+	for ( int i = 0; i < atoms.size(); i += atoms.size()-1 ) printf("%i6  %4s  %8.3f %8.3f %8.3f\n", atoms[i].element().c_str(), atoms[i].coord_orth().x(), atoms[i].coord_orth().y(), atoms[i].coord_orth().z() );
+      }
     } catch ( clipper::Message_fatal ) {
       std::cout << "FAILED TO READ PDB FILE: " << file << std::endl;
     }
@@ -303,5 +308,5 @@ std::vector<std::pair<double,double> > ParrotUtil::solvent_probability( clipper:
 
 double ParrotUtil::random() 
 {
-  return 0.001*(::random()%2000-1000);
+  return 0.001*(::rand()%2000-1000);
 }

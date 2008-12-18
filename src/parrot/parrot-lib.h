@@ -35,7 +35,7 @@ class ParrotUtil {
   static double effective_resolution( const clipper::HKL_data<clipper::data32::Phi_fom>& phiw );
 
   // coordinate utilities
-  static void read_model( clipper::MiniMol& mol, clipper::String file );
+  static void read_model( clipper::MiniMol& mol, clipper::String file, bool verbose );
 
   // mask utilities
   static void mask_expand( clipper::Xmap<float>& mskmod,

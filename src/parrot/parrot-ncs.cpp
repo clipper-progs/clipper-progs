@@ -3,6 +3,9 @@
 
 #include "parrot-ncs.h"
 
+extern "C" {
+  #include <stdio.h>
+}
 
 /*
  Transform an operator by pre- and post- RToperators.
@@ -152,4 +155,12 @@ Local_rtop Local_rtop::proper( const clipper::Spacegroup& spgr, const clipper::C
   // and pick the best
   std::sort( resultsym.begin(), resultsym.end() );
   return resultsym[0].second;
+}
+
+
+void Local_rtop::print_nxops( const clipper::String msg, const std::vector<Local_rtop>& nxops ) {
+  std::cout << "NX operators: " << msg << std::endl;
+  for ( int r = 0; r < nxops.size(); r++ )
+    printf ("euler,src,tgt: %6.1f %6.1f %6.1f, %6.1f %6.1f %6.1f, %6.1f %6.1f %6.1f\n", clipper::Util::rad2d(nxops[r].rot().euler_ccp4().alpha()), clipper::Util::rad2d(nxops[r].rot().euler_ccp4().beta()), clipper::Util::rad2d(nxops[r].rot().euler_ccp4().gamma()), nxops[r].src().x(), nxops[r].src().y(), nxops[r].src().z(), nxops[r].tgt().x(), nxops[r].tgt().y(), nxops[r].src().z() );
+  std::cout << std::endl;
 }

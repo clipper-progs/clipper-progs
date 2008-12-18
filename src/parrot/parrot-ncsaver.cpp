@@ -1,4 +1,4 @@
-/*! \file parrot-ncs.cpp parrot library */
+/*! \file parrot-ncsaver.cpp parrot library */
 /* Copyright 2008 Kevin Cowtan & University of York all rights reserved */
 
 #include "parrot-ncsaver.h"

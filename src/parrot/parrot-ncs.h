@@ -43,6 +43,9 @@ class Local_rtop
 
   // operator for sorting
   bool operator < ( const Local_rtop& other ) const { return rot().w() < other.rot().w(); }
+
+  // program output utilities
+  static void print_nxops( const clipper::String msg, const std::vector<Local_rtop>& nxops );
  private:
   clipper::Rotation rot_; clipper::Coord_orth src_, tgt_;
 };
