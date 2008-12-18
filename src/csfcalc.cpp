@@ -119,11 +119,12 @@ int main( int argc, char** argv )
 
   // do anisotropic scaling
   if ( aniso != NONE )  {
+    clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
     clipper::SFscale_aniso<float> sfscl;
     if ( aniso == FOBS ) sfscl( fo, fc );  // scale Fobs
     if ( aniso == FCAL ) sfscl( fc, fo );  // scale Fcal
     std::cout << "\nAnisotropic scaling:\n"
-	      << sfscl.u_aniso_orth().format() << "\n";
+	      << sfscl.u_aniso_orth(F).format() << "\n";
   }
 
   // now do sigmaa calc

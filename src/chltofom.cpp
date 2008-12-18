@@ -3,7 +3,11 @@
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
-#include <cstdlib>
+
+extern "C" {
+#include <stdlib.h>
+}
+
 
 int main( int argc, char** argv )
 {

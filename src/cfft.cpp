@@ -135,7 +135,7 @@ int main( int argc, char** argv )
       fphi[ih].shift_phase( 0.5*clipper::Util::pi() );
 
   // apply U value
-  fphi.compute( fphi, clipper::data32::Compute_scale_u_fphi( 1.0, -uvalue ) );
+  fphi.compute( fphi, clipper::data32::Compute_scale_u_iso_fphi( 1.0, -uvalue ) );
 
   // make grid if necessary
   if ( grid.is_null() ) grid.init( spgr, cell, reso );

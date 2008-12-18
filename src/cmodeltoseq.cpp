@@ -6,6 +6,11 @@
 #include <clipper/clipper-minimol.h>
 #include <fstream>
 
+extern "C" {
+#include <stdlib.h>
+}
+ 
+
 int main( int argc, char** argv )
 {
   CCP4Program prog( "cmodeltoseq", "0.1", "$Date: 2008/06/09" );

@@ -4,7 +4,13 @@
 #include <clipper/clipper.h>
 #include <clipper/clipper-minimol.h>
 #include <clipper/clipper-ccp4.h>
+#include <algorithm>
 
+extern "C" {
+#include <string.h>
+#include <stdlib.h>
+}
+ 
 
 clipper::String chain_sequence( const clipper::MPolymer& mp )
 {

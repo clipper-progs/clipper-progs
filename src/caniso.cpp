@@ -5,6 +5,10 @@
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 
+extern "C" {
+#include <stdlib.h>
+}
+ 
 
 int main( int argc, char** argv )
 {
@@ -59,10 +63,11 @@ int main( int argc, char** argv )
   mtzin.close_read();
 
   // scale structure factors
+  clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
   clipper::SFscale_aniso<float> sfscl( 3.0 );
   sfscl( fo );
   std::cout << "\nAnisotropic scaling:\n"
-	    << sfscl.u_aniso_orth().format() << "\n";
+	    << sfscl.u_aniso_orth(F).format() << "\n";
 
   // output data
   mtzout.open_append( ipfile, opfile );
