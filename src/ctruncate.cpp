@@ -55,7 +55,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.0", "$Date: 2008/10/30" );
+  CCP4Program prog( "ctruncate", "1.0.01", "$Date: 2009/01/21" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
   clipper::String anocols = "/*/*/[I(+),SIGI(+),I(-),SIGI(-)]";
   clipper::String ipfile = "NONE";
-  clipper::String twintest = "all";
+  clipper::String twintest = "first_principles";
 
   bool aniso = true;
   bool debug = false;
@@ -319,7 +319,6 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\n\nTRANSLATIONAL NCS:\n\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
-      printf("\n\nNCS:\n\n");
 	  printf("Translational NCS has been detected\n");
       printf("Ratio = %f\n",ratio);
       printf("Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
@@ -765,9 +764,9 @@ int main(int argc, char **argv)
 	      }
 
 	      if ( cell.beta() < Util::d2rad(93.0) ) {
-		      printf("Twinning operator h, -k, l\n");
-			  s = "h, -k, l";
-		      twinop(0,0) = 1;
+		      printf("Twinning operator -h, -k, l\n");
+			  s = "-h, -k, l";
+		      twinop(0,0) = -1;
 		      twinop(0,2) = 0;
 		      twinop(1,1) = -1;
 		      twinop(2,0) = 0;
