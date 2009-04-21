@@ -366,7 +366,7 @@ int main(int argc, char **argv)
 	  double Itotal = 0.0;
       double FFtotal = 0.0;
 	  prog.summary_beg();
-	  printf("\n\nANISOTROPY CORRECTION (using intensities:\n");
+	  printf("\n\nANISOTROPY CORRECTION (using intensities):\n");
 
 /*
       clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
@@ -437,6 +437,7 @@ int main(int argc, char **argv)
 	  invopt = maxres*v[0]/v[2];
 	  resopt = 1.0/sqrt(invopt);
 	  printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
+	  if ( v[0]/v[2] < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
 
 	  prog.summary_end();
 	  printf("\n");
@@ -1017,7 +1018,7 @@ int main(int argc, char **argv)
   float minres_scaling = 0.0625;   // 4 Angstroms
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() ) {
+	  if ( !isig[ih].missing() && Sigma.f(ih) > 0.0) {
 		  float lnS = -log(Sigma.f(ih));
 		  float res = ih.invresolsq();
 
@@ -1124,17 +1125,20 @@ int main(int argc, char **argv)
 	      float scat = sf.f(res);
 		  totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
 	  }
-	  float w1 = log( I_obs[j] / (float(N_obs[j]) * totalscat) );
-	  float w2 = log( I_obs[j] / (float(N_all[j]) * totalscat) );
 
-	  xxi.push_back(res);
-	  yyi.push_back(w1);
-	  yy2i.push_back(w2);
+	  if (I_obs[j] > 0.0) {
+	    float w1 = log( I_obs[j] / (float(N_obs[j]) * totalscat) );
+	    float w2 = log( I_obs[j] / (float(N_all[j]) * totalscat) );
 
-	  if (res > minres_scaling) {  
-		  xtr.push_back(res);
-		  ytr.push_back(w1);
-		  wtr.push_back(1.0);
+	    xxi.push_back(res);
+	    yyi.push_back(w1);
+	    yy2i.push_back(w2);
+
+	      if (res > minres_scaling) {  
+		    xtr.push_back(res);
+		    ytr.push_back(w1);
+		    wtr.push_back(1.0);
+	    }
 	  }
   }
 
@@ -1161,8 +1165,10 @@ int main(int argc, char **argv)
  
   // apply the Truncate procedure, unless amplitudes have been input
 
-  float scalef = sqrt(exp(b));
-  //float scalef = 4.66047;  //hardwired (for now) scalefactor
+  // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
+  // so only scale if B positive
+  float scalef = 1.0;
+  if ( b > 0 ) scalef = sqrt(exp(b));
   int nrej = 0; 
 
   if (!amplitudes) {
@@ -1609,7 +1615,6 @@ int main(int argc, char **argv)
 	      if (appendcol == "") labels = outcol + "[F(+),SIGF(+),F(-),SIGF(-)]";
 	      else labels = outcol + "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
 	      mtzout.export_hkl_data( fsig_ano, labels );
-		  // clipper has no column type D for DANO
 	      if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
 	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
 		  mtzout.export_hkl_data( Dano, labels );

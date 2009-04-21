@@ -4,6 +4,8 @@
 dnl package-name version-number bugs-to:
 AC_INIT(clipper_progs, 0.1.0, ccb@dl.ac.uk) 
 
+AC_CANONICAL_TARGET
+
 dnl package-name version-number, the gzip'd tar file is named
 dnl package-version.tar.gz.  
 AM_INIT_AUTOMAKE(clipper_progs, 0.1.0)
@@ -26,6 +28,8 @@ AC_ARG_ENABLE(debug,
   AC_HELP_STRING( [--enable-debug], [ enable debugging options ] ),
   [ac_cv_enable_debug=yes ],
   [ac_cv_enable_debug=no ] )
+
+AC_PROGS_OPTIONS
 
 dnl Check for FFTW.
 AM_PATH_FFTW(, AC_MSG_ERROR([locating necessary fftw]) )
