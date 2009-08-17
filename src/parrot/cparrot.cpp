@@ -15,12 +15,12 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.0", "$Date: 2008/10/30" );
+  CCP4Program prog( "cparrot", "1.0.0", "$Date: 2009/05/26" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008 Kevin Cowtan and University of York." << std::endl << std::endl;
   prog.summary_beg();
-  std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Combining constraints for electron-density modification.'" << std::endl << " Zhang K. Y. J., Cowtan K., Main P. (1997) Methods in Enzymology, 277, 53-64." << std::endl << std::endl << "$$";
+  std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Recent developments in classical density modification'" << std::endl << " Cowtan K. (2010) Acta Cryst. D66, in press." << std::endl << std::endl << "$$";
   prog.summary_end();
 
   // defaults
@@ -537,7 +537,7 @@ int main( int argc, char** argv )
     for ( MRI ix = msk_prt.first(); !ix.last(); ix.next() )
       map_wrk_gamma[ix] = map_wrk[ix] + sclrnd * ParrotUtil::random();
     ParrotUtil::density_modify( map_mod_gamma, map_wrk_gamma, map_ncs, map_nwt, msk_prt, msk_sol, map_ref, map_sim, msk_ref, dosolv, dohist );
-    double s11, s12;
+    double s11(0.0), s12(0.0);
     for ( MRI ix = msk_prt.first(); !ix.last(); ix.next() ) {
       map_wrk_gamma[ix] -= map_wrk[ix];
       map_mod_gamma[ix] -= map_mod[ix];

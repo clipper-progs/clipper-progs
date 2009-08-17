@@ -308,5 +308,9 @@ std::vector<std::pair<double,double> > ParrotUtil::solvent_probability( clipper:
 
 double ParrotUtil::random() 
 {
+#if defined(_MSC_VER) || defined (WIN32)
   return 0.001*(::rand()%2000-1000);
+#else
+  return 0.001*(::random()%2000-1000);
+#endif
 }
