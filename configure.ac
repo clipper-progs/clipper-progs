@@ -24,6 +24,10 @@ AC_HEADER_STDC
 AC_PROG_INSTALL
 #AC_PROG_RANLIB
 
+AX_PTHREAD(,
+    [ AC_MSG_ERROR([Failed to find threading library])
+    ] )
+
 AC_ARG_ENABLE(debug,
   AC_HELP_STRING( [--enable-debug], [ enable debugging options ] ),
   [ac_cv_enable_debug=yes ],
