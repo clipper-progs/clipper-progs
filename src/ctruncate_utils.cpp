@@ -12,8 +12,11 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
-#include <math.h>
 
+extern "C" {
+#include <math.h>
+#include <stdio.h>
+}
 
 int bisect(double (*f)(double), double x1, double x2, double &xmid)
 {
