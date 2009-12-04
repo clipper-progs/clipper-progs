@@ -22,6 +22,7 @@
 <b>ctruncate</b>
 <b>-hklin </b><i>filename</i>
 <b>-hklout </b><i>filename</i>
+<b>-seqin </b><i>sequence file name</i>
 <b>-colin </b><i>column label</i>
 <b>-colano </b><i>column label</i>
 <b>-colout </b><i>column label</i>
@@ -71,6 +72,11 @@ structure factors and the Wilson plot use uncorrected data.
 <p>Output mtz file name. Default 'ctruncate_out.mtz'. '-mtzout' is accepted as 
 an alternative to '-hklout'.</p>
 
+<h3><a name="seqin"></a>-seqin <i>sequence file name</i></h3>
+
+<p>Input sequence file in any common format (e.g. pir, fasta), used for scaling.
+</p> 
+
 </blockquote>
 
 
@@ -96,8 +102,8 @@ consider mean data.</p>
 <h3><a name="nres"></a>-nres <i>number of residues</i></h3>
 
 <p> Specifies the number of residues in the asymmetric unit for scaling 
-purposes. If not used, the number of residues will be estimated assuming 
-50% solvent content.</i></h3>
+purposes. If not used and an input sequence file is not provided, the number 
+of residues will be estimated assuming 50% solvent content.</i></h3>
 
 <h3><a name="noaniso"></a>-no-aniso</h3>
 
@@ -115,7 +121,7 @@ purposes. If not used, the number of residues will be estimated assuming
 <ol>
 <p><!-- KEEP startreferencelist --></p>
 
-<li>S. French S. and K. Wilson,  Acta Cryst. A34, 517-525 (1978).</li>
+<li>S. French and K. Wilson,  Acta Cryst. A34, 517-525 (1978).</li>
 
 <li>T. O. Yeates, Acta Cryst. A44, 142-144 (1980). </li>
 
