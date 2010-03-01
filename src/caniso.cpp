@@ -21,6 +21,7 @@ int main( int argc, char** argv )
   clipper::String ipcolfo = "NONE";
   clipper::String opfile = "aniso.mtz";
   clipper::String opcol = "aniso";
+  double resflt = -1.0;
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -36,6 +37,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) opfile = args[arg];
     } else if ( args[arg] == "-colout" ) {
       if ( ++arg < args.size() ) opcol = args[arg];
+    } else if ( args[arg] == "-resolution-filter" ) {
+      if ( ++arg < args.size() ) resflt = clipper::String(args[arg]).f();
     } else {
       std::cout << "Unrecognized:\t" << args[arg] << "\n";
       args.clear();
@@ -52,11 +55,12 @@ int main( int argc, char** argv )
   clipper::HKL_info hkls;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
   using clipper::data32::F_sigF;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // open file
   mtzin.open_read( ipfile );
   mtzin.import_hkl_info( hkls );
-  mtzin.import_crystal( cxtl, ipcolfo );
+  mtzin.import_crystal( cxtl, ipcolfo+".F_sigF.F" );
   clipper::HKL_data<F_sigF> fo( hkls, cxtl );
   mtzin.import_hkl_data( fo, ipcolfo );
   if ( opcol[0] != '/' ) opcol = mtzin.assigned_paths()[0].notail()+"/"+opcol;
@@ -64,8 +68,9 @@ int main( int argc, char** argv )
 
   // scale structure factors
   clipper::SFscale_aniso<float>::TYPE F = clipper::SFscale_aniso<float>::F;
-  clipper::SFscale_aniso<float> sfscl( 3.0 );
-  sfscl( fo );
+  clipper::SFscale_aniso<float>::MODE M = clipper::SFscale_aniso<float>::NORMAL;
+  clipper::SFscale_aniso<float> sfscl( 3.0, M );
+  sfscl( fo, resflt, 12 );
   std::cout << "\nAnisotropic scaling:\n"
 	    << sfscl.u_aniso_orth(F).format() << "\n";
 

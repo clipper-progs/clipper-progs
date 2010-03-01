@@ -6,8 +6,9 @@
 #include <clipper/clipper-ccp4.h>
 
 extern "C" {
-#include <stdio.h>
+  #include <stdio.h>
 }
+
 
 int main( int argc, char** argv )
 {
@@ -66,6 +67,7 @@ int main( int argc, char** argv )
   clipper::CCP4MTZfile mtzin, mtzout;
   clipper::HKL_info hkls;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   mtzin.open_read( ipfile );
   mtzin.import_hkl_info( hkls );

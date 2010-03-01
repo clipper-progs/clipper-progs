@@ -56,6 +56,7 @@ int main( int argc, char** argv )
   // make data objects
   clipper::CCP4MTZfile mtzin, mtzout;
   clipper::HKL_info hkls;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // input
   mtzin.open_read( ipfile );

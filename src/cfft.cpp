@@ -84,14 +84,15 @@ int main( int argc, char** argv )
   clipper::MTZcrystal cxtl;
   clipper::HKL_info hkls;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // open file
   mtzin.open_read( ipfile );
   clipper::Spacegroup spgr = mtzin.spacegroup();
   clipper::Cell       cell = mtzin.cell();
-  if ( ipcolf != "NONE" ) mtzin.import_crystal( cxtl, ipcolf );
-  if ( ipcola != "NONE" ) mtzin.import_crystal( cxtl, ipcola );
-  if ( ipcolm != "NONE" ) mtzin.import_crystal( cxtl, ipcolm );
+  if ( ipcolf != "NONE" ) mtzin.import_crystal( cxtl, ipcolf+".F_sigF.F" );
+  if ( ipcola != "NONE" ) mtzin.import_crystal( cxtl, ipcola+".F_sigF_ano.F+");
+  if ( ipcolm != "NONE" ) mtzin.import_crystal( cxtl, ipcolm+".F_phi.F" );
   if ( !cxtl.is_null() ) cell = cxtl;
   if ( reso.is_null() ) reso = mtzin.resolution();
   hkls.init( spgr, cell, reso, true );
@@ -108,11 +109,12 @@ int main( int argc, char** argv )
   mtzin.close_read();
 
   // make anomalous F if necessary
-  if ( ipcola != "NONE" )
+  if ( ipcola != "NONE" ) {
     if ( adiff )
       fsig.compute( fano, clipper::data32::Compute_diff_fsigf_from_fsigfano() );
     else
       fsig.compute( fano, clipper::data32::Compute_mean_fsigf_from_fsigfano() );
+  }
 
   // subtract difference F if necessary
   if ( ipcold != "NONE" ) 
@@ -135,7 +137,7 @@ int main( int argc, char** argv )
       fphi[ih].shift_phase( 0.5*clipper::Util::pi() );
 
   // apply U value
-  fphi.compute( fphi, clipper::data32::Compute_scale_u_iso_fphi( 1.0, -uvalue ) );
+  fphi.compute( fphi, clipper::data32::Compute_scale_u_iso_fphi(1.0,-uvalue) );
 
   // make grid if necessary
   if ( grid.is_null() ) grid.init( spgr, cell, reso );

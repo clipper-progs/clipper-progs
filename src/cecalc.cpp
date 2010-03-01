@@ -49,6 +49,7 @@ int main( int argc, char** argv )
   clipper::CCP4MTZfile mtzin, mtzout;
   clipper::HKL_info hkls;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // open file
   mtzin.open_read( ipfile );
@@ -82,7 +83,7 @@ int main( int argc, char** argv )
   double na, nc, sa, sc;
   na = nc = sa = sc = 0.0;
   for ( HRI ih = esig.first(); !ih.last(); ih.next() )
-    if ( !esig[ih].missing() ) 
+    if ( !esig[ih].missing() ) {
       if ( ih.hkl_class().centric() ) {
 	nc += 1.0;
 	sc += esig[ih].E()*esig[ih].E();
@@ -90,6 +91,7 @@ int main( int argc, char** argv )
 	na += 1.0;
 	sa += esig[ih].E()*esig[ih].E();
       }
+    }
   std::cout << "Number of reflections: " << clipper::Util::intr(na+nc) << "  Mean E^2: " << (sa+sc)/clipper::Util::max(na+nc,1.0) << std::endl;
   std::cout << "Number of acentrics  : " << clipper::Util::intr(na) << "  Mean E^2: " << (sa)/clipper::Util::max(na,1.0) << std::endl;
   std::cout << "Number of centrics   : " << clipper::Util::intr(nc) << "  Mean E^2: " << (sc)/clipper::Util::max(nc,1.0) << std::endl;

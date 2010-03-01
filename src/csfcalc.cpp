@@ -6,6 +6,10 @@
 #include <clipper/clipper-ccp4.h>
 #include <clipper/clipper-mmdb.h>
 
+extern "C" {
+  #include <stdio.h>
+}
+
 
 int main( int argc, char** argv )
 {
@@ -77,11 +81,12 @@ int main( int argc, char** argv )
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
   using clipper::data32::F_sigF;  using clipper::data32::F_phi;
   using clipper::data32::Phi_fom; using clipper::data32::Flag;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // open file
   mtzin.open_read( ipfile );
   mtzin.import_hkl_info( hkls );
-  mtzin.import_crystal( cxtl, ipcolfo );
+  mtzin.import_crystal( cxtl, ipcolfo+".F_sigF.F" );
   clipper::HKL_data<F_sigF> fo( hkls, cxtl );
   clipper::HKL_data<Flag> free( hkls, cxtl );
   mtzin.import_hkl_data( fo, ipcolfo );

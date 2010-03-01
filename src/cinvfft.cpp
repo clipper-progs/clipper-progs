@@ -49,6 +49,7 @@ int main( int argc, char** argv )
   clipper::MTZcrystal cxtl;
   clipper::Xmap<float> xmap;
   clipper::HKL_info hkls;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // open file
   mtzin.open_read( ipfile );

@@ -6,8 +6,9 @@
 #include <clipper/clipper-ccp4.h>
 
 extern "C" {
-#include <stdio.h>
+  #include <stdio.h>
 }
+
 
 int main( int argc, char** argv )
 {
@@ -65,7 +66,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: cphasematch\n\t-mtzin <filename>\n\t-mtzout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl-1 <colpath>\n\t-colin-phifom-1 <colpath>\n\t-colin-fc-1 <colpath>\n\t-colin-hl-2 <colpath>\n\t-colin-phifom-2 <colpath>\n\t-colin-fc-2 <colpath>\n\t-colout <colpath>\n\t-resolution-bins <number-of-bins>\n\t-no-origin-match\nInput fo and any one of fc/phifom/abcd for each of dataset 1 and 2.\nIf mtzout is given, the second dataset is shifted to match the first.\n";
+    std::cout << "Usage: cphasematch\n\t-mtzin <filename>\n\t-mtzout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl-1 <colpath>\n\t-colin-phifom-1 <colpath>\n\t-colin-fc-1 <colpath>\n\t-colin-hl-2 <colpath>\n\t-colin-phifom-2 <colpath>\n\t-colin-fc-2 <colpath>\n\t-colout <colpath>\n\t-resolution-bins <number-of-bins>\n\t-no-origin-hand\nInput fo and any one of fc/phifom/abcd for each of dataset 1 and 2.\nIf mtzout is given, the second dataset is shifted to match the first.\n";
     exit(1);
   }
 
@@ -73,6 +74,7 @@ int main( int argc, char** argv )
   clipper::CCP4MTZfile mtzin, mtzout;
   clipper::HKL_info hkls;
   clipper::HKL_info::HKL_reference_index ih;
+  mtzin.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
 
   // actual work
   mtzin.open_read( ipfile );
@@ -142,7 +144,7 @@ int main( int argc, char** argv )
   if ( omatch ) clipper::OriginMatch<float>( invert, x, fphi1, fphi2 );
   if ( invert ) std::cout << std::endl << " Change of hand  : YES" << std::endl;
   else          std::cout << std::endl << " Change of hand  : NO" << std::endl;
-  std::cout << " Change or origin: " << x.format() << std::endl
+  std::cout << " Change of origin: " << x.format() << std::endl
 	    << "  (Shift is applied to second set of phases to match first)"
 	    << std::endl << std::endl;
 
