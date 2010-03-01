@@ -57,7 +57,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.10", "$Date: 2009/11/06" );
+  CCP4Program prog( "ctruncate", "1.0.11", "$Date: 2009/12/11" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
   clipper::Resolution reso = mtzfile.resolution();
 
   // limit resolution of Patterson calculation for tNCS (default 4 A)
-  reso = clipper::Resolution( clipper::Util::max( reso.limit(), reso_Patt.limit() ) );
+  reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_Patt.limit() ) );
 
   HKL_info hkl_list;
   hkl_list.init( spgr, cell1, reso );
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
   // get Patterson spacegroup
   clipper::Spacegroup
     pspgr( clipper::Spgr_descr( spgr.generator_ops().patterson_ops() ) );
-  hklp.init( pspgr, cell1, reso, true );
+  hklp.init( pspgr, cell1, reso_Patt, true );
 
   // make patterson coeffs
   clipper::HKL_data<clipper::data32::F_phi> fphi( hklp );
@@ -298,7 +298,7 @@ int main(int argc, char **argv)
   }
 
   // make grid if necessary
-  if ( grid.is_null() ) grid.init( pspgr, cell1, reso );
+  if ( grid.is_null() ) grid.init( pspgr, cell1, reso_Patt );
 
   // make xmap
   clipper::Xmap<float> patterson( pspgr, cell1, grid );
@@ -330,12 +330,12 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\n\nTRANSLATIONAL NCS:\n\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
-	  printf("Translational NCS has been detected (with resolution limited to %5.2f A)\n", reso.limit() );
+	  printf("Translational NCS has been detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
       printf("Ratio = %f\n",ratio);
       printf("Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
   }
   else {
-	  printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso.limit() );
+	  printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
   }
   prog.summary_end();
 
@@ -543,7 +543,7 @@ int main(int argc, char **argv)
 		  double I = isig[ih].I() / ih.hkl_class().epsilon();
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 		  int cbin = int( ncbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
-		  if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (moments) illegal bin number %d\n$$\n", bin);
+		  if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
 		  //printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 		  if (!ih.hkl_class().centric()) {
 		      Na[bin]++;
@@ -558,7 +558,7 @@ int main(int argc, char **argv)
 		  }
 		  else if (Ncentric) {
 			  Nc[cbin]++;
-  		      if (cbin >= ncbins || cbin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (moments) illegal cbin number %d\n$$\n", cbin);
+  		      if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
 		      if (I > 0.0) {
 			      E1c[cbin] += sqrt(I);
 			      I1c[cbin] += I;
@@ -932,7 +932,7 @@ int main(int argc, char **argv)
 	  if ( !isig[ih].missing() ) {
 		  HKL hkl = ih.hkl();
 		  int bin = int( double(nbins) * ih.invresolsq()/ double(maxres) - 0.5  );
-		  if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (parity) illegal bin number %d\n$$\n", bin);
+		  if (bin >= nbins || bin < 0) printf("Warning: (parity) illegal bin number %d\n", bin);
 		  //if ( ih.hkl_class().centric() ) printf("centric: %d %d %d\n", hkl.h(), hkl.k(), hkl.l() );
 		  int h = hkl.h();
 		  int k = hkl.k();
@@ -1088,7 +1088,7 @@ int main(int argc, char **argv)
 		  lnS += log(totalscat);
 
 		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.5 ) - 0.5  );
-		  if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (Wilson) illegal bin number %d\n$$\n", bin);
+		  if (bin >= nbins || bin < 0) printf("Warning: (Wilson) illegal bin number %d\n", bin);
 	      if (flags[bin] != 1) {
 			  xxi.push_back(res);
 			  yyi.push_back(-lnS);
@@ -1156,7 +1156,7 @@ int main(int argc, char **argv)
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
       int bin = int( float(nbins) * ih.invresolsq() / maxres - 0.5 );
-	  if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (Wilson 2) illegal bin number %d\n$$\n", bin);
+	  if (bin >= nbins || bin < 0) printf("Warning: (Wilson 2) illegal bin number %d\n", bin);
 	  N_all[bin]++;
 	  if ( !isig[ih].missing() ) {
 		  I_obs[bin] += isig[ih].I();
@@ -1243,7 +1243,7 @@ int main(int argc, char **argv)
 			      fsig[ih].sigf() = fsig_ano[ih].sigf_mi();
 		      }
 		      else if ( !isig[ih].missing() && iwarn != 1 ) {
-			      printf("\n$TEXT:Warning: $$  $$\nWARNING: Imean exists but I(+), I(-) do not\n$$\n\n");
+			      printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
 			      iwarn = 1;
 		      }
 		      if ( ih.hkl_class().centric() ) {
@@ -1504,7 +1504,7 @@ int main(int argc, char **argv)
   }
   if (ntw > 2) {
 	  prog.summary_beg();
-	  printf("\n$TEXT:Warning: $$  $$\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n$$\n\n");
+	  printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n\n");
 	  prog.summary_end();
   }
 
@@ -1558,7 +1558,7 @@ int main(int argc, char **argv)
 	  if ( !fsig[ih].missing() ) {
 		  // bin number different in C because arrays start at zero
 		  int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-		  if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (Modis) illegal bin number %d\n$$\n", bin);
+		  if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
 		  HKL hkl = ih.hkl();
 		  float epsiln = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() ); 
 		  epsiln /= spg1->nsymop;
@@ -1617,7 +1617,7 @@ int main(int argc, char **argv)
 
   if (nzerosigma > 0) {
 	  prog.summary_beg();
-	  printf("\n$TEXT:Warning: $$  $$\nWARNING: ****  %d reflections have zero sigma ****\n$$\n\n", nzerosigma);
+	  printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
 	  prog.summary_end();
   }
 
@@ -1628,7 +1628,7 @@ int main(int argc, char **argv)
   for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
 	  // bin number different in C because arrays start at zero
 	  int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-	  //if (bin >= nbins || bin < 0) printf("$TEXT:Warning: $$  $$\nWarning: (completeness) illegal bin number %d\n$$\n", bin);
+	  //if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
 	  if ( bin < nbins && bin >= 0 ) sumov[bin] += 1.0;
 	  if ( !fsig[ih].missing() && bin < nbins && bin >= 0) summeas[bin] += 1.0;
   }
