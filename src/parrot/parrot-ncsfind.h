@@ -42,7 +42,7 @@ class NCSfind {
 
   std::vector<std::vector<std::pair<int,int> > > match_atoms( const std::vector<CoordDescr>& near1, const std::vector<CoordDescr>& near2 ) const;
 
-  double tol_ang_, tol_dst_;
+  double tol_dst_, tol_ang_;
   bool debug_;
 };
 

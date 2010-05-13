@@ -258,6 +258,24 @@ void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>&
 	mask[inx] = 0.0;
     }
   }
+
+  // now get stats for 10A sphere about map centre
+  double rad2 = clipper::Util::sqr(10.0);
+  double sn(0.0), s0(0.0), s1(0.0), s00(0.0), s11(0.0), s01(0.0);
+  for ( MRI inx = nxmap0.first(); !inx.last(); inx.next() ) {
+    const clipper::Coord_orth co = inx.coord_orth();
+    if ( (co-orth0).lengthsq() < rad2 ) {
+      const double rho0 = double( nxmap0[inx] );
+      const double rho1 = double( nxmap1[inx] );
+      sn  += 1.0;
+      s0  += rho0;
+      s1  += rho1;
+      s00 += rho0 * rho0;
+      s11 += rho1 * rho1;
+      s01 += rho0 * rho1;
+    }
+  }
+  correls = (sn*s01-s0*s1) / sqrt((sn*s00-s0*s0)*(sn*s11-s1*s1));
 }
 
 
@@ -270,7 +288,7 @@ void NCSaver::ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, co
   clipper::Coord_grid offset = xmap.coord_map( msk.coord_orth( clipper::Coord_map(0.0,0.0,0.0) ) ).coord_grid();
   clipper::NXmap<float> rho0( msk.grid(), msk.operator_orth_grid() );
   clipper::Coord_orth src( 0.0, 0.0, 0.0 ), tgt( 0.0, 0.0, 0.0 );
-  double sw;
+  double sw(0.0);
   rho0 = 0.0;
   // get source map
   MRI ix( xmap );

@@ -22,11 +22,12 @@ class NCSaver {
 
   double correlation_old() const { return correl0; }
   double correlation_new() const { return correl1; }
+  double correlation_sphere() const { return correls; }
   double mask_volume_ratio() const { return mskvol/totvol; }
   double mask_volume_total() const { return totvol; }
   const std::vector<double>& mask_volumes() const { return mskvols; }
  private:
-  double correl0, correl1, mskvol, totvol;
+  double correl0, correl1, correls, mskvol, totvol;
   std::vector<double> mskvols;
 
   /*! Target function for nxmap rotation optimisation. */

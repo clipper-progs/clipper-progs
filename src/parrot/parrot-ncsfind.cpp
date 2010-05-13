@@ -162,7 +162,6 @@ std::vector<Local_rtop> NCSfind::find_ncs_candidates( const clipper::Atom_list& 
   // find and evaluate density rotation candidates
   std::vector<std::vector<std::pair<int,int> > > matchtmp;
   std::vector<std::vector<std::pair<CoordDescr,CoordDescr> > > matches, matchescut;
-  double rmax = 0.0;
   for ( int c1 = 0; c1 < coords.size(); c1++ ) {
     for ( int c2 = c1+1 ; c2 < coords.size(); c2++ ) {
       const std::vector<CoordDescr>& near1 = environs[c1];
@@ -321,6 +320,7 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
 {
   const double dcut = 2.0;
   const int max_match = 8;
+  std::vector<std::vector<std::pair<int,int> > > result;
 
   // limit maximum number of atoms for initial match
   int nmatch  = clipper::Util::min( near1.size(), near2.size() );
@@ -368,6 +368,7 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
       }
     }
   }
+  if ( matches.size() == 0 ) return result;
 
   // find biggest atom index...
   int maxindex = 0;
@@ -427,7 +428,6 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
   std::reverse( index.begin(), index.end() );
 
   // make final list
-  std::vector<std::vector<std::pair<int,int> > > result;
   double scut = 0.2 * index[0].first + 2.4;
   for ( int i = 0; i < index.size(); i++ ) {
     if ( index[i].first < scut-0.01 ) break;

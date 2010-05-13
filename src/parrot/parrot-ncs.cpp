@@ -32,7 +32,6 @@ std::pair<double,Local_rtop> Local_rtop::symm_match( const Local_rtop& other, co
     symop_orth[i] = spgr.symop(i).rtop_orth(cell);
 
   // find scored symmetry match between two ops
-  double ang_rad = 10.0;
   Local_rtop rcbest;
   double scbest = 1.0e9;
   clipper::Coord_frac cf;

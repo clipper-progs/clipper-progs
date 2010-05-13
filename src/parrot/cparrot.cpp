@@ -4,23 +4,24 @@
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
-#include <clipper/clipper-minimol.h>
-#include <clipper/clipper-contrib.h>
 
 #include "simulate-lib.h"
 #include "parrot-lib.h"
 #include "parrot-ncsfind.h"
 #include "parrot-ncsaver.h"
+extern "C" {
+#include <stdio.h>
+}
 
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.0", "$Date: 2009/05/26" );
+  CCP4Program prog( "cparrot", "1.0.1", "$Date: 2010/04/14" );
   prog.set_termination_message( "Failed" );
 
-  std::cout << std::endl << "Copyright 2008 Kevin Cowtan and University of York." << std::endl << std::endl;
+  std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;
   prog.summary_beg();
-  std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Recent developments in classical density modification'" << std::endl << " Cowtan K. (2010) Acta Cryst. D66, in press." << std::endl << std::endl << "$$";
+  std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Recent developments in classical density modification.'" << std::endl << " Cowtan K. (2010) Acta Cryst. D66, 470-478." << std::endl << std::endl << "$$";
   prog.summary_end();
 
   // defaults
@@ -56,9 +57,9 @@ int main( int argc, char** argv )
   bool domask = false;
   bool dorice = false;
   bool doanis = false;
+  bool dodump = false;
   int nncs = 1;
   int ncycles = 3;
-  int freeflag = 0;
   int n_refln = 2000;
   int n_param = 10;
   int verbose = 0;
@@ -67,69 +68,72 @@ int main( int argc, char** argv )
   CCP4CommandInput args( argc, argv, true );
   int arg = 0;
   while ( ++arg < args.size() ) {
-    if        ( args[arg] == "-title" ) {
+    std::string key = args[arg];
+    if        ( key == "-title" ) {
       if ( ++arg < args.size() ) title = args[arg];
-    } else if ( args[arg] == "-mtzin-ref" ) {
+    } else if ( key == "-mtzin-ref" ) {
       if ( ++arg < args.size() ) ipmtz_ref = args[arg];
-    } else if ( args[arg] == "-mtzin-wrk" ) {
-      if ( ++arg < args.size() ) ipmtz_wrk = args[arg];
-    } else if ( args[arg] == "-pdbin-ref" ) {
+    } else if ( key == "-pdbin-ref" ) {
       if ( ++arg < args.size() ) ippdb_ref = args[arg];
-    } else if ( args[arg] == "-seqin-wrk" ) {
+    } else if ( key == "-mtzin"        || key == "-mtzin-wrk" ) {
+      if ( ++arg < args.size() ) ipmtz_wrk = args[arg];
+    } else if ( key == "-seqin"        || key == "-seqin-wrk" ) {
       if ( ++arg < args.size() ) ipseq_wrk = args[arg];
-    } else if ( args[arg] == "-pdbin-wrk" ) {
+    } else if ( key == "-pdbin"        || key == "-pdbin-wrk" ) {
       if ( ++arg < args.size() ) ippdb_wrk = args[arg];
-    } else if ( args[arg] == "-pdbin-wrk-ha" ) {
+    } else if ( key == "-pdbin-ha"     || key == "-pdbin-wrk-ha" ) {
       if ( ++arg < args.size() ) ippdb_wrk_ha  = args[arg];
-    } else if ( args[arg] == "-pdbin-wrk-mr" ) {
+    } else if ( key == "-pdbin-mr"     || key == "-pdbin-wrk-mr" ) {
       if ( ++arg < args.size() ) ippdb_wrk_mr  = args[arg];
-    } else if ( args[arg] == "-colin-ref-fo" ) {
+    } else if ( key == "-colin-ref-fo" ) {
       if ( ++arg < args.size() ) ipcol_ref_fo = args[arg];
-    } else if ( args[arg] == "-colin-ref-hl" ) {
+    } else if ( key == "-colin-ref-hl" ) {
       if ( ++arg < args.size() ) ipcol_ref_hl = args[arg];
-    } else if ( args[arg] == "-colin-wrk-fo" ) {
+    } else if ( key == "-colin-fo"     || key == "-colin-wrk-fo" ) {
       if ( ++arg < args.size() ) ipcol_wrk_fo = args[arg];
-    } else if ( args[arg] == "-colin-wrk-hl" ) {
+    } else if ( key == "-colin-hl"     || key == "-colin-wrk-hl" ) {
       if ( ++arg < args.size() ) ipcol_wrk_hl = args[arg];
-    } else if ( args[arg] == "-colin-wrk-phifom" ) {
+    } else if ( key == "-colin-phifom" || key == "-colin-wrk-phifom" ) {
       if ( ++arg < args.size() ) ipcol_wrk_pw = args[arg];
-    } else if ( args[arg] == "-colin-wrk-fc" ) {
+    } else if ( key == "-colin-fc"     || key == "-colin-wrk-fc" ) {
       if ( ++arg < args.size() ) ipcol_wrk_fc = args[arg];
-    } else if ( args[arg] == "-colin-wrk-free" ) {
+    } else if ( key == "-colin-free"   || key == "-colin-wrk-free" ) {
       if ( ++arg < args.size() ) ipcol_wrk_fr = args[arg];
-    } else if ( args[arg] == "-mtzout" ) {
+    } else if ( key == "-mtzout" ) {
       if ( ++arg < args.size() ) opfile = args[arg];
-    } else if ( args[arg] == "-colout" ) {
+    } else if ( key == "-colout" ) {
       if ( ++arg < args.size() ) opcol = args[arg];
-    } else if ( args[arg] == "-colout-hl" ) {
+    } else if ( key == "-colout-hl" ) {
       if ( ++arg < args.size() ) opcol_hl = args[arg];
-    } else if ( args[arg] == "-colout-fc" ) {
+    } else if ( key == "-colout-fc" ) {
       if ( ++arg < args.size() ) opcol_fc = args[arg];
-    } else if ( args[arg] == "-solvent-flatten" ) {
+    } else if ( key == "-solvent-flatten" ) {
       dosolv = true;
-    } else if ( args[arg] == "-histogram-match" ) {
+    } else if ( key == "-histogram-match" ) {
       dohist = true;
-    } else if ( args[arg] == "-ncs-average" ) {
+    } else if ( key == "-ncs-average" ) {
       doncsa = true;
-    } else if ( args[arg] == "-force-solvent-mask-calculation" ) {
+    } else if ( key == "-force-solvent-mask-calculation" ) {
       domask = true;
-    } else if ( args[arg] == "-rice-probability" ) {
+    } else if ( key == "-rice-probability" ) {
       dorice = true;
-    } else if ( args[arg] == "-resolution" ) {
+    } else if ( key == "-modify-map-and-terminate" ) {
+      dodump = true;
+    } else if ( key == "-resolution" ) {
       if ( ++arg < args.size() ) res_in = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-cycles" ) {
+    } else if ( key == "-cycles" ) {
       if ( ++arg < args.size() ) ncycles = clipper::String(args[arg]).i();
-    } else if ( args[arg] == "-anisotropy-correction" ) {
+    } else if ( key == "-anisotropy-correction" ) {
       doanis = true;
-    } else if ( args[arg] == "-solvent-content" ) {
+    } else if ( key == "-solvent-content" ) {
       if ( ++arg < args.size() ) solc   = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-solvent-mask-filter-radius" ) {
+    } else if ( key == "-solvent-mask-filter-radius" ) {
       if ( ++arg < args.size() ) solrad = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-ncs-mask-filter-radius" ) {
+    } else if ( key == "-ncs-mask-filter-radius" ) {
       if ( ++arg < args.size() ) ncs_radius = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-ncs-asu-fraction" ) {
+    } else if ( key == "-ncs-asu-fraction" ) {
       if ( ++arg < args.size() ) ncs_asufrc = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-ncs-operator" ) {
+    } else if ( key == "-ncs-operator" ) {
       if ( ++arg < args.size() ) {
 	std::vector<clipper::String> op=clipper::String(args[arg]).split(", ");
 	if ( op.size() == 9 ) {
@@ -145,9 +149,9 @@ int main( int argc, char** argv )
 	  args.clear();
 	}
       }
-    } else if ( args[arg] == "-sharpen" ) {
+    } else if ( key == "-sharpen" ) {
       if ( ++arg < args.size() ) usharp = clipper::String(args[arg]).f();
-    } else if ( args[arg] == "-verbose" ) {
+    } else if ( key == "-verbose" ) {
       if ( ++arg < args.size() ) verbose = clipper::String(args[arg]).i();
     } else {
       std::cout << "\nUnrecognized:\t" << args[arg] << std::endl;
@@ -155,7 +159,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin-wrk <filename>\t\tCOMPULSORY\n\t-seqin-wrk <filename>\n\t-pdbin-wrk <filename>\n\t-pdbin-wrk-ha <filename>\n\t-pdbin-wrk-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-wrk-fo <colpath>\t\tCOMPULSORY\n\t-colin-wrk-hl <colpath> or -colin-wrk-phifom <colpath>\tCOMPULSORY\n\t-colin-wrk-fc <colpath>\n\t-colin-wrk-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-do-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\nAn input mtz is specified, F's and HL coefficients are required.\n";
+    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbin-ha <filename>\n\t-pdbin-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-fo <colpath>\t\tCOMPULSORY\n\t-colin-hl <colpath> or -colin-phifom <colpath>\tCOMPULSORY\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\nAn input mtz is specified, F's and HL coefficients are required.\n";
     exit(1);
   }
 
@@ -175,7 +179,9 @@ int main( int argc, char** argv )
   using clipper::data32::Flag;
   clipper::Resolution resol;
   clipper::CCP4MTZfile mtzfile;
+  mtzfile.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
   std::string msg;
+  ParrotUtil util( ncycles );
   if ( opcol_hl == "NONE" ) opcol_hl = opcol;
   if ( opcol_fc == "NONE" ) opcol_fc = opcol;
   if ( !( dosolv || dohist || doncsa ) ) dosolv = dohist = doncsa = true;
@@ -304,7 +310,7 @@ int main( int argc, char** argv )
       printf("    %2i       %8.3f         %8.3f\n",
 	     n, solcs[n].second, solcs[n].first );
     std::cout << std::endl << "Solvent content from sequence: " << solest
-	      << "   (assuming " << nncs << "-fold NCS)."
+	      << "   (assuming " << nncs << " copies per asymmetric unit)."
 	      << std::endl << std::endl;
     if ( solcs.size() > 2 && solcs[nncs].first < 0.98 )
       std::cout << "$TEXT:Warning: $$ $$" << std::endl
@@ -338,7 +344,8 @@ int main( int argc, char** argv )
 
   // work map coefficients
   wrk_pw.compute( wrk_hl, Compute_phifom_from_abcd() );
-  wrk_fp.compute( wrk_f, wrk_pw, Compute_fphi_from_fsigf_phifom() );
+  if ( ipcol_wrk_fc == "NONE" )
+    wrk_fp.compute( wrk_f, wrk_pw, Compute_fphi_from_fsigf_phifom() );
 
   // get NCS stats
   map_wrk.fft_from( wrk_fp );
@@ -377,7 +384,7 @@ int main( int argc, char** argv )
       std::cout << " Target: " << newops[r].tgt().format() << std::endl;
     }
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from heavy atoms.\n$$" << std::endl;
-    nxops.insert( nxops.end(), newops.begin(), newops.end() );
+    else nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
   }
   if ( doncsa && mol_wrk_mr.size() > 0 ) {
@@ -410,14 +417,17 @@ int main( int argc, char** argv )
 	  }
 	}
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from atomic model.\n$$" << std::endl;
-    nxops.insert( nxops.end(), newops.begin(), newops.end() );
+    else nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
   }
 
+  // store initial stats
+  util.log_rfl_stats( wrk_f, wrk_fp, wrk_pw, flagwt );
+
+  // ----------------------------------------------------------------------
   // Main program loop
   for ( int cycle = 0; cycle < ncycles; cycle++ ) {
-    std::cout << std::endl << "-- Cycle: " << cycle+1
-	      << " --------------------------------" << std::endl << std::endl;
+    util.log_cycle( cycle+1 );
 
     // reference map coefficients
     clipper::HKL_data<F_sigF> sim_f( hkls_ref );
@@ -476,7 +486,7 @@ int main( int argc, char** argv )
       std::vector<double> ncsvols( nxops.size() ), ncscors( nxops.size() );
       for ( int r = 0; r < nxops.size(); r++ ) {
 	Local_rtop nxop = nxops[r];
-	Local_rtop nxo0 = nxop;
+	Local_rtop nxop_old = nxop;
 	clipper::NXmap<float> ncsmsk;
 	const double asuvol = map_wrk.cell().volume() /
 	  double( map_wrk.spacegroup().num_symops() );
@@ -485,55 +495,27 @@ int main( int argc, char** argv )
 			  map_radius, ncs_radius, ncs_level, 3 );
 	ncsaver.ncs_refine( nxop, map_wrk, ncsmsk, ncsref );
 	ncsaver.ncs_average( map_ncs, map_nwt, map_wrk, ncsmsk, nxop );
-	
-	// store refined operator
 	nxops[r] = nxop;
-	ncsvols[r] = ncsaver.mask_volumes()[0]/asuvol;
-	ncscors[r] = ncsaver.correlation_new();
 
-	// output
-	printf( "NCS operator: %3i\n", r );
-	printf( " NCS masking: mask volume as fraction of ASU: %8.2f\n",
-		ncsvols[r] );
-	if ( ncsref ) {
-	  clipper::Euler_ccp4 euler1 = nxo0.rot().euler_ccp4();
-	  clipper::Euler_ccp4 euler2 = nxop.rot().euler_ccp4();
-	  printf( " NXop refinement- correlation before: %6.3f, after: %6.3f\n", ncsaver.correlation_old(), ncsaver.correlation_new() );
-	  printf( " NXop old: %6.1f %6.1f %6.1f   %6.1f %6.1f %6.1f   %6.1f %6.1f %6.1f\n", clipper::Util::rad2d(euler1.alpha()), clipper::Util::rad2d(euler1.beta() ), clipper::Util::rad2d(euler1.gamma()), nxo0.src().x(), nxo0.src().y(), nxo0.src().z(), nxo0.tgt().x(), nxo0.tgt().y(), nxo0.tgt().z() );
-	  printf( " NXop new: %6.1f %6.1f %6.1f   %6.1f %6.1f %6.1f   %6.1f %6.1f %6.1f\n", clipper::Util::rad2d(euler2.alpha()), clipper::Util::rad2d(euler2.beta() ), clipper::Util::rad2d(euler2.gamma()), nxop.src().x(), nxop.src().y(), nxop.src().z(), nxop.tgt().x(), nxop.tgt().y(), nxop.tgt().z() );
-	}
-	std::cout << std::endl;
+	// store and log output
+	util.log_ncs_stats( nxop_old, nxop, ncsaver.mask_volumes()[0]/asuvol,
+			    ncsaver.correlation_sphere(),
+			    ncsaver.correlation_old(),
+			    ncsaver.correlation_new(), ncsref );
       }
 
       // output
       prog.summary_beg();
-      printf("NCS operator statistics:\n");
-      printf(" Operator_number  Mask_volume/ASU  Correlation\n");
-      for ( int n = 0; n < ncsvols.size(); n++ )
-        printf( "         %4i         %8.3f     %8.3f\n",
-		n+1, ncsvols[n], ncscors[n] );
+      util.log_ncs_table();
       prog.summary_end(); std::cout << std::endl;
     }
 
     // density modify
     ParrotUtil::density_modify( map_mod, map_wrk, map_ncs, map_nwt, msk_prt, msk_sol, map_ref, map_sim, msk_ref, dosolv, dohist );
 
-    // make stats
-    ParrotUtil::Map_stats stat_ref, stat_sim, stat_prt, stat_sol;
-    stat_ref = ParrotUtil::masked_stats( map_ref, msk_ref );
-    stat_sim = ParrotUtil::masked_stats( map_sim, msk_ref );
-    stat_prt = ParrotUtil::masked_stats( map_wrk, msk_prt );
-    stat_sol = ParrotUtil::masked_stats( map_wrk, msk_sol );
-    clipper::Generic_ordinal ord_ref, ord_sim, ord_prt, ord_sol, ord_mod_prt, ord_mod_sol;
-    ord_ref = ParrotUtil::masked_ordinal( map_ref, msk_ref, stat_ref );
-    ord_sim = ParrotUtil::masked_ordinal( map_sim, msk_ref, stat_ref );
-    ord_prt = ParrotUtil::masked_ordinal( map_wrk, msk_prt, stat_prt );
-    ord_sol = ParrotUtil::masked_ordinal( map_wrk, msk_sol, stat_prt );
-    ord_mod_prt = ParrotUtil::masked_ordinal( map_mod, msk_prt, stat_prt );
-    ord_mod_sol = ParrotUtil::masked_ordinal( map_mod, msk_sol, stat_prt );
-
     // gamma correct
-    double sclrnd = 0.01 * stat_prt.std_dev();
+    ParrotUtil::Map_stats statp = ParrotUtil::masked_stats( map_wrk, msk_prt );
+    double sclrnd = 0.01 * statp.std_dev();
     for ( MRI ix = msk_prt.first(); !ix.last(); ix.next() )
       map_wrk_gamma[ix] = map_wrk[ix] + sclrnd * ParrotUtil::random();
     ParrotUtil::density_modify( map_mod_gamma, map_wrk_gamma, map_ncs, map_nwt, msk_prt, msk_sol, map_ref, map_sim, msk_ref, dosolv, dohist );
@@ -546,30 +528,8 @@ int main( int argc, char** argv )
     }
     double gamma = s12 / s11;
 
-    // print stats
-    const int ntab = 20;
-    const double rng = stat_prt.max()-stat_prt.min();
-    const double scl = stat_sim.std_dev() / stat_prt.std_dev();
-    printf("$TABLE :Electron density histograms:\n");
-    printf("$GRAPHS :Protein:N:1,4,5,6::Solvent:N:1,7,8::Simulation:N:1,3,4: $$\n");
-    printf("rho_min rho_max   Simulatn P_init P_trgt P_mod  S_init S_mod $$\n");
-    printf("$$\n");
-    for ( int i = 0; i < ntab; i++ ) {
-      double r1 = stat_prt.min() + rng * double(i  ) / double(ntab);
-      double r2 = stat_prt.min() + rng * double(i+1) / double(ntab);
-      double rr1 = scl * ( r1 - stat_prt.mean() ) + stat_sim.mean();
-      double rr2 = scl * ( r2 - stat_prt.mean() ) + stat_sim.mean();
-      double rr = ord_ref.ordinal(rr2) - ord_ref.ordinal(rr1);
-      double rs = ord_sim.ordinal(rr2) - ord_sim.ordinal(rr1);
-      double wp = ord_prt.ordinal(r2) - ord_prt.ordinal(r1);
-      double ws = ord_sol.ordinal(r2) - ord_sol.ordinal(r1);
-      double mp = ord_mod_prt.ordinal(r2) - ord_mod_prt.ordinal(r1);
-      double ms = ord_mod_sol.ordinal(r2) - ord_mod_sol.ordinal(r1);
-      printf( "%7.3f %7.3f      %5.3f  %5.3f  %5.3f  %5.3f  %5.3f  %5.3f\n",
-      	r1, r2, rs, wp, rr, mp, ws, ms );
-    }
-    printf("$$\n");
-    std::cout << std::endl << std::endl;
+    // display stats
+    util.log_histogram_graph( msk_ref, msk_prt, msk_sol, map_ref, map_sim, map_wrk, map_mod );
 
     // apply gamma
     std::cout << "Gamma " << gamma << std::endl << std::endl;
@@ -578,6 +538,7 @@ int main( int argc, char** argv )
 
     // back transform
     map_mod.fft_to( wrk_fp );
+    if ( dodump ) break;
 
     // weighting
     clipper::SFweight_spline<float> sfw( n_refln, n_param );
@@ -598,25 +559,11 @@ int main( int argc, char** argv )
 	if ( wrk_fp[ih].missing() ) wrk_fp[ih] = fbest[ih];
     }
 
-    std::cout << "Log likelihood:" << sfw.log_likelihood_free() << std::endl;
-    printf("$TABLE :SigmaA statistics:\n");
-    printf("$GRAPHS :SigmaA statistics:N:1,2,3: $$\n");
-    printf(" 1/resol^2  sigmaA(s)  sigmaA(w) $$\n");
-    printf("$$\n");
-    int npweight = sfw.params_scale().size();
-    clipper::Resolution_ordinal ord;
-    ord.init( flagwt, cell_wrk, 1.0 ); ord.invert();
-    for ( int i = 0; i < npweight; i++ ) {
-      double err = sfw.params_error()[i];
-      double s = ord.ordinal( (double(i)+0.5)/double(npweight) );
-      double sigmaa1 = sfw.params_scale()[i];
-      double sigmaa2 = ( err < 1.0 ) ? sqrt(1.0-err) : 0.0;
-      printf( " %8.3f   %8.3f   %8.3f\n", s, sigmaa1, sigmaa2 );
-    }
-    printf("$$\n");
-    std::cout << std::endl << std::endl;
-
-  }  // cycle loop
+    // display stats
+    util.log_sigmaa_graph( sfw, flagwt );
+    util.log_rfl_stats( wrk_f, wrk_fp, wrk_pw, flagwt );
+  } // cycle loop
+  // ----------------------------------------------------------------------
 
   // output new results
   Compute_scale_u_aniso_fphi compute_aniso( 1.0, uaniso );
@@ -624,8 +571,12 @@ int main( int argc, char** argv )
   if ( opcol_hl[0] != '/' ) opcol_hl = oppath + opcol_hl;
   if ( opcol_fc[0] != '/' ) opcol_fc = oppath + opcol_fc;
   mtzfile.open_append( ipmtz_wrk, opfile );
-  mtzfile.export_hkl_data( mod_hl, opcol_hl );
-  mtzfile.export_hkl_data( wrk_fp, opcol_fc );
+  if ( !dodump ) {
+    mtzfile.export_hkl_data( mod_hl, opcol_hl );
+    mtzfile.export_hkl_data( wrk_fp, opcol_fc );
+  } else {
+    mtzfile.export_hkl_data( wrk_fp, opcol_fc );
+  }
   mtzfile.close_append();
 
   // output NCS operators
@@ -646,6 +597,8 @@ int main( int argc, char** argv )
     }
   }
   std::cout << std::endl;
+
+  util.log_summary_graphs();
 
   prog.set_termination_message( "Normal termination" );
 }
