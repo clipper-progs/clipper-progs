@@ -158,6 +158,7 @@ AC_SUBST(csequins_LDFLAGS)
 AC_SUBST(cmaplocal_LDFLAGS)
 AC_SUBST(cmakereference_LDFLAGS)
 AC_SUBST(cmodeltoseq_LDFLAGS)
+AC_SUBST(cnsfrommodel_LDFLAGS)
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
