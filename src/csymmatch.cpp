@@ -6,6 +6,10 @@
 #include <clipper/clipper-ccp4.h>
 #include <clipper/clipper-minimol.h>
 
+extern "C" {
+  #include <stdlib.h>
+}
+
 
 class MapFilterFn_g5 : public clipper::MapFilterFn_base {
 public: clipper::ftype operator() ( const clipper::ftype& radius ) const { return exp(-radius*radius/50.0); }

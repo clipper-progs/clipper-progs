@@ -5,6 +5,10 @@
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 
+extern "C" {
+  #include <stdlib.h>
+}
+
 
 int main( int argc, char** argv )
 {

@@ -5,6 +5,10 @@
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-ccp4.h>
 
+extern "C" {
+  #include <stdlib.h>
+}
+
 
 double sfunc( double q, int i, int j );
 double pfunc( double t, int nt );
