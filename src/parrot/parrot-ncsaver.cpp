@@ -3,6 +3,22 @@
 
 #include "parrot-ncsaver.h"
 
+#include <algorithm>
+
+
+/*
+void print_stats( const clipper::NXmap<float>& map )
+{
+  typedef clipper::NXmap<float>::Map_reference_index MRI;
+  clipper::Range<double> range;
+  for ( MRI ix = map.first(); !ix.last(); ix.next() ) range.include(map[ix]);
+  clipper::Histogram hist( range, 50 );
+  for ( MRI ix = map.first(); !ix.last(); ix.next() ) hist.accumulate(map[ix]);
+  double gridvol = map.operator_grid_orth().rot().det();
+  for ( int i = 0; i < hist.size(); i++ ) std::cout << hist.x(i) << " " << gridvol*hist.y(i) << std::endl;
+}
+*/
+
 
 void NCSaver::local_correlation( clipper::NXmap<float>& correl, const clipper::NXmap<float>& r0, const clipper::NXmap<float>& r1, const double& local_radius )
 {
@@ -91,8 +107,8 @@ void NCSaver::ncs_mask_from_correl( clipper::NXmap<float>& mask, const clipper::
   }
   bool done = false;
   while ( !done ) {
-    // forward through map
     done = true;
+    // forward through map
     clipper::Coord_grid c0;
     for ( c0.w() = 0; c0.w() < grid.nw(); c0.w()++ )
       for ( c0.v() = 0; c0.v() < grid.nv(); c0.v()++ )
@@ -112,9 +128,7 @@ void NCSaver::ncs_mask_from_correl( clipper::NXmap<float>& mask, const clipper::
 	    }
 	  }
 	}
-    if ( done ) break;
     // backward through map
-    done = true;
     for ( c0.w() = grid.nw()-1; c0.w() >= 0; c0.w()-- )
       for ( c0.v() = grid.nv()-1; c0.v() >= 0; c0.v()-- )
 	for ( c0.u() = grid.nu()-1; c0.u() >= 0; c0.u()-- ) {
@@ -133,7 +147,6 @@ void NCSaver::ncs_mask_from_correl( clipper::NXmap<float>& mask, const clipper::
 	    }
 	  }
 	}
-    if ( done ) break;
   }
 
   // extract the peak list
@@ -182,27 +195,34 @@ void NCSaver::ncs_mask_from_correl( clipper::NXmap<float>& mask, const clipper::
     mskvol = 0.0;
     totvol = 1.0;
   }
+
+  //std::cout << "NCS level: " << level << std::endl;
+  //std::cout << "Correlations: " << std::endl;
+  //print_stats( correl );
+  //std::cout << "Mask: " << std::endl;
+  //print_stats( mask );
 }
 
 
 void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>& xmap, const Local_rtop& nxop, const double& map_radius, const double& local_radius, const double& level, const int& nscl )
 {
-  typedef clipper::NXmap<float>::Map_reference_index MRI;
+  typedef clipper::Xmap<float>::Map_reference_index MRI;
+  typedef clipper::NXmap<float>::Map_reference_index NRI;
   typedef float                 TYPE;
   typedef clipper::Xmap<TYPE>   XMAP;
   typedef clipper::Interp_linear INTERP;
-  clipper::Coord_orth orth0, orth1;
   clipper::Coord_grid grid0;
   const clipper::Cell cell = xmap.cell();
+
+  mskmul = 0;
+  mskasu = mskovr = correls = 0.0;
 
   // calc coarse grid
   clipper::Grid_sampling gfine = xmap.grid_sampling();
   clipper::Grid_sampling
     gcoarse( gfine.nu()/nscl, gfine.nv()/nscl, gfine.nw()/nscl );
-  // fetch operator components
-  orth0 = nxop.src();
   // get grid offset for source coordinate
-  grid0 = orth0.coord_frac( cell ).coord_grid( gcoarse );
+  grid0 = nxop.src().coord_frac( cell ).coord_grid( gcoarse );
   // calc grid containing the desired volume
   clipper::Grid_range gr0( cell, gcoarse, map_radius );
   // and offset by the base coordinate
@@ -216,9 +236,8 @@ void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>&
   clipper::NXmap<float> nxmap1( cell, gcoarse, gr1 );
 
   // populate the unrotated and rotated nxmap
-  clipper::Xmap<float>::Map_reference_coord ix( xmap );
   clipper::Coord_frac cf;
-  for ( MRI inx = nxmap0.first(); !inx.last(); inx.next() ) {
+  for ( NRI inx = nxmap0.first(); !inx.last(); inx.next() ) {
     const clipper::Coord_orth co = inx.coord_orth();
     nxmap0[inx] = xmap.interp<INTERP>( xmap.coord_map( co ) );
     nxmap1[inx] = xmap.interp<INTERP>( xmap.coord_map( rtop * co ) );
@@ -231,9 +250,9 @@ void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>&
   // calc mask
   ncs_mask_from_correl( msktmp, correl, level );
 
-  // get limits of mask
+  // Calculate final mask extent
   clipper::Range<double> xu, xv, xw;
-  for ( MRI inx = msktmp.first(); !inx.last(); inx.next() )
+  for ( NRI inx = msktmp.first(); !inx.last(); inx.next() )
     if ( msktmp[inx] > 0.0 ) {
       const clipper::Coord_map cm = xmap.coord_map( inx.coord_orth() );
       xu.include( cm.u() );
@@ -241,30 +260,66 @@ void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>&
       xw.include( cm.w() );
     }
 
-  // get range, if any
-  if ( xu.range() > 0.0 && xv.range() >= 0.0 && xw.range() >= 0.0 ) {
-    const double d = 1.0;
-    const clipper::Coord_map cm0( xu.min()-d, xv.min()-d, xw.min()-d );
-    const clipper::Coord_map cm1( xu.max()+d, xv.max()+d, xw.max()+d );
-    const clipper::Grid_range gcrop( cm0.coord_grid(), cm1.coord_grid() );
+  if ( xu.range() <= 0.0 || xv.range() <= 0.0 || xw.range() <= 0.0 ) return;
 
-    // make final mask
-    mask.init( cell, gfine, gcrop );
-    for ( MRI inx = mask.first(); !inx.last(); inx.next() ) {
-      clipper::Coord_map cm = msktmp.coord_map( inx.coord_orth() );
-      if ( INTERP::can_interp( msktmp, cm ) )
-	mask[inx] = msktmp.interp<INTERP>( cm );
-      else
-	mask[inx] = 0.0;
-    }
+  // Build final mask on fine grid
+  const double d = 1.0;
+  const clipper::Coord_map cm0( xu.min()-d, xv.min()-d, xw.min()-d );
+  const clipper::Coord_map cm1( xu.max()+d, xv.max()+d, xw.max()+d );
+  const clipper::Grid_range gcrop( cm0.coord_grid(), cm1.coord_grid() );
+  mask.init( cell, gfine, gcrop );
+  for ( NRI inx = mask.first(); !inx.last(); inx.next() ) {
+    clipper::Coord_map cm = msktmp.coord_map( inx.coord_orth() );
+    if ( INTERP::can_interp( msktmp, cm ) )
+      mask[inx] = msktmp.interp<INTERP>( cm );
+    else
+      mask[inx] = 0.0;
   }
 
-  // now get stats for 10A sphere about map centre
+  // Mask normalisation (required for strictly correct weighting)
+  // calculate mask self-overlap in the xmap ASU
+  clipper::Xmap<int> nmap( xmap.spacegroup(), xmap.cell(), gfine );
+  nmap = 0;
+  clipper::Xmap<float>::Map_reference_coord ix( nmap );
+  clipper::Coord_grid offset = nmap.coord_map( mask.coord_orth( clipper::Coord_map(0.0,0.0,0.0) ) ).coord_grid();
+  for ( NRI inx = mask.first(); !inx.last(); inx.next() )
+    if ( mask[inx] > 0.0 ) {
+      ix.set_coord( inx.coord() + offset );
+      nmap[ix] += 1;
+    }
+  // calculate median self-overlap
+  int nmax = 0;
+  for ( MRI iy = nmap.first(); !iy.last(); iy.next() )
+    if ( nmap[iy] > nmax ) nmax = nmap[iy];
+  std::vector<int> hist( nmax+1, 0 );
+  for ( MRI iy = nmap.first(); !iy.last(); iy.next() )
+    hist[nmap[iy]] += nmap[iy];
+  int nmask(0), count(0), median(1);
+  for ( int i = 1; i < hist.size(); i++ ) nmask += hist[i];
+  for ( median = 1; median < hist.size(); median++ ) {
+    count += hist[median];
+    if ( count > nmask/2 ) break;
+  }
+  // weight mask
+  double wgt = 1.0 / double(median);
+  for ( NRI inx = mask.first(); !inx.last(); inx.next() ) mask[inx] *= wgt;
+  // store stats
+  mskmul = median;
+  double asuvol = cell.volume() / double( nmap.spacegroup().num_symops() );
+  mskasu = mskvols[0] / ( mskmul * asuvol );
+  mskovr = double( hist[mskmul] ) / double( nmask );
+
+  // Mask statistics
+  // now get stats for 10A sphere about highest correl
+  clipper::Coord_orth comax(0.0,0.0,0.0);
+  double cmax = -1.0;
+  for ( NRI inx = nxmap0.first(); !inx.last(); inx.next() )
+    if ( correl[inx] > cmax ) { cmax = correl[inx]; comax = inx.coord_orth(); }
   double rad2 = clipper::Util::sqr(10.0);
   double sn(0.0), s0(0.0), s1(0.0), s00(0.0), s11(0.0), s01(0.0);
-  for ( MRI inx = nxmap0.first(); !inx.last(); inx.next() ) {
+  for ( NRI inx = nxmap0.first(); !inx.last(); inx.next() ) {
     const clipper::Coord_orth co = inx.coord_orth();
-    if ( (co-orth0).lengthsq() < rad2 ) {
+    if ( (co-comax).lengthsq() < rad2 ) {
       const double rho0 = double( nxmap0[inx] );
       const double rho1 = double( nxmap1[inx] );
       sn  += 1.0;
@@ -275,11 +330,14 @@ void NCSaver::ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>&
       s01 += rho0 * rho1;
     }
   }
-  correls = (sn*s01-s0*s1) / sqrt((sn*s00-s0*s0)*(sn*s11-s1*s1));
+  if ( sn > 0.0 ) correls = (sn*s01-s0*s1)/sqrt((sn*s00-s0*s0)*(sn*s11-s1*s1));
+
+  //for ( int i = 1; i < hist.size(); i++ ) std::cout << "overlap: " << i << " " << hist[i] << " " << ((i==median)?'*':' ') << std::endl;
+  //std::cout << "Vol/ASU " << double( nmask * xmap.spacegroup().num_symops() ) / double( gfine.size() ) << std::endl;
 }
 
 
-void NCSaver::ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, const clipper::NXmap<float>& msk, bool refine )
+void NCSaver::ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, const clipper::NXmap<float>& msk )
 {
   if ( msk.is_null() ) return;
   typedef clipper::Xmap<float>::Map_reference_index MRI;
@@ -306,15 +364,10 @@ void NCSaver::ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, co
   tgt = nxop.rtop_orth() * src;
   Local_rtop nxop0( nxop.rot(), src, tgt );
   // make target fn class
-  if ( refine ) {
-    NCSaver::Target_fn_xmap_mask_rtop tfn( xmap, rho0, msk, 0.05, 0.5, 5 );
-    nxop = tfn.refine( nxop0 );
-    correl0 = -tfn( nxop0 );
-    correl1 = -tfn( nxop  );
-  } else {
-    NCSaver::Target_fn_xmap_mask_rtop tfn( xmap, rho0, msk, 0.05, 0.5, 7 );
-    correl1 = correl0 = -tfn( nxop0 );
-  }
+  NCSaver::Target_fn_xmap_mask_rtop tfn( xmap, rho0, msk, 0.05, 0.5, 5 );
+  nxop = tfn.refine( nxop0 );
+  correl0 = -tfn( nxop0 );
+  correl1 = -tfn( nxop  );
 }
 
 

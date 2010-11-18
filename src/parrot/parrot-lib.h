@@ -38,8 +38,9 @@ class ParrotUtil {
   // reflection data utilities
   static double effective_resolution( const clipper::HKL_data<clipper::data32::Phi_fom>& phiw );
 
-  // coordinate utilities
+  // file utilities
   static void read_model( clipper::MiniMol& mol, clipper::String file, bool verbose );
+  static void output_ncs_mask( clipper::String prefix, const clipper::NXmap<float>& msk, const clipper::Cell& cell, int cyc, int op );
 
   // mask utilities
   static void mask_expand( clipper::Xmap<float>& mskmod,
@@ -73,7 +74,7 @@ class ParrotUtil {
   // store reflection stats by cycle
   void log_rfl_stats( clipper::HKL_data<clipper::data32::F_sigF>& wrk_f, clipper::HKL_data<clipper::data32::F_phi>& wrk_fp, clipper::HKL_data<clipper::data32::Phi_fom>& wrk_pw, const clipper::HKL_data<clipper::data32::Flag>& flagwt );
   // store ncs stats by cycle
-  void log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, double correl, double correl0, double correl1, bool refine );
+  void log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, int mult, double correl, double correl0, double correl1, double rcont, double rover );
   // output ncs cycle stats
   void log_ncs_table() const;
   // output final graphs for summary

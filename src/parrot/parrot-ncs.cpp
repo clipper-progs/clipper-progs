@@ -3,6 +3,8 @@
 
 #include "parrot-ncs.h"
 
+#include <algorithm>
+
 extern "C" {
   #include <stdio.h>
 }
@@ -147,7 +149,7 @@ Local_rtop Local_rtop::proper( const clipper::Spacegroup& spgr, const clipper::C
     init = next = resultsym[k].second.src();
     for ( int r = 0; r < maxncs; r++ ) {
       next = rtop * next;
-      loopshift = clipper::Util::min( loopshift, (next-init).lengthsq() );
+      loopshift = std::min( loopshift, (next-init).lengthsq() );
     }
     resultsym[k].first = wloop*loopshift+wscrw*scrwshift+wtran*transhift;
   }

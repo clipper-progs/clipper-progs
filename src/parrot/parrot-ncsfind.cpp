@@ -2,6 +2,9 @@
 /* Copyright 2008 Kevin Cowtan & University of York all rights reserved */
 
 #include "parrot-ncsfind.h"
+
+#include <algorithm>
+
 extern "C" {
 #include <string.h>
 }
@@ -61,6 +64,15 @@ clipper::RTop_orth NCSfind::superpose( const clipper::MPolymer& mp1, const clipp
   }
   if ( nmat < nmin ) return result;
 
+  /*
+  std::cout << seq1 << std::endl;
+  for ( int i = 0; i < seq1.size(); i++ ) if ( v1[i] >= 0 ) std::cout << "|"; else std::cout << " "; 
+  std::cout << std::endl;
+  for ( int i = 0; i < seq2.size(); i++ ) if ( v2[i] >= 0 ) std::cout << "|"; else std::cout << " "; 
+  std::cout << std::endl;
+  std::cout << seq2 << std::endl;
+  */
+
   // now get the coordinates
   std::vector<clipper::Coord_orth> c1, c2;
   for ( int i1 = 0; i1 < seq1.size(); i1++ ) {
@@ -106,6 +118,7 @@ clipper::RTop_orth NCSfind::superpose( const clipper::MPolymer& mp1, const clipp
     }
     c1 = t1;
     c2 = t2;
+    //std::cout << c << " " << t1.size() << " " << sqrt(r2) << std::endl;
   }
 
   // if a close match has been found, return it
@@ -147,6 +160,8 @@ Local_rtop NCSfind::local_rtop( const clipper::MPolymer& mp1, const clipper::MPo
 */
 std::vector<Local_rtop> NCSfind::find_ncs_candidates( const clipper::Atom_list& atoms, const std::vector<clipper::String> atominfo, const clipper::Spacegroup& spgr, const clipper::Cell& cell ) const
 {
+  std::vector<Local_rtop> results;
+
   // constants
   const int nnear = 25;
 
@@ -176,6 +191,7 @@ std::vector<Local_rtop> NCSfind::find_ncs_candidates( const clipper::Atom_list& 
       }
     }
   }
+  if ( matches.size() == 0 ) return results;
 
   // sort matches by score
   std::vector<std::pair<double,int> > index(matches.size());
@@ -185,14 +201,13 @@ std::vector<Local_rtop> NCSfind::find_ncs_candidates( const clipper::Atom_list& 
   std::reverse( index.begin(), index.end() );
 
   // make trimmed list
-  double scut = 0.2 * index[0].first + 2.4;
+  double scut = 0.2 * ( index[0].first - 3.0 ) + 3.0;
   for ( int i = 0; i < index.size(); i++ ) {
     if ( index[i].first < scut-0.01 ) break;
     matchescut.push_back( matches[index[i].second] );
   }
 
   // assemble results
-  std::vector<Local_rtop> results;
   for ( int m = 0; m < matchescut.size(); m++ )
     results.push_back( local_rtop( matchescut[m] ).proper( spgr, cell ) );
 
@@ -255,7 +270,7 @@ std::vector<NCSfind::CoordDescr> NCSfind::find_environ( std::vector<CoordDescr> 
   }
   std::sort( index.begin(), index.end() );
   // make truncated list
-  allcut.resize( clipper::Util::min( nnear, int( all.size() ) ) );
+  allcut.resize( std::min( nnear, int( all.size() ) ) );
   for ( int i = 0; i < allcut.size(); i++ )
     allcut[i] = all[ index[i].second ];
   // return result
@@ -323,8 +338,8 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
   std::vector<std::vector<std::pair<int,int> > > result;
 
   // limit maximum number of atoms for initial match
-  int nmatch  = clipper::Util::min( near1.size(), near2.size() );
-  int nmax = clipper::Util::min( nmatch, max_match );
+  int nmatch  = std::min( near1.size(), near2.size() );
+  int nmax = std::min( nmatch, max_match );
 
   // first make a list of rotation candidates
   std::vector<std::pair<int,int> > match(3);
@@ -339,7 +354,8 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
       bool uniqt1 = near2[t1].index() != near2[0].index();
       double lt1 = sqrt((near2[t1].coord_orth()-
 			 near2[0].coord_orth()).lengthsq());
-      if ( uniqs1 && uniqt1 && fabs(lt1-ls1) < dcut ) {
+      bool diff1 = near1[s1].index() != near2[t1].index();
+      if ( uniqs1 && uniqt1 && diff1 && fabs(lt1-ls1) < dcut ) {
 	// loop over second source and target atom
 	for ( int s2 = 1; s2 < nmax; s2++ ) if ( s2 >  s1 ) {
 	  bool uniqs2 = near1[s2].index() != near1[0].index();
@@ -349,7 +365,8 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
 	    bool uniqt2 = near2[t2].index() != near2[0].index();
 	    double lt2 = sqrt((near2[t2].coord_orth()-
 			       near2[0].coord_orth()).lengthsq());
-	    if ( uniqs2 && uniqt2 && fabs(lt2-ls2) < dcut ) {
+	    bool diff2 = near1[s2].index() != near2[t2].index();
+	    if ( uniqs2 && uniqt2 && diff2 && fabs(lt2-ls2) < dcut ) {
 	      // check third edge of triangle
 	      bool uniqs12 = near1[s2].index() != near1[s1].index();
 	      bool uniqt12 = near2[t2].index() != near2[t1].index();
@@ -395,20 +412,21 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
       for ( int n1 = 0; n1 < near1.size(); n1++ )
 	if ( !used1[near1[n1].index()] )
 	  for ( int n2 = 0; n2 < near2.size(); n2++ )
-	    if ( !used2[near2[n2].index()] ) {
-	      double d2 = ( rtop * near1[n1].coord_orth() -
-			    near2[n2].coord_orth() ).lengthsq();
-	      if ( d2 < d2min ) {
-		newpair = std::pair<int,int>(n1,n2);
-		d2min = d2;
-	      }
+	    if ( !used2[near2[n2].index()] ) 
+	      if ( near1[n1].index() != near2[n2].index() ) {
+		double d2 = ( rtop * near1[n1].coord_orth() -
+			      near2[n2].coord_orth() ).lengthsq();
+		if ( d2 < d2min ) {
+		  newpair = std::pair<int,int>(n1,n2);
+		  d2min = d2;
+		}
 	    }
       if ( newpair.first < 0 ) break;
       // try the new match
       std::vector<std::pair<int,int> > newmatch = match;
       newmatch.push_back( newpair );
-      clipper::RTop_orth newop = match_rtop( near1, near2, match );
-      std::vector<double> diff = match_diff( near1, near2, match, newop );
+      clipper::RTop_orth newop = match_rtop( near1, near2, newmatch );
+      std::vector<double> diff = match_diff( near1, near2, newmatch, newop );
       double mdiff = 0.0;
       for ( int i = 0; i < diff.size()-1; i++ )	mdiff += diff[i];
       mdiff = mdiff / double( diff.size()-1 );
@@ -428,7 +446,7 @@ std::vector<std::vector<std::pair<int,int> > > NCSfind::match_atoms( const std::
   std::reverse( index.begin(), index.end() );
 
   // make final list
-  double scut = 0.2 * index[0].first + 2.4;
+  double scut = 0.2 * ( index[0].first - 3.0 ) + 3.0;
   for ( int i = 0; i < index.size(); i++ ) {
     if ( index[i].first < scut-0.01 ) break;
     result.push_back( matches[index[i].second] );

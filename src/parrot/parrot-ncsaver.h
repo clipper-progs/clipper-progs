@@ -11,11 +11,12 @@
 
 class NCSaver {
  public:
+  NCSaver() : correl0(-1.0), correl1(-1.0), correls(0.0), mskmul(0.0), mskasu(0.0), mskovr(0.0), mskvol(0.0), totvol(0.0) {}
   static void local_correlation( clipper::NXmap<float>& correl, const clipper::NXmap<float>& r0, const clipper::NXmap<float>& r1, const double& local_radius );
   static clipper::Map_stats ncs_stats( const clipper::Xmap<float>& xmap, const double& local_radius );
   void ncs_mask_from_correl( clipper::NXmap<float>& mask, const clipper::NXmap<float>& correl, const double& level );
   void ncs_mask( clipper::NXmap<float>& mask, const clipper::Xmap<float>& xmap, const Local_rtop& nxop, const double& map_radius, const double& local_radius, const double& level, const int& nscl );
-  void ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, const clipper::NXmap<float>& msk, bool refine );
+  void ncs_refine( Local_rtop& nxop, const clipper::Xmap<float>& xmap, const clipper::NXmap<float>& msk );
   void ncs_average( clipper::Xmap<float>& xncs, clipper::Xmap<float>& xwgt, const clipper::Xmap<float>& xmap, const clipper::NXmap<float>& src, const Local_rtop& nxop ) const;
 
   std::vector<Local_rtop> filter_ncs_candidates( std::vector<Local_rtop> rtops, const clipper::Xmap<float>& xmap, const double& local_radius, const double& level, const double& minvol, const int& nscl );
@@ -23,11 +24,14 @@ class NCSaver {
   double correlation_old() const { return correl0; }
   double correlation_new() const { return correl1; }
   double correlation_sphere() const { return correls; }
+  double mask_multiplicity() const { return mskmul; }
+  double mask_volume_asu()   const { return mskasu; }
+  double mask_overlap_ratio() const { return mskovr; }
   double mask_volume_ratio() const { return mskvol/totvol; }
   double mask_volume_total() const { return totvol; }
   const std::vector<double>& mask_volumes() const { return mskvols; }
  private:
-  double correl0, correl1, correls, mskvol, totvol;
+  double correl0, correl1, correls, mskmul, mskasu, mskovr, mskvol, totvol;
   std::vector<double> mskvols;
 
   /*! Target function for nxmap rotation optimisation. */

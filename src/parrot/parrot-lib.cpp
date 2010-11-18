@@ -3,6 +3,8 @@
 
 #include "parrot-lib.h"
 
+#include <clipper/clipper-ccp4.h>
+
 #include <fstream>
 extern "C" {
 #include <stdlib.h>
@@ -72,16 +74,27 @@ void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file, bool v
     try {
       mmdb.read_file( file );
       mmdb.import_minimol( mol );
-      std::cout << "Read PDB file: " << file << std::endl;
-      if ( verbose ) {
-	clipper::Atom_list atoms = mol.atom_list();
-	std::cout << "Number of atoms read: " << atoms.size() << std::endl;
-	for ( int i = 0; i < atoms.size(); i += atoms.size()-1 ) printf("%i6  %4s  %8.3f %8.3f %8.3f\n", i, atoms[i].element().c_str(), atoms[i].coord_orth().x(), atoms[i].coord_orth().y(), atoms[i].coord_orth().z() );
-      }
+      clipper::Atom_list atoms = mol.atom_list();
+      std::cout << "PDB file: " << file << std::endl;
+      std::cout << "  Number of atoms read: " << atoms.size() << std::endl;
+      if ( verbose ) for ( int i = 0; i < atoms.size(); i += atoms.size()-1 ) printf("%i6  %4s  %8.3f %8.3f %8.3f\n", i, atoms[i].element().c_str(), atoms[i].coord_orth().x(), atoms[i].coord_orth().y(), atoms[i].coord_orth().z() );
     } catch ( clipper::Message_fatal ) {
       std::cout << "FAILED TO READ PDB FILE: " << file << std::endl;
     }
   }
+}
+
+
+void ParrotUtil::output_ncs_mask( clipper::String prefix, const clipper::NXmap<float>& msk, const clipper::Cell& cell, int cyc, int op )
+{
+  clipper::String nums( "0123456789" );
+  int c = cyc+1; int o = op+1;
+  clipper::String name = prefix+"_cycle"+nums[c/100%10]+nums[c/10%10]+nums[c%10]+"_operator"+nums[o/100%10]+nums[o/10%10]+nums[o%10]+".map";
+  clipper::CCP4MAPfile file;
+  file.open_write( name );
+  file.set_cell( cell );
+  file.export_nxmap( msk );
+  file.close_write();
 }
 
 
@@ -200,7 +213,7 @@ void ParrotUtil::density_modify( clipper::Xmap<float>& map_mod, const clipper::X
   // now do histogram matching
   for ( MRI ix = map_tmp.first(); !ix.last(); ix.next() ) {
     const double r0 = ord_prt.ordinal( map_tmp[ix] );
-    //double x = clipper::Util::max( clipper::Util::min( r0, 0.995 ), 0.005 );
+    //double x = std::max( std::min( r0, 0.995 ), 0.005 );
     double x = 2.0 * r0 - 1.0;
     x = x / ( sqrt( 1.0 + 0.01 * x * x ) );
     x = ( x + 1.0 ) / 2.0;
@@ -374,7 +387,8 @@ void ParrotUtil::log_histogram_graph( const clipper::Xmap<float>& msk_ref, const
 
 void ParrotUtil::log_sigmaa_graph( clipper::SFweight_spline<float>& sfw, const clipper::HKL_data<clipper::data32::Flag>& flagwt ) const
 {
-  std::cout << "Log likelihood:" << sfw.log_likelihood_free() << std::endl << std::endl;
+  printf( "Log likelihood:%14.6e      Log likelihood (free):%14.6e\n\n",
+	  sfw.log_likelihood_work(), sfw.log_likelihood_free() );
   printf("$TABLE :Cycle %i SigmaA statistics:\n",cyc);
   printf("$GRAPHS :SigmaA statistics:N:1,2,3: $$\n");
   printf(" 1/resol^2  sigmaA(s)  sigmaA(w) $$\n");
@@ -432,7 +446,7 @@ void ParrotUtil::log_rfl_stats( clipper::HKL_data<clipper::data32::F_sigF>& wrk_
 }
 
 
-void ParrotUtil::log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, double correl, double correl0, double correl1, bool refine )
+void ParrotUtil::log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, int mult, double correl, double correl0, double correl1, double rcont, double rover )
 {
   // store
   ncsopinf data = { vol, correl };
@@ -440,8 +454,9 @@ void ParrotUtil::log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, 
 
   // output
   printf( "NCS operator: %3i\n", ncsdata[cyc].size() );
-  printf( " NCS masking: mask volume as fraction of ASU: %8.2f\n", vol );
-  if ( refine ) {
+  printf( " NCS masking: Mask volume as fraction of ASU: %8.2f   Multiplicity: %i\n", vol, mult );
+  printf( "              Contiguity score: %6.3f   Self-overlap score: %6.3f\n", rcont, rover );
+  if ( correl0 > -1.0 && correl1 > -1.0 ) {
     clipper::Euler_ccp4 euler1 = nxop0.rot().euler_ccp4();
     clipper::Euler_ccp4 euler2 = nxop1.rot().euler_ccp4();
     printf( " NXop refinement- correlation before: %6.3f, after: %6.3f\n", correl0, correl1 );
@@ -488,8 +503,8 @@ void ParrotUtil::log_summary_graphs() const
       for ( int r = 0; r < ncsdata[c].size(); r++ ) {
 	cormean[c] += ncsdata[c][r].ncscor;
 	volmean[c] += ncsdata[c][r].ncsvol;
-	volmin[c] = clipper::Util::min( ncsdata[c][r].ncsvol, volmin[c] );
-	volmax[c] = clipper::Util::max( ncsdata[c][r].ncsvol, volmax[c] );
+	volmin[c] = std::min( ncsdata[c][r].ncsvol, volmin[c] );
+	volmax[c] = std::max( ncsdata[c][r].ncsvol, volmax[c] );
       }
       cormean[c] /= double( ncsdata[c].size() );
       volmean[c] /= double( ncsdata[c].size() );
@@ -497,7 +512,7 @@ void ParrotUtil::log_summary_graphs() const
   }
   if ( nncs > 0 ) {
     printf("$TABLE :NCS statistics:\n");
-    printf("$GRAPHS :NCS correlation statistics, 10A sphere:N:1,2: $$\n");
+    printf("$GRAPHS :NCS correlation statistics, best 10A sphere:N:1,2: $$\n");
     printf("$GRAPHS :NCS mask volumes:N:1,3,4,5: $$\n");
     printf(" Cycle   Correlation   MaskVol(mean) MaskVol(min)  MaskVol(max)$$\n");
     printf("$$\n");

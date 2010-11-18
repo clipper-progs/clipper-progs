@@ -11,12 +11,13 @@
 #include "parrot-ncsaver.h"
 extern "C" {
 #include <stdio.h>
+#include <stdlib.h>
 }
 
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.1", "$Date: 2010/04/14" );
+  CCP4Program prog( "cparrot", "1.0.2", "$Date: 2010/08/21" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -44,6 +45,7 @@ int main( int argc, char** argv )
   clipper::String opcol = "parrot";
   clipper::String opcol_hl = "NONE";
   clipper::String opcol_fc = "NONE";
+  clipper::String opncsm = "NONE";
   double res_in = 1.0;         // Resolution limit
   double solrad = 0.0;
   double solc   = 0.0;         // solvent content
@@ -107,6 +109,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) opcol_hl = args[arg];
     } else if ( key == "-colout-fc" ) {
       if ( ++arg < args.size() ) opcol_fc = args[arg];
+    } else if ( key == "-mapout-ncs" ) {
+      if ( ++arg < args.size() ) opncsm = args[arg];
     } else if ( key == "-solvent-flatten" ) {
       dosolv = true;
     } else if ( key == "-histogram-match" ) {
@@ -159,7 +163,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbin-ha <filename>\n\t-pdbin-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-fo <colpath>\t\tCOMPULSORY\n\t-colin-hl <colpath> or -colin-phifom <colpath>\tCOMPULSORY\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\nAn input mtz is specified, F's and HL coefficients are required.\n";
+    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbin-ha <filename>\n\t-pdbin-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-fo <colpath>\t\tCOMPULSORY\n\t-colin-hl <colpath> or -colin-phifom <colpath>\tCOMPULSORY\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-mapout-ncs <filename prefix>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\nAn input mtz is specified, F's and HL coefficients are required.\n";
     exit(1);
   }
 
@@ -200,12 +204,12 @@ int main( int argc, char** argv )
 
   // Get resolution for calculation
   mtzfile.open_read( ipmtz_ref );
-  double res_ref = clipper::Util::max( mtzfile.resolution().limit(), res_in );
+  double res_ref = std::max( mtzfile.resolution().limit(), res_in );
   mtzfile.close_read();
   mtzfile.open_read( ipmtz_wrk );
-  double res_wrk = clipper::Util::max( mtzfile.resolution().limit(), res_in );
+  double res_wrk = std::max( mtzfile.resolution().limit(), res_in );
   mtzfile.close_read();
-  resol = clipper::Resolution( clipper::Util::max( res_ref, res_wrk ) );
+  resol = clipper::Resolution( std::max( res_ref, res_wrk ) );
   if ( res_ref > res_wrk ) std::cout << "\nWARNING: resolution of work structure truncated to reference:\n Ref: " << res_ref << " Wrk: " << res_wrk << std::endl;
 
   // Get reference reflection data
@@ -221,6 +225,7 @@ int main( int argc, char** argv )
   // Get work reflection data
   clipper::MTZcrystal cxtl;
   clipper::HKL_info hkls_wrk;
+  mtzfile.set_verbose( (verbose>0) ? 3 : 2 );
   mtzfile.open_read( ipmtz_wrk );
   hkls_wrk.init( mtzfile.spacegroup(), mtzfile.cell(), resol, true );
   mtzfile.import_crystal( cxtl, ipcol_wrk_fo+".F_sigF.F" );
@@ -493,15 +498,18 @@ int main( int argc, char** argv )
 	const double map_radius = pow( asuvol, 0.333 );
 	ncsaver.ncs_mask( ncsmsk, map_wrk, nxop,
 			  map_radius, ncs_radius, ncs_level, 3 );
-	ncsaver.ncs_refine( nxop, map_wrk, ncsmsk, ncsref );
+	if ( ncsref ) ncsaver.ncs_refine( nxop, map_wrk, ncsmsk );
 	ncsaver.ncs_average( map_ncs, map_nwt, map_wrk, ncsmsk, nxop );
 	nxops[r] = nxop;
 
 	// store and log output
-	util.log_ncs_stats( nxop_old, nxop, ncsaver.mask_volumes()[0]/asuvol,
-			    ncsaver.correlation_sphere(),
-			    ncsaver.correlation_old(),
-			    ncsaver.correlation_new(), ncsref );
+	util.log_ncs_stats
+	  ( nxop_old, nxop, ncsaver.mask_volume_asu(),
+	    ncsaver.mask_multiplicity(), ncsaver.correlation_sphere(),
+	    ncsaver.correlation_old(), ncsaver.correlation_new(),
+	    ncsaver.mask_volume_ratio(), ncsaver.mask_overlap_ratio() );
+	if ( opncsm != "NONE" )
+	  util.output_ncs_mask( opncsm, ncsmsk, cell_wrk, cycle, r );
       }
 
       // output
