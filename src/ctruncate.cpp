@@ -148,6 +148,10 @@ int main(int argc, char **argv)
 	}
 
   }
+  if (anomalous) {
+    clipper::CCP4MTZ_type_registry::add_group( "G_sigG_ano", "FANO" );
+    clipper::CCP4MTZ_type_registry::add_group( "J_sigJ_ano", "IANO" );
+  }
   if ( args.size() <= 1 ) {
 	  CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
   }
