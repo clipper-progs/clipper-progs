@@ -717,6 +717,7 @@ cmaplocal_LDFLAGS
 cmakereference_LDFLAGS
 cmodeltoseq_LDFLAGS
 cnsfrommodel_LDFLAGS
+csloop_LDFLAGS
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -6265,7 +6266,8 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/parrot/Makefile src/buccaneer/Makefile html/Makefile"
+
+ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/parrot/Makefile src/buccaneer/Makefile src/sloop/Makefile html/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -6894,6 +6896,7 @@ do
     "src/pirate/Makefile") CONFIG_FILES="$CONFIG_FILES src/pirate/Makefile" ;;
     "src/parrot/Makefile") CONFIG_FILES="$CONFIG_FILES src/parrot/Makefile" ;;
     "src/buccaneer/Makefile") CONFIG_FILES="$CONFIG_FILES src/buccaneer/Makefile" ;;
+    "src/sloop/Makefile") CONFIG_FILES="$CONFIG_FILES src/sloop/Makefile" ;;
     "html/Makefile") CONFIG_FILES="$CONFIG_FILES html/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -7135,11 +7138,12 @@ cmaplocal_LDFLAGS!$cmaplocal_LDFLAGS$ac_delim
 cmakereference_LDFLAGS!$cmakereference_LDFLAGS$ac_delim
 cmodeltoseq_LDFLAGS!$cmodeltoseq_LDFLAGS$ac_delim
 cnsfrommodel_LDFLAGS!$cnsfrommodel_LDFLAGS$ac_delim
+csloop_LDFLAGS!$csloop_LDFLAGS$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 43; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 44; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
