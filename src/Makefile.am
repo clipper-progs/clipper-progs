@@ -1,5 +1,5 @@
-DIST_SUBDIRS = pirate buccaneer parrot
-SUBDIRS = pirate buccaneer parrot
+DIST_SUBDIRS = pirate buccaneer parrot sloop
+SUBDIRS = pirate buccaneer parrot sloop
 
 bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch cmaplocal cncsfrommodel cmodeltoseq
 
