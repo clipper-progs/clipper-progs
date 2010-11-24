@@ -49,7 +49,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgdatadir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_csloop_OBJECTS = protein_db.$(OBJEXT)
+am_csloop_OBJECTS = csloop.$(OBJEXT)
 csloop_OBJECTS = $(am_csloop_OBJECTS)
 csloop_LDADD = $(LDADD)
 csloop_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(csloop_LDFLAGS) \
@@ -219,7 +219,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-csloop_SOURCES = protein_db.cpp        protein_db_utils.h
+csloop_SOURCES = protein_db_utils.h protein_db.h csloop.cpp
 INCLUDES = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) \
 	   -I$(includedir)
 
@@ -290,7 +290,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protein_db.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/csloop.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -501,7 +501,6 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_pkgdataDATA
 	ps ps-am tags uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-dist_pkgdataDATA
 
-protein_db.h     csloop.cpp            protein_db_utils.cpp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
