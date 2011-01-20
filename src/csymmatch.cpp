@@ -239,7 +239,9 @@ int main( int argc, char** argv )
 	      << "  Symmetry operator: "
 	      << spgr.symop(bestsym).format() << std::endl
 	      << "  Lattice shift:     "
-	      << bestoff.format() << std::endl;
+	      << bestoff.format() << std::endl
+	      << "  with normalised score:  "
+	      << bestscr/double(atoms.size()) << std::endl;
   }
 
   // write file
