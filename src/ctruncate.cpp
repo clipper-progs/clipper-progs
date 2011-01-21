@@ -57,7 +57,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.11", "$Date: 2009/12/11" );
+  CCP4Program prog( "ctruncate", "1.0.12", "$Date: 2009/12/11" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 
   // calculate Sigma (mean intensity in resolution shell) 
   // use intensities uncorrected for anisotropy
-  const int nprm = 12;
+  const int nprm = nbins;
 
   std::vector<double> params_init( nprm, 1.0 );
   clipper::BasisFn_spline basis_fo( isig, nprm );
@@ -523,8 +523,8 @@ int main(int argc, char **argv)
   if (debug) {
       FILE *ftestfile;
       ftestfile = fopen("sigma.txt","w");
-      for (int i=0; i<60; i++) {
-          double res = maxres * pow( double(i+1)/60.0, 0.666666 );
+      for (int i=0; i!=nprm; ++i) {
+          double res = maxres * pow( double(i+1)/nprm, 0.666666 );
 	      fprintf(ftestfile,"%10.6f %10.6f \n", res, basis_fo.f_s( res, Sigma.params() ));
       }
       fclose(ftestfile);
@@ -1069,7 +1069,6 @@ int main(int argc, char **argv)
   // Wilson plot
   
   std::vector<float> xi, yi, wi, xxi, yyi, yy2i; 
-  std::vector<int> flags(nbins,0);
   float totalscat; 
   float minres_scaling = 0.0625;   // 4 Angstroms
 
@@ -1079,7 +1078,7 @@ int main(int argc, char **argv)
 		  float res = ih.invresolsq();
 
 		  totalscat = 0;
-		  for (int i=0;i<4;i++) {
+		  for (int i=0;i!=5;++i) {
 			  Atom atom;
               atom.set_occupancy(1.0);
               atom.set_element(name[i]);
@@ -1090,14 +1089,7 @@ int main(int argc, char **argv)
 			  totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
 		  }
 		  lnS += log(totalscat);
-
-		  int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.5 ) - 0.5  );
-		  if (bin >= nbins || bin < 0) printf("Warning: (Wilson) illegal bin number %d\n", bin);
-	      if (flags[bin] != 1) {
-			  xxi.push_back(res);
-			  yyi.push_back(-lnS);
-		      flags[bin] = 1;
-	      }
+		  
 		  if (res > minres_scaling) {  
 			  xi.push_back(res);
 			  yi.push_back(lnS);
@@ -1131,15 +1123,27 @@ int main(int argc, char **argv)
   else {
 	  printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
   }
-
+  
   printf("$TABLE: Wilson plot:\n");
-  printf("$SCATTER");
+  printf("$GRAPHS");
   //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
   printf(": Wilson plot - estimated B factor = %5.1f :A:1,2:\n$$", a);  
   printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
 
-  for ( int i=0; i<xxi.size(); i++ ) {
-	  printf("%10.5f %10.5f\n", xxi[i], yyi[i]);
+  for ( int i=0; i!=nbins; ++i ) {
+		float res = maxres*(float(i)+0.5)/float(nbins); 
+		float totalscat = 0;
+		for (int i=0;i!=5;++i) {
+		    Atom atom;
+			atom.set_occupancy(1.0);
+			atom.set_element(name[i]);
+			atom.set_u_iso(0.0);
+			atom.set_u_aniso_orth( U_aniso_orth( U_aniso_orth::null() ) ); // need this o/w next line hangs
+			AtomShapeFn sf(atom);
+			float scat = sf.f(res);
+			totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
+		}
+	  printf("%10.5f %10.5f\n", res,log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat));
   }
 
   printf("$$\n\n");
@@ -1168,10 +1172,10 @@ int main(int argc, char **argv)
 	  }
   }
 
-  for ( int j=0; j<nbins; j++ ) {
+  for ( int j=0; j!=nbins; ++j ) {
 	  float res = maxres*(float(j)+0.5)/float(nbins);
 	  totalscat = 0;
-	  for (int i=0;i<4;i++) {
+	  for (int i=0;i!=5;++i) {
 		  Atom atom;
           atom.set_occupancy(1.0);
           atom.set_element(name[i]);
