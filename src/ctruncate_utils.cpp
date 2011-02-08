@@ -79,5 +79,183 @@ void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<f
 	return;
 }
 
+//from pointless
 
+#include "ctruncate_utils.h"
 
+#include <assert.h>
+#define ASSERT assert
+namespace ctruncate
+{
+	//--------------------------------------------------------------
+	void Rings::DefaultIceRings()
+	{
+		// Set up default ice rings: 3.90, 3.67, 3.44A
+		// clear any existing ones first
+		nrings = 0;
+		rings.clear();
+		AddRing(3.90, 0.0025);
+		AddRing(3.67, 0.0025);
+		AddRing(3.44, 0.0025);
+		AddRing(2.25, 0.01);
+		AddRing(1.92, 0.01);
+		AddRing(1.53, 0.01);
+	}
+	//--------------------------------------------------------------
+	void Rings::CheckRing(const int& Iring) const
+	{
+		ASSERT (Iring < nrings && Iring >= 0);
+	}
+	//--------------------------------------------------------------
+	// Resolution in A, width in 1/d^2 units
+	void Rings::AddRing(const double& Resolution, const double& width)
+	{
+		rings.push_back(IceRing(Resolution, width));
+		nrings++;
+	}
+	//--------------------------------------------------------------
+	// Copy rejected rings only
+	void Rings::CopyRejRings(const Rings& other)
+	{
+		rings.clear();
+		for (int i=0;i<other.nrings;i++)
+		{
+			if (other.rings[i].Reject())
+			{rings.push_back(other.rings[i]);}
+		}
+		nrings = rings.size();
+	}
+	//--------------------------------------------------------------
+	// Clear list
+	void Rings::Clear()
+	{
+		nrings = 0;
+		rings.clear();
+	}
+	//--------------------------------------------------------------
+	// If in ring, returns ring number (0,n-1), else = -1 
+	int Rings::InRing(const double& invresolsq) const
+	{
+		for (int i=0;i<rings.size();i++)
+		{
+			if (rings[i].InRing(invresolsq))
+			{return i;}
+		}
+		return -1;
+	}
+	//--------------------------------------------------------------
+	void Rings::ClearSums()
+	{
+		for (int i=0;i<rings.size();i++)
+		{
+			rings[i].ClearSums();
+		}
+	}
+	//--------------------------------------------------------------
+	void Rings::AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI,
+					   const double& invresolsq)
+	{
+		CheckRing(Iring);
+		rings[Iring].AddObs(I_sigI, invresolsq);
+	}
+	//--------------------------------------------------------------
+	void Rings::SetReject(const int& Iring)
+	{
+		CheckRing(Iring);
+		rings[Iring].SetReject();
+	}
+	//--------------------------------------------------------------
+	void Rings::SetReject(const int& Iring, const bool& Rej)
+	{
+		CheckRing(Iring);
+		rings[Iring].SetReject(Rej);
+	}
+	//--------------------------------------------------------------
+	bool Rings::Reject(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].Reject();
+	}
+	//--------------------------------------------------------------
+	double Rings::MeanI(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].MeanI();
+	}
+	//--------------------------------------------------------------
+	double Rings::MeanSigI(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].MeanSigI();
+	}
+	//--------------------------------------------------------------
+	double Rings::MeanSSqr(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].MeanSSqr();
+	}
+	//--------------------------------------------------------------
+	int Rings::N(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].N();
+	}
+	//--------------------------------------------------------------
+	//--------------------------------------------------------------
+	IceRing::IceRing(const double& Resolution, const double& width)
+	{
+		ring_invressqr = 1./(Resolution*Resolution);
+		halfwidth_invressqr = 0.5*width;
+		ClearSums();
+	}
+	//--------------------------------------------------------------
+	bool IceRing::InRing(const double& invresolsq) const
+	{
+		if (Close<double,double>(invresolsq,
+								 ring_invressqr,halfwidth_invressqr))
+		{return true;}
+		return false;
+	}
+	//--------------------------------------------------------------
+	void IceRing::ClearSums()
+	{
+		sum_I = 0.0;
+		sum_sigI = 0.0;
+		sum_sSqr = 0.0;
+		nI = 0;
+		reject = false;
+	}
+	//--------------------------------------------------------------
+	void IceRing::AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq)
+	{
+		sum_I += I_sigI.I();
+		sum_sigI += I_sigI.sigI();
+		sum_sSqr += invresolsq;
+		nI++;
+	}
+	//--------------------------------------------------------------
+	double IceRing::MeanI() const
+	{
+		if (nI > 0)
+		{return sum_I/nI;}
+		else
+		{return 0.0;}
+	}
+	//--------------------------------------------------------------
+	double IceRing::MeanSigI() const
+	{
+		if (nI > 0)
+		{return sum_sigI/nI;}
+		else
+		{return 0.0;}
+	}
+	//--------------------------------------------------------------
+	double IceRing::MeanSSqr() const
+	{
+		if (nI > 0)
+		{return sum_sSqr/nI;}
+		else
+		{return 0.0;}
+	}
+	//--------------------------------------------------------------
+}
