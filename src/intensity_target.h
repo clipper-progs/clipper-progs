@@ -1,6 +1,6 @@
 /*! \file lib/resol_targetfn.h
-    Header file for resolution function generator
-*/
+ Header file for resolution function generator
+ */
 //C Copyright (C) 2000-2006 Kevin Cowtan and University of York
 //L
 //L  This library is free software and is distributed under the terms
@@ -46,53 +46,46 @@
 #define INTENSITY_TARGET
 
 #include "clipper/clipper.h"
+#include "ctruncate_utils.h"
 
-
-using namespace clipper;
-
-
-  // following added by nds
-  template<class T> class TargetFn_meanInth : public TargetFn_base
-  {
-  public:
+// following added by nds
+template<class T> class TargetFn_meanInth : public clipper::TargetFn_base
+{
+public:
     //! constructor: takes the datalist against which to calc target, and power
-    TargetFn_meanInth( const HKL_data<T>& hkl_data_, const ftype& n );
-    //! return the value and derivatives of the target function
-    Rderiv rderiv( const HKL_info::HKL_reference_index& ih, const ftype& fh ) const;
+	TargetFn_meanInth( const clipper::HKL_data<T>& hkl_data_, const clipper::ftype& n ) : 
+	hkl_data(&hkl_data_), power(n) {}
+	//! constructor: takes the datalist against which to calc target, and power, plus rings for exclusion
+	TargetFn_meanInth( const clipper::HKL_data<T>& hkl_data_, const clipper::ftype& n, const ctruncate::Rings& rings_ ) :
+	hkl_data(&hkl_data_), power(n), rings(rings_) {}
+	//! return the value and derivatives of the target function
+	Rderiv rderiv( const clipper::HKL_info::HKL_reference_index& ih, const clipper::ftype& fh ) const;
     //! the type of the function: optionally used to improve convergence
-    FNtype type() const { return QUADRATIC; }
-  private:
-    ftype power;
-    const HKL_data<T>* hkl_data;
-  };
+	FNtype type() const { return QUADRATIC; }
+private:
+	clipper::ftype power;
+    const clipper::HKL_data<T>* hkl_data;
+	const ctruncate::Rings rings;
+};
 
 
-
-  // implementations for template functions
-
-  // following two added by nds to scale I**n
-  template<class T> TargetFn_meanInth<T>::TargetFn_meanInth( const HKL_data<T>& hkl_data_, const ftype& n )
-  {
-    power = n;
-    hkl_data = &hkl_data_;
-  }
-
-  template<class T> TargetFn_base::Rderiv TargetFn_meanInth<T>::rderiv( const HKL_info::HKL_reference_index& ih, const ftype& fh ) const
-  {
+template<class T> clipper::TargetFn_base::Rderiv 
+TargetFn_meanInth<T>::rderiv( const clipper::HKL_info::HKL_reference_index& ih, const clipper::ftype& fh ) const
+{
     // it's really this bit that does the work
-    Rderiv result;
-    const HKL_data<T>& data = *hkl_data;
-    if ( !data[ih].missing() ) {
-      ftype d = fh - pow( ftype(data[ih].I()) / ih.hkl_class().epsilon(),  // do we want sqrt / epsilon here?
-			  power );
-      result.r = d * d;
-      result.dr = 2.0 * d;
-      result.dr2 = 2.0;
+	Rderiv result;
+    const clipper::HKL_data<T>& data = *hkl_data;
+    if ( !data[ih].missing() && (rings.InRing(ih.hkl().invresolsq(data.base_cell() ) ) == -1 ) ) {
+		clipper::ftype d = fh - pow( clipper::ftype(data[ih].I()) / ih.hkl_class().epsilon(),  // do we want sqrt / epsilon here?
+						   power );
+		result.r = d * d;
+		result.dr = 2.0 * d;
+		result.dr2 = 2.0;
     } else {
-      result.r = result.dr = result.dr2 = 0.0;
+		result.r = result.dr = result.dr2 = 0.0;
     }
     return result;
-  }
+}
 
 
 #endif
