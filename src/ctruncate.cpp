@@ -27,6 +27,7 @@
 #include "alt_hkl_datatypes.h"
 
 #include "cpsf_utils.h"
+#include "ctruncate_utils.h"
 
 #include <mmdb/mmdb_tables.h>
 
@@ -57,7 +58,7 @@ extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.12", "$Date: 2009/12/11" );
+  CCP4Program prog( "ctruncate", "1.0.13", "$Date: 2011/02/07" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -82,6 +83,7 @@ int main(int argc, char **argv)
   int nbins = 60;
   int ncbins = 60;
   int nresidues = 0;
+	int nprm = 60;
 
   clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
 
@@ -508,27 +510,6 @@ int main(int argc, char **argv)
 	  if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
   }
 
-
-  // calculate Sigma (mean intensity in resolution shell) 
-  // use intensities uncorrected for anisotropy
-  const int nprm = nbins;
-
-  std::vector<double> params_init( nprm, 1.0 );
-  clipper::BasisFn_spline basis_fo( isig, nprm );
-  TargetFn_meanInth<clipper::data32::I_sigI> target_fo( isig, 1 );
-  clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_init );
-
-
-  
-  if (debug) {
-      FILE *ftestfile;
-      ftestfile = fopen("sigma.txt","w");
-      for (int i=0; i!=nprm; ++i) {
-          double res = maxres * pow( double(i+1)/nprm, 0.666666 );
-	      fprintf(ftestfile,"%10.6f %10.6f \n", res, basis_fo.f_s( res, Sigma.params() ));
-      }
-      fclose(ftestfile);
-  }
 
   // calculate moments of Z using truncate methods
 
@@ -1067,14 +1048,24 @@ int main(int argc, char **argv)
 
 
   // Wilson plot
-  
+	
+  	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
+	ctruncate::Rings icerings;
+	icerings.DefaultIceRings();
+	
+	std::vector<double> params_init( nprm, 1.0 );
+	clipper::BasisFn_linear basis_fo_wilson( isig, nprm, 2.0 );
+	TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( isig, 1);
+	clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
+	
   std::vector<float> xi, yi, wi, xxi, yyi, yy2i; 
   float totalscat; 
-  float minres_scaling = 0.0625;   // 4 Angstroms
+  const float minres_scaling = 0.0625;   // 4 Angstroms
+  const float maxres_scaling = 0.0816;    // 3.5 Angstroms
 
   for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() && Sigma.f(ih) > 0.0) {
-		  float lnS = -log(Sigma.f(ih));
+	  if ( !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+		  float lnS = -log(wilsonplot.f(ih));
 		  float res = ih.invresolsq();
 
 		  totalscat = 0;
@@ -1090,7 +1081,7 @@ int main(int argc, char **argv)
 		  }
 		  lnS += log(totalscat);
 		  
-		  if (res > minres_scaling) {  
+		  if (res > minres_scaling && ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell() ) ) == -1 ) ) {  
 			  xi.push_back(res);
 			  yi.push_back(lnS);
 			  //float weight = pow(isig[ih].sigI(),2);
@@ -1111,7 +1102,7 @@ int main(int argc, char **argv)
   float a,b,siga,sigb,a1,b1;
   b = 0.0;
 
-  if ( wi.size() > 200 && maxres > 0.0816) {               // 3.5 Angstroms
+  if ( wi.size() > 200 && maxres > maxres_scaling) {               // 3.5 Angstroms
       straight_line_fit(xi,yi,wi,nobs,a,b,siga,sigb);
 	  prog.summary_beg();
 	  printf("\nResults from Clipper style Wilson plot:\n");
@@ -1124,11 +1115,34 @@ int main(int argc, char **argv)
 	  printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
   }
   
+	// Sigma or Normalisation curve
+	// calculate Sigma (mean intensity in resolution shell) 
+	// use intensities uncorrected for anisotropy
+	
+	int nprm2 = std::floor(nprm/3.0);
+	
+	HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
+	for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+		double reso = ih.hkl().invresolsq(hklinf.cell());
+		xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
+		if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+		if ( icerings.InRing(reso) != -1 )
+			xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+	}		
+	std::vector<double> params_ice( nprm2, 1.0 );
+	clipper::BasisFn_spline basis_fo( xsig, nprm2, 2.0 );
+	TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
+	clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_ice );
+	
+	// end of Norm calc
+
+	
+	// wilson plot plus Norm curve
   printf("$TABLE: Wilson plot:\n");
   printf("$GRAPHS");
   //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2:\n$$", a);  
-  printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
+  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4:\n$$", a);  
+  printf(" 1/resol^2 ln(I/I_th) Sigma Overall-B $$\n$$\n");
 
   for ( int i=0; i!=nbins; ++i ) {
 		float res = maxres*(float(i)+0.5)/float(nbins); 
@@ -1143,15 +1157,24 @@ int main(int argc, char **argv)
 			float scat = sf.f(res);
 			totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
 		}
-	  printf("%10.5f %10.5f\n", res,log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat));
+	  printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
+			 log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat),-0.5*a*res-b);
   }
 
   printf("$$\n\n");
 
-
+	if (debug) {
+		FILE *ftestfile;
+		ftestfile = fopen("sigma.txt","w");
+		for (int i=0; i!=nprm; ++i) {
+			double res = maxres * pow( double(i+1)/nprm, 0.666666 );
+			fprintf(ftestfile,"%10.6f %10.6f %10.6f \n", res, basis_fo_wilson.f_s( res, wilsonplot.params() ),basis_fo.f_s( res, Sigma.params() ));
+		}
+		fclose(ftestfile);
+	}
 
   // Truncate style Wilson plot
-
+/*(
   std::vector<int> N_all(nbins,0);
   std::vector<int> N_obs(nbins,0);
   std::vector<float> I_obs(nbins,0.0);
@@ -1222,6 +1245,7 @@ int main(int argc, char **argv)
   }
   printf("$$\n\n");
 
+ */
  
   // apply the Truncate procedure, unless amplitudes have been input
 
