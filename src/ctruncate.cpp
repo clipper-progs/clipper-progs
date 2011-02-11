@@ -843,14 +843,14 @@ int main(int argc, char **argv)
 			              double L = 0.0;
 	                      //if ( I1 != 0.0 && I2 != 0.0 && I1/isig[ih].sigI() > 0.0 && I2/isig[hkl2].sigI() > 0.0 ) L = (I2-I1)/(I2+I1);
 	                      if ( I1 != 0.0 && I2 != 0.0 ) L = (I2-I1)/(I2+I1);
-		  HKL hkl = ih.hkl();
+				          //printf("%f\n",L);
 			              if (fabs(L) < 1){
 			                  LT += fabs(L)*weight;
 			                  LT2 += L*L*weight;
 			                  NLT += weight;
 							  for (int i=0;i<20;i++) {
 								  if ( fabs(L) < (double(i+1))/20.0 ) cdf[i]++;
-					  HKL hkl2;
+							  }
 						  }
 					  }
 				  }
@@ -934,7 +934,7 @@ int main(int argc, char **argv)
 		  Iparity[6][abs((h+k+l)%2)][bin] += I_over_sigma;
 
 		  Nparity[0][abs(h%2)][bin] ++;
-		  HKL hkl = ih.hkl();
+		  Nparity[1][abs(k%2)][bin] ++;
 		  Nparity[2][abs(l%2)][bin] ++;
 		  Nparity[3][abs((h+k)%2)][bin] ++;
 		  Nparity[4][abs((h+l)%2)][bin] ++;
@@ -1280,7 +1280,7 @@ int main(int argc, char **argv)
 		      }
 		      if ( ih.hkl_class().centric() ) {
 			      Dano[ih].d() = 0.0;
-		  HKL hkl = ih.hkl();
+			      Dano[ih].sigd() = 0.0;
 		      }
 	      }
       }
@@ -1567,7 +1567,7 @@ int main(int argc, char **argv)
   float somdir[3][60];
   float somsddir[3][60];
   int numdir[3][60];
-		  HKL hkl = ih.hkl();
+  float enumdir[3][60];
 
   for (int i=0;i<3;i++){
 	  for (int j=0;j<60;j++){
@@ -1746,7 +1746,7 @@ int main(int argc, char **argv)
 	  if (spacegroup[0] == 'H') {
 	      strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
 	  }
-		  HKL hkl = ih.hkl();
+	  CMtz::MtzPut( mtz2, outfile.c_str() );
       CMtz::MtzFree( mtz2 );
   }
   CMtz::MtzFree( mtz1 );
@@ -1791,7 +1791,7 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 			  fsig[ih].sigf() = sigF*scalef*sqwt;
 			  //fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
 		  }
-		  HKL hkl = ih.hkl();
+	  }
   }
   //fclose(checkfile);
   return(1);
@@ -1819,7 +1819,7 @@ int truncate(  HKL_data<data32::J_sigJ_ano> isig,   HKL_data<data32::J_sigJ_ano>
 		  float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
 		  if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
 		  float sqwt = sqrt(weight);
-		  HKL hkl = ih.hkl();
+
 		  I /= weight;
 		  sigma /= weight;
 
@@ -2094,11 +2094,11 @@ void tricart(Cell cell, Mat33<float>& transf)
     //sw = sin(acos(cw));   // ?? use simpler formula
 	sw = 0.0;
 	if (fabs(cw) < 1.0) sw = sqrt(1.0-cw*cw);
-		    HKL hkl = ih.hkl();
+
     transf(0,0) = cell.a_star()*s3*sw;
     transf(0,1) = 0.0;
     transf(0,2) = 0.0;
-		    HKL twin;
+    transf(1,0) = cell.a_star()*c3;
     transf(1,1) = cell.b_star();
     transf(1,2) = cell.c_star()*c1;
     transf(2,0) = cell.a_star()*s3*cw;
