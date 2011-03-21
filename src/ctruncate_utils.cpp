@@ -94,12 +94,22 @@ namespace ctruncate
 		// clear any existing ones first
 		nrings = 0;
 		rings.clear();
-		AddRing(3.90, 0.0025);
-		AddRing(3.67, 0.0025);
-		AddRing(3.44, 0.0025);
-		AddRing(2.25, 0.01);
-		AddRing(1.92, 0.01);
-		AddRing(1.53, 0.01);
+		// Revised figures from Garman and Schneider
+		// use a constant width in reciprocal space
+		// rings should get wider at higher resolution, but they
+		// probably get weaker as well 
+		const double RWIDTH = 0.005;
+		// resolution in A, full width in d* 1/A
+		AddRing(3.8996, RWIDTH);
+		AddRing(3.6697, RWIDTH);
+		AddRing(3.4398, RWIDTH);
+		AddRing(2.6699, RWIDTH);
+		AddRing(2.2499, RWIDTH);
+		AddRing(2.0800, RWIDTH);
+		AddRing(1.9499, RWIDTH);
+		AddRing(1.9200, RWIDTH);
+		AddRing(1.8900, RWIDTH);
+		AddRing(1.7250, RWIDTH);
 	}
 	//--------------------------------------------------------------
 	void Rings::CheckRing(const int& Iring) const
