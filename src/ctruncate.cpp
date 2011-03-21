@@ -1044,6 +1044,7 @@ int main(int argc, char **argv)
       numatoms[1] = int(1.35*nresidues);
       numatoms[2] = int(1.5*nresidues);
       numatoms[3] = 8*nresidues;
+	  numatoms[4] = int(0.05*nresidues);
   }
 
 
