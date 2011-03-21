@@ -287,6 +287,22 @@ int main(int argc, char **argv)
   printf("Pointgroup: %s\n\n",pointgroup);
   prog.summary_end();
 
+	if ( ipseq != "NONE" ) {
+		clipper::SEQfile seqf;
+		seqf.read_file( ipseq );
+		
+		ctruncate::Matthews cmath(true,false);
+		int nmol = cmath(cell1, spgr, seqf, resopt);
+		std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+		cmath.summary();
+	} else if (nresidues > 0) {		
+		ctruncate::Matthews cmath(true,false);
+		int nmol = cmath(cell1, spgr, nresidues, resopt);
+		std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+		cmath.summary();
+		
+	}
+	
   // check for pseudo translation (taken from cpatterson)
   // get Patterson spacegroup
   clipper::Spacegroup
@@ -1689,6 +1705,24 @@ int main(int argc, char **argv)
   }
   printf("$$\n\n");
 
+	
+	{
+		ctruncate::PattPeak patt_peak(std::sqrt(maxres));
+		
+		float opt_res = patt_peak(basis_fo, Sigma);
+		
+		float width_patt = 2.0f*patt_peak.sigma();
+		
+		float b_patt = 2.0f*clipper::Util::twopi()*clipper::Util::twopi()*std::pow(width_patt/2.0f,2.0f);
+		
+		prog.summary_beg();
+		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
+		prog.summary_end();
+		
+		
+		
+	}
+	
 
   // output data
   if (!amplitudes) {
