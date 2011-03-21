@@ -153,6 +153,8 @@ int main(int argc, char **argv)
   if (anomalous) {
     clipper::CCP4MTZ_type_registry::add_group( "G_sigG_ano", "FANO" );
     clipper::CCP4MTZ_type_registry::add_group( "J_sigJ_ano", "IANO" );
+	clipper::CCP4MTZ_type_registry::add_type( "ISym", "Y", 1.0);
+	clipper::CCP4MTZ_type_registry::add_group( "ISym", "ISYM" );
   }
   if ( args.size() <= 1 ) {
 	  CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
@@ -174,6 +176,7 @@ int main(int argc, char **argv)
   HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
   HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
   HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
+  HKL_data<data32::ISym> freidal_sym(hklinf);
 
 //  clipper::MTZcrystal cxtl;
 //  mtzfile.import_crystal( cxtl, meancol );
@@ -1277,19 +1280,23 @@ int main(int argc, char **argv)
 	      truncate( isig_ano, jsig_ano, fsig_ano, Sigma, scalef, spg1, nrej, debug );
 	      int iwarn = 0;
 	      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			  freidal_sym[ih].isym() = 0; //mimic old truncate
 			  if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
 			      fsig[ih].f() = 0.5 * ( fsig_ano[ih].f_pl() + fsig_ano[ih].f_mi() );
 			      fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_ano[ih].sigf_pl(), 2 ) + pow( fsig_ano[ih].sigf_mi(), 2 ) );
 			      Dano[ih].d() = fsig_ano[ih].f_pl() - fsig_ano[ih].f_mi();
 			      Dano[ih].sigd() = 2.0 * fsig[ih].sigf();
+				  freidal_sym[ih].isym() = 0;
 		      }
 		      else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
 			      fsig[ih].f() = fsig_ano[ih].f_pl();
 			      fsig[ih].sigf() = fsig_ano[ih].sigf_pl();
+				  freidal_sym[ih].isym() = 1;
 		      }
 		      else if ( !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
 			      fsig[ih].f() = fsig_ano[ih].f_mi();
 			      fsig[ih].sigf() = fsig_ano[ih].sigf_mi();
+				  freidal_sym[ih].isym() = 2;
 		      }
 		      else if ( !isig[ih].missing() && iwarn != 1 ) {
 			      printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
@@ -1743,6 +1750,9 @@ int main(int argc, char **argv)
 	      if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
 	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
 		  mtzout.export_hkl_data( Dano, labels );
+	      if (appendcol == "") labels = outcol + "[ISYM]";
+	      else labels = outcol + "[ISYM_" + appendcol + "]";
+		  mtzout.export_hkl_data( freidal_sym, labels );
       }
 	  if (appendcol != "") {
 		  String::size_type loc = meancol.find(",",0);

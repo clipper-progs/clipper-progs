@@ -130,20 +130,45 @@ namespace clipper
       dtype f_pl_, f_mi_, sigf_pl_, sigf_mi_ ;
     };
 
-  }
 
-
+	class ISym : private Datatype_base
+	{
+	public:
+		ISym() { bias_ = -1;}
+		explicit ISym( const int& bias ) : bias_(bias) {}
+		void set_null() { bias_ = -1; }
+		static String type() { return "ISym"; }
+		void friedel() {}
+		void shift_phase(const ftype& dphi) {}
+		bool missing() const { return (bias_ == -1); }
+		static int data_size() { return 1; }
+		static String data_names() { return "ISym"; }
+		void data_export( xtype array[] ) const
+		{ array[0] = xtype( bias_ ); }
+		void data_import( const xtype array[] )
+		{ bias_ = int(array[0]) ; }
+		// accessors
+		const int& isym() const { return bias_; }  //<! read access
+		int& isym() { return bias_; }  //<! write access
+	private:
+		int bias_; // ISYM=0 normally but for those HKLs where all data
+		//    refer to I+ or to I-  ISYM is set to 1 or 2 indicating that
+		//    FMEAN value is biased.
+	};
+	
+}
   namespace data32
   {
     typedef clipper::datatypes::J_sigJ_ano<ftype32> J_sigJ_ano;  //!< datatype
 	typedef clipper::datatypes::G_sigG_ano<ftype32> G_sigG_ano;  //!< datatype
+	typedef clipper::datatypes::ISym ISym;						 //!< datatype
   }
 
   namespace data64
   {
     typedef clipper::datatypes::J_sigJ_ano<ftype64> J_sigJ_ano;  //!< datatype
 	typedef clipper::datatypes::G_sigG_ano<ftype64> G_sigG_ano;  //!< datatype
-
+	typedef clipper::datatypes::ISym ISym;						 //!< datatype
   }
 
 
