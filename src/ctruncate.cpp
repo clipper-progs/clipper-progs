@@ -1,6 +1,6 @@
 //
 //     CTRUNCATE
-//     Copyright (C) 2006-2008 Norman Stein
+//     Copyright (C) 2006-2011 Norman Stein, Charles Ballard
 //
 //     This code is distributed under the terms and conditions of the
 //     CCP4 Program Suite Licence Agreement as a CCP4 Application.
@@ -36,16 +36,16 @@ using namespace clipper;
 
 // replacement for Wilson/Truncate
 
-int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
-int truncate(  HKL_data<data32::J_sigJ_ano> isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
+int truncate(  HKL_data<data32::I_sigI>& isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
+			   clipper::ResolutionFn& Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
+int truncate(  HKL_data<data32::J_sigJ_ano>& isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
+			   clipper::ResolutionFn& Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug);
 int truncate_acentric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug);
 int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug);
-void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb);
-void tricart(Cell cell, Mat33<float>& transf);
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug );
-void MatrixToString( Mat33<int> twinoper, String &s );
+void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector<float>& w, int n, float &a, float &b, float &siga, float &sigb);
+void tricart(Cell& cell, Mat33<float>& transf);
+void Htest( HKL_data<data32::I_sigI>& isig, Mat33<int>& twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug );
+void MatrixToString( Mat33<int>& twinoper, String &s );
 
 extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
 	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
@@ -1756,8 +1756,8 @@ int main(int argc, char **argv)
 }
 
 
-int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
+int truncate(  HKL_data<data32::I_sigI>& isig,   HKL_data<data32::I_sigI>& jsig,   HKL_data<data32::F_sigF>& fsig,
+			   clipper::ResolutionFn& Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
 {
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
   //FILE *checkfile;
@@ -1798,8 +1798,8 @@ int truncate(  HKL_data<data32::I_sigI> isig,   HKL_data<data32::I_sigI>& jsig, 
 }
 
 
-int truncate(  HKL_data<data32::J_sigJ_ano> isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
-			   clipper::ResolutionFn Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
+int truncate(  HKL_data<data32::J_sigJ_ano>& isig,   HKL_data<data32::J_sigJ_ano>& jsig,   HKL_data<data32::G_sigG_ano>& fsig,
+			   clipper::ResolutionFn& Sigma, float scalef, CSym::CCP4SPG *spg1, int& nrej, bool debug)
 
 // takes anomalous I's as input. 
 
@@ -2067,7 +2067,7 @@ int truncate_centric(float I, float sigma, float S, float& J, float& sigJ, float
   }
 }
 
-void tricart(Cell cell, Mat33<float>& transf)
+void tricart(Cell& cell, Mat33<float>& transf)
 {
 /* Calculates the matrix that transforms coordinates relative to the
    triclinic axes a1, a2 and a3 to a Cartesian set of axes. a2(cart)
@@ -2107,7 +2107,7 @@ void tricart(Cell cell, Mat33<float>& transf)
 	return;
 }
 
-void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug )
+void Htest( HKL_data<data32::I_sigI>& isig, Mat33<int>& twinop, int &itwin, int scalefac, String s, CCP4Program& prog, bool debug )
 {
 	typedef clipper::HKL_data_base::HKL_reference_index HRI;
     double HT=0.0;
@@ -2199,7 +2199,7 @@ void Htest( HKL_data<data32::I_sigI> isig, Mat33<int> twinop, int &itwin, int sc
 // convert twinning operator from a matrix to a string
 // code modified from Symop::format
 
-void MatrixToString( Mat33<int> op, String &s )
+void MatrixToString( Mat33<int>& op, String &s )
 {
   String t, hkl="hkl";
   for ( int i = 0; i < 3; i++ ) {

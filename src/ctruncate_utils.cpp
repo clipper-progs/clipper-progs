@@ -48,7 +48,7 @@ int bisect(double (*f)(double), double x1, double x2, double &xmid)
 
 
 
-void straight_line_fit(std::vector<float> x, std::vector<float> y, std::vector<float> w, int n, float &a, float &b, float &siga, float &sigb)
+void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector<float>& w, int n, float &a, float &b, float &siga, float &sigb)
 {
   // fits a straight line through a set of points (yi,xi) using least squares
 	float d;
