@@ -7,17 +7,8 @@
 //     A copy of the CCP4 licence can be obtained by writing to the
 //     CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
 //
-#include "clipper/clipper.h"
-#include "clipper/ccp4/ccp4_mtz_io.h"
 
-#include <algorithm>
-#include <iostream>
-#include <vector>
-
-extern "C" {
-#include <math.h>
-#include <stdio.h>
-}
+#include "ctruncate_utils.h"
 
 int bisect(double (*f)(double), double x1, double x2, double &xmid)
 {
@@ -80,8 +71,70 @@ void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector
 	return;
 }
 
+void tricart(clipper::Cell& cell, clipper::Mat33<float>& transf)
+{
+	/* Calculates the matrix that transforms coordinates relative to the
+	 triclinic axes a1, a2 and a3 to a Cartesian set of axes. a2(cart)
+	 runs along a2, a1(cart) lies in the plane of a1 and a2 and a3(cart)
+	 runs along a1 x a2.
+	 
+	 I.e. X || b* x c,  Y || b*,  Z || a* x b* || c
+	 This does not agree with any of the standard orthogonalisation
+	 codes, and so we cannot use library functions to get transf.
+	 
+	 Alpha, beta, gamma must be given in radians.
+	 Lit.: M.G.Rossman & D.M.Blow, Acta Cryst.(1962) Vol.15,24
+	 formula (9).
+	 */
+    float c1,c2,c3,s1,s3,cw,sw;
+	
+    c1 = cos( cell.alpha_star() );
+    c2 = cos( cell.beta_star() );
+    c3 = cos( cell.gamma_star() );
+    s1 = sin( cell.alpha_star() );
+    s3 = sin( cell.gamma_star() );
+	
+    cw = (c2-c1*c3)/(s1*s3);
+    //sw = sin(acos(cw));   // ?? use simpler formula
+	sw = 0.0;
+	if (fabs(cw) < 1.0) sw = sqrt(1.0-cw*cw);
+	
+    transf(0,0) = cell.a_star()*s3*sw;
+    transf(0,1) = 0.0;
+    transf(0,2) = 0.0;
+    transf(1,0) = cell.a_star()*c3;
+    transf(1,1) = cell.b_star();
+    transf(1,2) = cell.c_star()*c1;
+    transf(2,0) = cell.a_star()*s3*cw;
+    transf(2,1) = 0.0;
+    transf(2,2) = cell.c_star()*s1;
+	return;
+}
 
-#include "ctruncate_utils.h"
+
+
+// convert twinning operator from a matrix to a string
+// code modified from Symop::format
+
+void MatrixToString( clipper::Mat33<int>& op, clipper::String &s )
+{
+	clipper::String t, hkl="hkl";
+	for ( int i = 0; i < 3; i++ ) {
+		t = "";
+		for ( int j = 0; j < 3; j++ ) {
+			if ( op(i,j) != 0 ) {
+				t += ( op(i,j) > 0 ) ? "+" : "-";
+				if ( abs( op(i,j) ) != 12 )
+					t += clipper::String::rational( fabs( float( op(i,j) )/12.0 ), 24 );
+				t += hkl[j];
+			}
+		}
+		s += t.substr( ( t[0] == '+' ) ? 1 : 0 );
+		if ( i < 2 ) s+= ", ";
+	}
+}
+
+
 
 #include <assert.h>
 #define ASSERT assert

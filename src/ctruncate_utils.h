@@ -9,7 +9,13 @@
 #include <vector>
 #include <cmath>
 
+void tricart(clipper::Cell& cell, clipper::Mat33<float>& transf);
+void MatrixToString( clipper::Mat33<int>& twinoper, clipper::String &s );
+void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector<float>& w, int n, float &a, float &b, float &siga, float &sigb);
+
+
 namespace ctruncate {
+	
 	// Close(a,b[,tol])  true if a == b within tolerance
 	template<class T1, class T2> inline static bool
 	Close(const T1& a, const T2& b,
