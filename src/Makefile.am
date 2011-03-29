@@ -25,7 +25,7 @@ caniso_SOURCES = caniso.cpp
 
 convert2mtz_SOURCES = convert2mtz.cpp
 
-ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.f
+ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.f ctruncate_truncate.cpp ctruncate_twin.cpp ctruncate_parity.cpp ctruncate_moments.cpp ctruncate_analyse.cpp ctruncate_matthews.cpp
 
 csymmatch_SOURCES = csymmatch.cpp
 
