@@ -17,6 +17,35 @@ namespace ctruncate {
 	
 	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::ResolutionFn& Sigma);
 	
+	//--------------------------------------------------------------
+	
+	class PattPeak 
+	{
+	public:
+		PattPeak( float maxinvres, int nbins = 20, float temp = -1.0f );
+		
+		float operator() (clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn);
+		void setBins(int nbins) { _nbins = nbins; _patterson.resize(nbins); }
+		void setMaxInvRes(float maxinvres) { _maxinvres = maxinvres; }
+		void setWidth(float width) { _width = width; }
+		
+		float p000() { return _P000; }
+		float sigma() { return _sigma; }
+		float optRes();
+		
+	private:
+		void calcOriginPeak(clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn);
+		void fitOriginPeak(clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn);
+		
+		float _P000;
+		float _sigma;
+		
+		int _nbins; // number of bins
+		float _maxinvres;  // maximum 1/res to use
+		float _width;
+		std::vector<float> _patterson;
+	};
+	
 }
 
 #endif

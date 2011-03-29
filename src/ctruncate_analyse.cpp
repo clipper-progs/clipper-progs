@@ -9,6 +9,7 @@
 //
 
 #include "ctruncate_analyse.h"
+#include "ctruncate_utils.h"
 
 namespace ctruncate {
 	
@@ -93,4 +94,90 @@ namespace ctruncate {
 		}
 		return ntw;
 	}
+	
+	//--------------------------------------------------------------
+	
+	
+	
+	PattPeak::PattPeak(float maxinvres, int nbins, float temp ) : _maxinvres(maxinvres), _nbins(nbins), _patterson(nbins,0.0f)
+	{
+		float coef = 1.5f;
+		float dmax = (sqrt(1.0f/maxinvres)/3.0f)*2.0f*1.5f;
+		float btemp = ( temp > 0.0f ) ? temp : 0.0f ;
+		float dmax1 =  std::sqrt(btemp/(clipper::Util::twopi()*clipper::Util::twopi()*2.0f) )*2.0f*1.5f ;
+		_width = ( dmax1 > dmax ) ? dmax1 : dmax ;
+	}
+	
+	float PattPeak::operator()(clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn)
+	{
+		calcOriginPeak(basis_fo, resol_fn);
+		fitOriginPeak(basis_fo, resol_fn);
+		
+		return optRes();
+	}
+	
+	float PattPeak::optRes()
+	{
+		float width_res = 0.715*1.0f/_maxinvres;
+		float width_patt = 2.0f*_sigma;
+		
+		return std::sqrt((width_patt*width_patt+width_res*width_res)/2.0f);
+	}
+	
+	// calculate the patterson origin peak in 1-d using fitted data
+	
+	void PattPeak::calcOriginPeak(clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn) 
+	/* -----------------------------------------------------------
+	 
+	 <I(s)> = average intensity , dS = DETRH
+	 
+	 P(r) = 4pi * Int <I> * (sin(2pisr)/(2pisr)) * s^2 * ds
+	 
+	 -----------------------------------------------------------*/
+	{
+		float widthd = _width/float(_nbins);
+		float widthr = _maxinvres/float(_nbins);
+		
+		for (int id = 0 ; id != _nbins ; ++id ) {
+			float d = widthd*(float(id)+0.5f);
+			
+			for ( int ir=0; ir!=_nbins; ++ir ) {
+				float res = widthr*(float(ir)+0.5f); 
+				float rsq = res*res;
+				float intensity = basis_fo.f_s( rsq, resol_fn.params() );
+				float sr = clipper::Util::twopi()*res*d;
+				
+				_patterson[id] += 2.0f*intensity * std::sin(sr)*rsq*widthr/(res*d);			}
+		}
+		return;
+	}
+	
+	void PattPeak::fitOriginPeak(clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn) 
+	/* fit gaussain to OriginPeak
+	 */
+	{
+		std::vector<float> weights(_nbins,1.0f);
+		std::vector<float> x(_nbins);
+		std::vector<float> y(_nbins);
+		
+		for( int i = 0 ; i != _nbins ; ++i) {
+			float dist = (float(i)+0.5f)*_width/float(_nbins);
+			x[i] = 0.25*dist*dist;
+			y[i] = std::log(1.0f/_patterson[i]);
+		}
+		
+		float a, b, siga, sigb;
+		
+		straight_line_fit(x,y,weights,_nbins,a,b,siga,sigb);
+		
+		_P000 = std::exp(-a);
+		
+		float btemp = 0.25*b;
+		
+		_sigma = std::sqrt(1.0f/std::abs(2.0f*btemp) );
+		
+		return;	
+	}
+	
+	
 }

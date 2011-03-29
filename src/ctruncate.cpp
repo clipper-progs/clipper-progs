@@ -33,6 +33,7 @@
 #include "ctruncate_parity.h"
 #include "ctruncate_moments.h"
 #include "ctruncate_analyse.h"
+#include "ctruncate_matthews.h"
 
 #include <mmdb/mmdb_tables.h>
 
