@@ -1,11 +1,12 @@
-/*
- *  ctruncate_moments.cpp
- *  
- *
- *  Created by Charles Ballard on 28/03/2011.
- *  Copyright 2011 __MyCompanyName__. All rights reserved.
- *
- */
+//
+//     CTRUNCATE
+//     Copyright (C) 2006-2011 Norman Stein, Charles Ballard
+//
+//     This code is distributed under the terms and conditions of the
+//     CCP4 Program Suite Licence Agreement as a CCP4 Application.
+//     A copy of the CCP4 licence can be obtained by writing to the
+//     CCP4 Secretary, Daresbury Laboratory, Warrington WA4 4AD, UK.
+//
 
 #include "ctruncate_moments.h"
 
@@ -66,7 +67,7 @@ namespace ctruncate {
 			}
 		}
 		
-		printf("$TABLE: Acentric moments of E using Truncate method:\n");
+		printf("$TABLE: Acentric moments of E:\n");
 		printf("$GRAPHS");
 		printf(": 4th moment of E (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,4:\n", maxres);
 		printf(": 1st & 3rd moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,3:\n", maxres);
@@ -88,7 +89,7 @@ namespace ctruncate {
 		printf("$$\n\n");
 		
 		if (ncentric != 0) {
-			printf("$TABLE: Centric moments of E using Truncate method:\n");
+			printf("$TABLE: Centric moments of E:\n");
 			printf("$GRAPHS");
 			printf(": 4th moment of E (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,4:\n", maxres);
 			printf(": 1st & 3rd moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,3:\n", maxres);
