@@ -138,13 +138,6 @@ template<class T> bool Iscale_aniso<T>::operator() ( HKL_data<datatypes::I_sigI<
 }
 
 
-// compile templates
-
-template class Iscale_aniso<ftype32>;
-
-template class Iscale_aniso<ftype64>;
-
-
 } // namespace clipper
 
 #endif
