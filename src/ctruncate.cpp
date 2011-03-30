@@ -288,19 +288,23 @@ int main(int argc, char **argv)
   prog.summary_end();
 
 	if ( ipseq != "NONE" ) {
+		prog.summary_beg(); printf("CELL CONTENTS: %s\n\n");
+		
 		clipper::SEQfile seqf;
 		seqf.read_file( ipseq );
 		
 		ctruncate::Matthews cmath(true,false);
 		int nmol = cmath(cell1, spgr, seqf, resopt);
 		std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+		prog.summary_end();
 		cmath.summary();
 	} else if (nresidues > 0) {		
+		prog.summary_beg(); printf("CELL CONTENTS: %s\n\n");
 		ctruncate::Matthews cmath(true,false);
 		int nmol = cmath(cell1, spgr, nresidues, resopt);
 		std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+		prog.summary_end();
 		cmath.summary();
-		
 	}
 	
   // check for pseudo translation (taken from cpatterson)
@@ -391,7 +395,8 @@ int main(int argc, char **argv)
 			std::cout << i << t.format() << patterson.interp<clipper::Interp_cubic>( t ) << std::endl;
 		}*/
 
-
+  // falloff and completeness for input intensities
+	if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
 
   // anisotropy correction
 
@@ -684,7 +689,7 @@ int main(int argc, char **argv)
   if ( wi.size() > 200 && maxres > maxres_scaling) {               // 3.5 Angstroms
       straight_line_fit(xi,yi,wi,nobs,a,b,siga,sigb);
 	  prog.summary_beg();
-	  printf("\nResults from Clipper style Wilson plot:\n");
+	  printf("\nResults Wilson plot:\n");
       a *= 2.0;
       printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",a,b,siga,sigb);
       printf("scale factor on intensity = %10.4f\n\n",(exp(b)));
