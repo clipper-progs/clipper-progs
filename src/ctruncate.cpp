@@ -34,6 +34,7 @@
 #include "ctruncate_moments.h"
 #include "ctruncate_analyse.h"
 #include "ctruncate_matthews.h"
+#include "ctruncate_wilson.h"
 
 #include <mmdb/mmdb_tables.h>
 
@@ -46,7 +47,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.13", "$Date: 2011/02/07" );
+  CCP4Program prog( "ctruncate", "1.0.14", "$Date: 2011/03/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -279,7 +280,7 @@ int main(int argc, char **argv)
   prog.summary_end();
 
 	if ( ipseq != "NONE" ) {
-		prog.summary_beg(); printf("CELL CONTENTS: %s\n\n");
+		prog.summary_beg(); printf("CELL CONTENTS:\n\n");
 		
 		clipper::SEQfile seqf;
 		seqf.read_file( ipseq );
@@ -290,7 +291,7 @@ int main(int argc, char **argv)
 		prog.summary_end();
 		cmath.summary();
 	} else if (nresidues > 0) {		
-		prog.summary_beg(); printf("CELL CONTENTS: %s\n\n");
+		prog.summary_beg(); printf("CELL CONTENTS:\n\n");
 		ctruncate::Matthews cmath(true,false);
 		int nmol = cmath(cell1, spgr, nresidues, resopt);
 		std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
@@ -563,136 +564,30 @@ int main(int argc, char **argv)
 
 	ctruncate::parity(isig, maxres, nbins);
 
-  //Wilson pre
-  
-  prog.summary_beg();
-  printf("\nWILSON SCALING:\n\n");
-  int nsym = spg1->nsymop;
-  clipper::MMoleculeSequence seq;
-
-  std::string name[5] = { "C", "N", "O", "H", "S" };
-  int numatoms[5] = { 0, 0, 0, 0, 0 }; 
-
-// Use single letter residue names from mmdb - note that C appears twice
-
-//                   A   R   N   D   C   C   Q   E   G   H   I   L   K   M   F   P   S   T   W   Y   V
-  int Catoms[21] = { 3,  6,  4,  4,  3,  3,  5,  5,  2,  6,  6,  6,  6,  5,  9,  5,  3,  4, 11,  9,  5 };
-  int Hatoms[21] = { 7, 14,  8,  7,  7,  7, 10,  9,  5,  9, 13, 13, 14, 11, 11,  9,  7,  9, 12, 11, 11 };
-  int Natoms[21] = { 1,  4,  2,  1,  1,  1,  2,  1,  1,  3,  1,  1,  2,  1,  1,  1,  1,  1,  2,  1,  1 };
-  int Oatoms[21] = { 2,  2,  3,  4,  2,  2,  3,  4,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  2,  3,  2 };
-  int Satoms[21] = { 0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 };
-
-  if ( ipseq != "NONE" ) {
-    clipper::SEQfile seqf;
-    seqf.read_file( ipseq );
-    seqf.import_molecule_sequence( seq );
-	MPolymerSequence poly = seq[0];
-	String sequence = poly.sequence();
-	//std::cout << poly.sequence() << "\n";
-	for (int i=0; i<sequence.length(); i++) {
-		for (int j=0; j<21; j++) {
-			if (sequence[i] == ResidueName1[j]) {
-				numatoms[0] += Catoms[j];
-				numatoms[1] += Natoms[j];
-				numatoms[2] += Oatoms[j];
-				numatoms[3] += Hatoms[j];
-				numatoms[4] += Satoms[j];
-				break;
-			}
-		}
+	//Wilson plot
+	std::vector<float> wilson(2,0.0f);
+	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
+	clipper::MMoleculeSequence seq;
+	if ( ipseq != "NONE" ) {
+		clipper::SEQfile seqf;
+		seqf.read_file( ipseq );
+		seqf.import_molecule_sequence( seq );
+		MPolymerSequence poly = seq[0];
+		wilson = wilson_plot(isig,poly,maxres,nprm, prog);
+	} else if (nresidues > 0) {
+		wilson = wilson_plot(isig,nresidues,maxres,nprm, prog);	}
+	else {
+		wilson = wilson_plot(isig,maxres,nprm, prog);
 	}
-	printf("User supplied sequence contains %d C, %d N, %d O, %d H, %d S atoms\n", numatoms[0],numatoms[1],numatoms[2],numatoms[3],numatoms[4]);
-  }
-
-  else if (nresidues > 0) {
-	  printf("User supplied number of residues = %d\n",nresidues);
-  }
-  else {
-      nresidues = int(0.5*hklinf.cell().volume()/(nsym*157));
-      printf("Estimated number of residues = %d\n",nresidues);
-  }
-  prog.summary_end();
-
-  if ( ipseq == "NONE" ) {
-      numatoms[0] = 5*nresidues;
-      numatoms[1] = int(1.35*nresidues);
-      numatoms[2] = int(1.5*nresidues);
-      numatoms[3] = 8*nresidues;
-	  numatoms[4] = int(0.05*nresidues);
-  }
-
-
-  // Wilson plot
 	
-  	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
-	ctruncate::Rings icerings;
-	icerings.DefaultIceRings();
 	
-	std::vector<double> params_init( nprm, 1.0 );
-	clipper::BasisFn_linear basis_fo_wilson( isig, nprm, 2.0 );
-	TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( isig, 1);
-	clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
-	
-  std::vector<float> xi, yi, wi, xxi, yyi, yy2i; 
-  float totalscat; 
-  const float minres_scaling = 0.0625;   // 4 Angstroms
-  const float maxres_scaling = 0.0816;    // 3.5 Angstroms
-
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  if ( !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
-		  float lnS = -log(wilsonplot.f(ih));
-		  float res = ih.invresolsq();
-
-		  totalscat = 0;
-		  for (int i=0;i!=5;++i) {
-			  Atom atom;
-              atom.set_occupancy(1.0);
-              atom.set_element(name[i]);
-              atom.set_u_iso(0.0);
-              atom.set_u_aniso_orth( U_aniso_orth( U_aniso_orth::null() ) ); // need this o/w next line hangs
-              AtomShapeFn sf(atom);
-			  float scat = sf.f(res);
-			  totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
-		  }
-		  lnS += log(totalscat);
-		  
-		  if (res > minres_scaling && ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell() ) ) == -1 ) ) {  
-			  xi.push_back(res);
-			  yi.push_back(lnS);
-			  //float weight = pow(isig[ih].sigI(),2);
-			  float weight = isig[ih].sigI();
-			  //if (res > 0.1) printf("%f\n",weight);
-			  if (weight > 0.0) {
-				  wi.push_back(1.0/weight);
-			  }
-			  else {
-			      wi.push_back(0.0);
-			  }
-		  }
-	  }
-  }
-
-  int nobs = xi.size();
-  //printf("%d %d %d\n", xi.size(), yi.size(), wi.size());
-  float a,b,siga,sigb,a1,b1;
-  b = 0.0;
-
-  if ( wi.size() > 200 && maxres > maxres_scaling) {               // 3.5 Angstroms
-      straight_line_fit(xi,yi,wi,nobs,a,b,siga,sigb);
-	  prog.summary_beg();
-	  printf("\nResults Wilson plot:\n");
-      a *= 2.0;
-      printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",a,b,siga,sigb);
-      printf("scale factor on intensity = %10.4f\n\n",(exp(b)));
-	  prog.summary_end();
-  }
-  else {
-	  printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
-  }
-  
+  //Wilson pre
+	  
 	// Sigma or Normalisation curve
 	// calculate Sigma (mean intensity in resolution shell) 
 	// use intensities uncorrected for anisotropy
+	ctruncate::Rings icerings;
+	icerings.DefaultIceRings();
 	
 	int nprm2 = std::floor(nprm/3.0);
 	
@@ -710,124 +605,14 @@ int main(int argc, char **argv)
 	clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_ice );
 	
 	// end of Norm calc
-
-	
-	// wilson plot plus Norm curve
-  printf("$TABLE: Wilson plot:\n");
-  printf("$GRAPHS");
-  //printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4:\n$$", a);  
-  printf(" 1/resol^2 ln(I/I_th) Sigma Overall-B $$\n$$\n");
-
-  for ( int i=0; i!=nbins; ++i ) {
-		float res = maxres*(float(i)+0.5)/float(nbins); 
-		float totalscat = 0;
-		for (int i=0;i!=5;++i) {
-		    Atom atom;
-			atom.set_occupancy(1.0);
-			atom.set_element(name[i]);
-			atom.set_u_iso(0.0);
-			atom.set_u_aniso_orth( U_aniso_orth( U_aniso_orth::null() ) ); // need this o/w next line hangs
-			AtomShapeFn sf(atom);
-			float scat = sf.f(res);
-			totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
-		}
-	  printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-			 log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat),-0.5*a*res-b);
-  }
-
-  printf("$$\n\n");
-
-	if (debug) {
-		FILE *ftestfile;
-		ftestfile = fopen("sigma.txt","w");
-		for (int i=0; i!=nprm; ++i) {
-			double res = maxres * pow( double(i+1)/nprm, 0.666666 );
-			fprintf(ftestfile,"%10.6f %10.6f %10.6f \n", res, basis_fo_wilson.f_s( res, wilsonplot.params() ),basis_fo.f_s( res, Sigma.params() ));
-		}
-		fclose(ftestfile);
-	}
-
-  // Truncate style Wilson plot
-/*(
-  std::vector<int> N_all(nbins,0);
-  std::vector<int> N_obs(nbins,0);
-  std::vector<float> I_obs(nbins,0.0);
-
-  std::vector<float> xtr, ytr, wtr; 
-
-  xxi.clear();
-  yyi.clear();
-
-
-  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-      int bin = int( float(nbins) * ih.invresolsq() / maxres - 0.5 );
-	  if (bin >= nbins || bin < 0) printf("Warning: (Wilson 2) illegal bin number %d\n", bin);
-	  N_all[bin]++;
-	  if ( !isig[ih].missing() ) {
-		  I_obs[bin] += isig[ih].I();
-		  N_obs[bin]++;
-	  }
-  }
-
-  for ( int j=0; j!=nbins; ++j ) {
-	  float res = maxres*(float(j)+0.5)/float(nbins);
-	  totalscat = 0;
-	  for (int i=0;i!=5;++i) {
-		  Atom atom;
-          atom.set_occupancy(1.0);
-          atom.set_element(name[i]);
-          atom.set_u_iso(0.0);
-		  atom.set_u_aniso_orth( U_aniso_orth( U_aniso_orth::null() ) ); // need this o/w next line hangs
-          AtomShapeFn sf(atom);
-	      float scat = sf.f(res);
-		  totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
-	  }
-
-	  if (I_obs[j] > 0.0) {
-	    float w1 = log( I_obs[j] / (float(N_obs[j]) * totalscat) );
-	    float w2 = log( I_obs[j] / (float(N_all[j]) * totalscat) );
-
-	    xxi.push_back(res);
-	    yyi.push_back(w1);
-	    yy2i.push_back(w2);
-
-	      if (res > minres_scaling) {  
-		    xtr.push_back(res);
-		    ytr.push_back(w1);
-		    wtr.push_back(1.0);
-	    }
-	  }
-  }
-
-  nobs = xtr.size();
-  if ( wi.size() > 200 && maxres > 0.0816) {
-      straight_line_fit(xtr,ytr,wtr,nobs,a1,b1,siga,sigb);
-	  prog.summary_beg();
-      printf("\nresults from fitting Truncate style Wilson plot\n");
-      printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",-2.0*a1,-b1,siga,sigb);
-      printf("scale factor on intensity = %10.4f\n\n", exp(-b1));
-	  prog.summary_end();
-  }
-
-  printf("$TABLE: Truncate style Wilson plot:\n");
-  printf("$GRAPHS");
-  printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3:\n$$", -2.0*a1);  
-  //printf(": Wilson plot:0|0.1111x-8|-5.5:1,2,3:\n$$");  // limits hardwired
-  printf(" 1/resol^2 obs all $$\n$$\n");
-  for ( int i=0; i<xxi.size(); i++ ) {
-      printf( "%10.6f %10.6f %10.6f\n", xxi[i], yyi[i], yy2i[i]);
-  }
-  printf("$$\n\n");
-
- */
  
   // apply the Truncate procedure, unless amplitudes have been input
 
   // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
   // so only scale if B positive
   float scalef = 1.0;
-  if ( b > 0 ) scalef = sqrt(exp(b));
+
+  if ( wilson[0] > 0 ) scalef = sqrt(exp(wilson[0]));
   int nrej = 0; 
 
   if (!amplitudes) {
