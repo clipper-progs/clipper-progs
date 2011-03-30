@@ -20,6 +20,8 @@ namespace ctruncate {
 	
 	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog);
 	
+	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog);
+	
 	//--------------------------------------------------------------
 	
 	class PattPeak 
