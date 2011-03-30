@@ -44,15 +44,6 @@ using namespace ctruncate;
 // replacement for Wilson/Truncate
 
 
-extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
-	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
-	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
-	   ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-		 int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ));
-
-
 int main(int argc, char **argv)
 {
   CCP4Program prog( "ctruncate", "1.0.13", "$Date: 2011/02/07" );
