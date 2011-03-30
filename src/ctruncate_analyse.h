@@ -12,10 +12,13 @@
 #define __CTRUNCATE_ANALYSE_H
 
 #include "clipper/clipper.h"
+#include "clipper/clipper-ccp4.h"
 
 namespace ctruncate {
 	
 	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::ResolutionFn& Sigma);
+	
+	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog);
 	
 	//--------------------------------------------------------------
 	
