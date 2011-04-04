@@ -423,8 +423,10 @@ int main(int argc, char **argv)
 	  }
 
       // scale intensities 
-	  clipper::Iscale_aniso<float> sfscl( 3.0 );     
-	  sfscl( ianiso );                                        
+	  //clipper::Iscale_aniso<float> sfscl( 3.0 );
+	  //sfscl( ianiso );
+	  clipper::SFscale_aniso<float> sfscl( 3.0 );
+	  sfscl( ianiso, -1.0f, 12 );                                        
 
       
 
