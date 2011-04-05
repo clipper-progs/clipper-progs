@@ -583,28 +583,101 @@ int main(int argc, char **argv)
 	}
 	
 	
+	// Ice rings
+	ctruncate::Rings icerings;
+	icerings.DefaultIceRings();
+	icerings.ClearSums();
+    float iceTolerance = 4.0f;
+	
+	for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+		if ( !isig[ih].missing() )
+		if (! ih.hkl_class().centric() ) {
+			double reso = ih.hkl().invresolsq(hklinf.cell());
+			int ice = icerings.InRing(reso);
+			if ( ice != -1 ) icerings.AddObs(ice,isig[ih],reso); //symmetry?
+		}
+	}
+	
+	for (int i = 0; i != icerings.Nrings(); ++i) icerings.SetReject(i, true);
+	
   //Wilson pre
 	  
+	//int nprm2 = std::floor(nprm/3.0);
+	int nprm2 = 12;
+	
+	HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
+	
+	{
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.hkl().invresolsq(hklinf.cell());
+			xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
+			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( icerings.InRing(reso) != -1 ) 
+				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}		
+		std::vector<double> params_ice( nprm2, 1.0 );
+		clipper::BasisFn_spline basis_ice( xsig, nprm2, 2.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_ice( xsig, 1 );
+		clipper::ResolutionFn Sigma( hklinf, basis_ice, target_ice, params_ice );
+		
+		for (int i = 0; i != icerings.Nrings(); ++i) {
+			bool reject = false;
+			float reso = icerings.MeanSSqr(i);
+			if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
+				float imean = icerings.MeanI(i);
+				float sigImean = icerings.MeanSigI(i);
+				float expectedI = basis_ice.f_s(reso, params_ice);
+				if ((imean-expectedI)/sigImean > iceTolerance) reject = true;
+			}
+			icerings.SetReject(i, reject);
+		}
+		
+		bool icer = false;
+		for ( int i = 0; i != icerings.Nrings(); ++i) if (icerings.Reject(i) ) icer = true;
+		
+		prog.summary_beg();
+		printf("\nICE RINGS:\n\n");
+		if (icer) printf("Possible Ice Rings\n\n");
+		else printf("No Ice Rings detected\n\n");
+		prog.summary_end();
+		
+		if ( icerings.MeanSSqr(0) <= maxres && icerings.MeanSigI(0) > 0.0f ) {
+			printf("Ice Ring Summary:\n");
+			printf(" reso mean_I mean_Sigma Estimated_I Zscore\n");
+			for ( int i = 0; i != icerings.Nrings(); ++i) {
+				float reso = icerings.MeanSSqr(i);
+				if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
+					float imean = icerings.MeanI(i);
+					float sigImean = icerings.MeanSigI(i);
+					float expectedI = basis_ice.f_s(reso, Sigma.params());
+					printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI,(imean-expectedI)/sigImean);
+				}
+			}
+		}
+	}
+	
 	// Sigma or Normalisation curve
 	// calculate Sigma (mean intensity in resolution shell) 
 	// use intensities uncorrected for anisotropy
-	ctruncate::Rings icerings;
-	icerings.DefaultIceRings();
 	
-	int nprm2 = std::floor(nprm/3.0);
-	
-	HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
 	for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		double reso = ih.hkl().invresolsq(hklinf.cell());
 		xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
 		if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-		if ( icerings.InRing(reso) != -1 )
-			xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-	}		
-	std::vector<double> params_ice( nprm2, 1.0 );
+		if ( icerings.InRing(reso) != -1 ) 
+			if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+	}
+
+		
+	std::vector<double> params( nprm2, 1.0 );
 	clipper::BasisFn_spline basis_fo( xsig, nprm2, 2.0 );
 	TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
-	clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_ice );
+	clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params );
+	
+	for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			xsig[ih] = clipper::data32::I_sigI( Sigma.f(ih), 1.0f );
+	}
 	
 	// end of Norm calc
  
