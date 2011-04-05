@@ -78,7 +78,7 @@ namespace ctruncate {
 		//printf("%d %d %d\n", xi.size(), yi.size(), wi.size());
 		float a,b,siga,sigb,a1,b1;
 		b = 0.0; a = 0.0f;
-		
+		bool line(false);
 		if ( wi.size() > 200 && maxres > maxres_scaling) {               // 3.5 Angstroms
 			straight_line_fit(xi,yi,wi,nobs,a,b,siga,sigb);
 			prog.summary_beg();
@@ -87,8 +87,8 @@ namespace ctruncate {
 			printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",a,b,siga,sigb);
 			printf("scale factor on intensity = %10.4f\n\n",(exp(b)));
 			prog.summary_end();
-		}
-		else {
+			line = true;
+		} else {
 			printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
 		}
 		
@@ -118,8 +118,13 @@ namespace ctruncate {
 		printf("$TABLE: Wilson plot:\n");
 		printf("$GRAPHS");
 		//printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-		printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4:\n$$", a);  
-		printf(" 1/resol^2 ln(I/I_th) Sigma Overall-B $$\n$$\n");
+		if (line) {
+			printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4:\n$$", a);  
+			printf(" 1/resol^2 ln(I/I_th) Sigma Overall-B $$\n$$\n");
+		} else {
+			printf(": Wilson plot :A:1,2,3:\n$$");  
+			printf(" 1/resol^2 ln(I/I_th) Sigma $$\n$$\n");
+		}
 		
 		int nbins = 60;
 		for ( int i=0; i!=nbins; ++i ) {
@@ -135,8 +140,10 @@ namespace ctruncate {
 				float scat = sf.f(res);
 				totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
 			}
-			printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
+			if (line) printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
 				   log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat),-0.5*a*res-b);
+			else printf("%10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
+						log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat));
 		}
 		
 		printf("$$\n\n");
