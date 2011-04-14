@@ -608,18 +608,71 @@ int main(int argc, char **argv)
 	HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
 	
 	{
+		HKL_data<data32::I_sigI> tr1(hklinf);
+		tr1 = data32::I_sigI(1.0f,1.0f);
+		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( ih.hkl_class().epsilon() ); //tage into account  epsilon
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			double reso = ih.hkl().invresolsq(hklinf.cell());
-			xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
+			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
 			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
 			if ( icerings.InRing(reso) != -1 ) 
 				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
 		}		
+		
+		// calc scale
+		std::vector<double> param_gauss( 2, 0.0 );
+		clipper::BasisFn_log_gaussian gauss;
+		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( xsig, tr1);
+		ResolutionFn rfn_gauss( hklinf, gauss, tfn_gauss, param_gauss );
+		param_gauss = rfn_gauss.params();
+		
+		std::cout << param_gauss[0] << " " << param_gauss[1] << std::endl;
+		
+		std::vector<double> params_test( 60, 1.0 );
+		clipper::BasisFn_spline basis_fo( isig, 60, 2.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_fo( isig, 1 );
+		clipper::ResolutionFn Test( hklinf, basis_fo, target_fo, params_test ); 
+		
+		//datatypes::Compute_scale_u_iso<float> compute_s(1.0,param_gauss[1]);
+		//xsig.compute( isig, compute_s );
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ) {
+				double reso = ih.hkl().invresolsq(hklinf.cell());
+				xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
+			}
+		}
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.hkl().invresolsq(hklinf.cell());
+			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( icerings.InRing(reso) != -1 ) 
+				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}		
+		
 		std::vector<double> params_ice( nprm2, 1.0 );
 		clipper::BasisFn_spline basis_ice( xsig, nprm2, 2.0 );
 		TargetFn_meanInth<clipper::data32::I_sigI> target_ice( xsig, 1 );
 		clipper::ResolutionFn Sigma( hklinf, basis_ice, target_ice, params_ice );
+		
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			if ( !xsig[ih].missing() ) {
+				double reso = ih.hkl().invresolsq(hklinf.cell());
+				xsig[ih].I() = exp( log(Sigma.f(ih) ) + rfn_gauss.f(ih) );
+			}
+		}
+		
+		// wilson plot plus Norm curve
+		printf("$TABLE: Test plot:\n");
+		printf("$GRAPHS");
+		printf(": Wilson plot :A:1,2,3:\n$$");  
+		printf(" 1/resol^2 ln(I/I_th) Sigma $$\n$$\n");
+		int nbins = 60;
+		for ( int i=0; i!=nbins; ++i ) {
+			float res = maxres*(float(i)+0.5)/float(nbins); 
+			printf("%10.5f %10.5f %10.5f \n", res,log(basis_fo.f_s( res, Test.params())),log(exp( log(basis_ice.f_s( res, Sigma.params()) ) + param_gauss[1]*res) )/*,exp(-param_gauss[0])*exp(param_gauss[1]*res)*/);
+		}
+		printf("$$\n\n");
+	 //fs2[ih] = exp( log( fs1[ih] ) + rfn_fo2.f(ih) );
 		
 		for (int i = 0; i != icerings.Nrings(); ++i) {
 			bool reject = false;
