@@ -130,7 +130,8 @@ am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) ctruncate_utils.$(OBJEXT) \
 	cpsf_utils.$(OBJEXT) twinlaws.$(OBJEXT) \
 	ctruncate_truncate.$(OBJEXT) ctruncate_twin.$(OBJEXT) \
 	ctruncate_parity.$(OBJEXT) ctruncate_moments.$(OBJEXT) \
-	ctruncate_analyse.$(OBJEXT) ctruncate_matthews.$(OBJEXT)
+	ctruncate_analyse.$(OBJEXT) ctruncate_matthews.$(OBJEXT) \
+	ctruncate_wilson.$(OBJEXT) intensity_scale.$(OBJEXT)
 ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
 ctruncate_LDADD = $(LDADD)
 ctruncate_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
@@ -325,7 +326,7 @@ cphasecombine_SOURCES = cphasecombine.cpp
 cpatterson_SOURCES = cpatterson.cpp
 caniso_SOURCES = caniso.cpp
 convert2mtz_SOURCES = convert2mtz.cpp
-ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.f ctruncate_truncate.cpp ctruncate_twin.cpp ctruncate_parity.cpp ctruncate_moments.cpp ctruncate_analyse.cpp ctruncate_matthews.cpp
+ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.f ctruncate_truncate.cpp ctruncate_twin.cpp ctruncate_parity.cpp ctruncate_moments.cpp ctruncate_analyse.cpp ctruncate_matthews.cpp ctruncate_wilson.cpp intensity_scale.cpp
 csymmatch_SOURCES = csymmatch.cpp
 cmaplocal_SOURCES = cmaplocal.cpp
 cncsfrommodel_SOURCES = cncsfrommodel.cpp
@@ -469,6 +470,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_truncate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_twin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_wilson.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/intensity_scale.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
