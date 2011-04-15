@@ -47,7 +47,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.0.14", "$Date: 2011/03/30" );
+  CCP4Program prog( "ctruncate", "1.1.0", "$Date: 2011/03/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -564,24 +564,7 @@ int main(int argc, char **argv)
 
   //Parity group analysis
 
-	ctruncate::parity(isig, maxres, nbins);
-
-	//Wilson plot
-	std::vector<float> wilson(2,0.0f);
-	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
-	clipper::MMoleculeSequence seq;
-	if ( ipseq != "NONE" ) {
-		clipper::SEQfile seqf;
-		seqf.read_file( ipseq );
-		seqf.import_molecule_sequence( seq );
-		MPolymerSequence poly = seq[0];
-		wilson = wilson_plot(isig,poly,maxres,nprm, prog);
-	} else if (nresidues > 0) {
-		wilson = wilson_plot(isig,nresidues,maxres,nprm, prog);	}
-	else {
-		wilson = wilson_plot(isig,maxres,nprm, prog);
-	}
-	
+	ctruncate::parity(isig, maxres, nbins);	
 	
 	// Ice rings
 	ctruncate::Rings icerings;
@@ -601,7 +584,8 @@ int main(int argc, char **argv)
 	for (int i = 0; i != icerings.Nrings(); ++i) icerings.SetReject(i, true);
 	
   //Wilson pre
-	  
+	std::vector<float> wilson(2,0.0f);
+	std::vector<double> param_gauss( 2, 0.0 );
 	//int nprm2 = std::floor(nprm/3.0);
 	int nprm2 = 12;
 	
@@ -621,21 +605,14 @@ int main(int argc, char **argv)
 		}		
 		
 		// calc scale
-		std::vector<double> param_gauss( 2, 0.0 );
+		//std::vector<double> param_gauss( 2, 0.0 );
 		clipper::BasisFn_log_gaussian gauss;
 		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( xsig, tr1);
 		ResolutionFn rfn_gauss( hklinf, gauss, tfn_gauss, param_gauss );
 		param_gauss = rfn_gauss.params();
-		
-		std::cout << param_gauss[0] << " " << param_gauss[1] << std::endl;
-		
-		std::vector<double> params_test( 60, 1.0 );
-		clipper::BasisFn_spline basis_fo( isig, 60, 2.0 );
-		TargetFn_meanInth<clipper::data32::I_sigI> target_fo( isig, 1 );
-		clipper::ResolutionFn Test( hklinf, basis_fo, target_fo, params_test ); 
-		
+				
 		//datatypes::Compute_scale_u_iso<float> compute_s(1.0,param_gauss[1]);
-		//xsig.compute( isig, compute_s );
+		//xsig.compute( isig, compute_s ); scale xsig for gaussian decay
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			if ( !isig[ih].missing() ) {
 				double reso = ih.hkl().invresolsq(hklinf.cell());
@@ -654,33 +631,13 @@ int main(int argc, char **argv)
 		TargetFn_meanInth<clipper::data32::I_sigI> target_ice( xsig, 1 );
 		clipper::ResolutionFn Sigma( hklinf, basis_ice, target_ice, params_ice );
 		
-		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-			if ( !xsig[ih].missing() ) {
-				double reso = ih.hkl().invresolsq(hklinf.cell());
-				xsig[ih].I() = exp( log(Sigma.f(ih) ) + rfn_gauss.f(ih) );
-			}
-		}
-		
-		// wilson plot plus Norm curve
-		printf("$TABLE: Test plot:\n");
-		printf("$GRAPHS");
-		printf(": Wilson plot :A:1,2,3:\n$$");  
-		printf(" 1/resol^2 ln(I/I_th) Sigma $$\n$$\n");
-		int nbins = 60;
-		for ( int i=0; i!=nbins; ++i ) {
-			float res = maxres*(float(i)+0.5)/float(nbins); 
-			printf("%10.5f %10.5f %10.5f \n", res,log(basis_fo.f_s( res, Test.params())),log(exp( log(basis_ice.f_s( res, Sigma.params()) ) + param_gauss[1]*res) )/*,exp(-param_gauss[0])*exp(param_gauss[1]*res)*/);
-		}
-		printf("$$\n\n");
-	 //fs2[ih] = exp( log( fs1[ih] ) + rfn_fo2.f(ih) );
-		
 		for (int i = 0; i != icerings.Nrings(); ++i) {
 			bool reject = false;
 			float reso = icerings.MeanSSqr(i);
 			if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
 				float imean = icerings.MeanI(i);
 				float sigImean = icerings.MeanSigI(i);
-				float expectedI = basis_ice.f_s(reso, params_ice);
+				float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
 				if ((imean-expectedI)/sigImean > iceTolerance) reject = true;
 			}
 			icerings.SetReject(i, reject);
@@ -703,7 +660,7 @@ int main(int argc, char **argv)
 				if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
 					float imean = icerings.MeanI(i);
 					float sigImean = icerings.MeanSigI(i);
-					float expectedI = basis_ice.f_s(reso, Sigma.params());
+					float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
 					printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI,(imean-expectedI)/sigImean);
 				}
 			}
@@ -713,10 +670,9 @@ int main(int argc, char **argv)
 	// Sigma or Normalisation curve
 	// calculate Sigma (mean intensity in resolution shell) 
 	// use intensities uncorrected for anisotropy
-	
 	for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 		double reso = ih.hkl().invresolsq(hklinf.cell());
-		xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
+		xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
 		if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
 		if ( icerings.InRing(reso) != -1 ) 
 			if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
@@ -729,9 +685,25 @@ int main(int argc, char **argv)
 	clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params );
 	
 	for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-			xsig[ih] = clipper::data32::I_sigI( Sigma.f(ih), 1.0f );
+		double reso = ih.hkl().invresolsq(hklinf.cell());
+		xsig[ih].I() = exp( log(Sigma.f(ih)) +param_gauss[1]*reso );  //not using multiplicity  THIS DOES NOT CONFORM!!!!!!
 	}
 	
+	//Wilson plot
+	//std::vector<float> wilson(2,0.0f);
+	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
+	clipper::MMoleculeSequence seq;
+	if ( ipseq != "NONE" ) {
+		clipper::SEQfile seqf;
+		seqf.read_file( ipseq );
+		seqf.import_molecule_sequence( seq );
+		MPolymerSequence poly = seq[0];
+		wilson = wilson_plot(isig,poly,maxres,nprm, prog, xsig);
+	} else if (nresidues > 0) {
+		wilson = wilson_plot(isig,nresidues,maxres,nprm, prog, xsig);	}
+	else {
+		wilson = wilson_plot(isig,maxres,nprm, prog, xsig);
+	}		
 	// end of Norm calc
  
   // apply the Truncate procedure, unless amplitudes have been input
@@ -745,7 +717,7 @@ int main(int argc, char **argv)
 
   if (!amplitudes) {
       if (anomalous) {
-	      truncate( isig_ano, jsig_ano, fsig_ano, Sigma, scalef, spg1, nrej, debug );
+	      truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, nrej, debug );
 	      int iwarn = 0;
 	      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			  freidal_sym[ih].isym() = 0; //mimic old truncate
@@ -778,7 +750,7 @@ int main(int argc, char **argv)
       }
 
       else {
-          truncate( isig, jsig, fsig, Sigma, scalef, spg1, nrej, debug );
+          truncate( isig, jsig, fsig, xsig, scalef, spg1, nrej, debug );
       }
   }
   prog.summary_beg();
@@ -816,7 +788,7 @@ int main(int argc, char **argv)
 
 
   // construct cumulative distribution function for intensity (using Z rather than E)
-  int ntw = cumulative_plot(isig, Sigma);
+  int ntw = cumulative_plot(isig, xsig);
 	
   if (ntw > 2) {
 	  prog.summary_beg();
@@ -831,7 +803,7 @@ int main(int argc, char **argv)
 	{
 		ctruncate::PattPeak patt_peak(std::sqrt(maxres));
 		
-		float opt_res = patt_peak(basis_fo, Sigma);
+		float opt_res = patt_peak(xsig);
 		
 		float width_patt = 2.0f*patt_peak.sigma();
 		

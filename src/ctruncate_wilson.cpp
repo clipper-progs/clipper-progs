@@ -18,7 +18,7 @@ namespace ctruncate {
 	std::string name[5] = { "C", "N", "O", "H", "S" };
 	
 	std::vector<float> wilson_calc(clipper::HKL_data<clipper::data32::I_sigI>& isig, std::vector<int>& numatoms, float maxres, 
-								   int nprm, CCP4Program& prog)
+								   int nprm, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& ref)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -95,21 +95,11 @@ namespace ctruncate {
 		// Sigma or Normalisation curve
 		// calculate Sigma (mean intensity in resolution shell) 
 		// use intensities uncorrected for anisotropy
-		
-		int nprm2 = 12;
-		
-		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.hkl().invresolsq(hklinf.cell());
-			xsig[ih] = clipper::data32::I_sigI( isig[ih].I(), isig[ih].sigI() );
-			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( icerings.InRing(reso) != -1 )
-				xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-		}		
-		std::vector<double> params_ice( nprm2, 1.0 );
-		clipper::BasisFn_spline basis_fo( xsig, nprm2, 2.0 );
-		TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
-		clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params_ice );
+				
+		std::vector<double> params_ref( nprm, 1.0 );
+		clipper::BasisFn_spline basis_ref( ref, nprm, 2.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_ref( ref, 1 );
+		clipper::ResolutionFn Sigma( hklinf, basis_ref, target_ref, params_ref );
 		
 		// end of Norm calc
 		
@@ -141,9 +131,9 @@ namespace ctruncate {
 				totalscat +=  float( nsym * numatoms[i] ) * scat * scat;
 			}
 			if (line) printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-				   log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat),-0.5*a*res-b);
+				   log(basis_ref.f_s( res, Sigma.params() ))-log(totalscat),-0.5*a*res-b);
 			else printf("%10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-						log(basis_fo.f_s( res, Sigma.params() ))-log(totalscat));
+						log(basis_ref.f_s( res, Sigma.params() ))-log(totalscat));
 		}
 		
 		printf("$$\n\n");
@@ -152,7 +142,8 @@ namespace ctruncate {
 		return params;
 	}
 	
-	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog)
+	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog,
+								   clipper::HKL_data<clipper::data32::I_sigI>& ref)
 	{
 		const clipper::HKL_info& hklinf = isig.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
@@ -170,11 +161,11 @@ namespace ctruncate {
 		numatoms[3] = 8*nresidues;
 		numatoms[4] = int(0.05*nresidues);
 		
-		wilson_calc(isig, numatoms, maxres, nbins, prog);
+		wilson_calc(isig, numatoms, maxres, nbins, prog, ref);
 	}
 	
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, float maxres, 
-					 int nbins, CCP4Program& prog)
+								   int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& ref)
 	{
 		std::vector<int> numatoms(5,0); 
 		
@@ -208,12 +199,12 @@ namespace ctruncate {
 			   numatoms[0],numatoms[1],numatoms[2],numatoms[3],numatoms[4]);
 		prog.summary_end();
 		
-		wilson_calc(isig, numatoms, maxres, nbins, prog);
+		wilson_calc(isig, numatoms, maxres, nbins, prog, ref);
 		
 	}
 	
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, float maxres, int nbins, 
-					 CCP4Program& prog)
+					 CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& ref)
 	{
 		prog.summary_beg();
 		printf("\n\nWILSON SCALING:\n");
@@ -228,7 +219,7 @@ namespace ctruncate {
 		numatoms[4] = int(0.05*nresidues);
 		
 		
-		wilson_calc(isig, numatoms, maxres, nbins, prog);
+		wilson_calc(isig, numatoms, maxres, nbins, prog, ref);
 	}	
 	
 	// Truncate style Wilson plot

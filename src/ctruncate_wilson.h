@@ -18,13 +18,15 @@
 namespace ctruncate {
 	
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, 
-								   CCP4Program& prog);
+								   CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
 	
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, float maxres, 
-								   int nbins, CCP4Program& prog);
+								   int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
 	
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, 
-								   float maxres, int nbins, CCP4Program& prog);
+								   float maxres, int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
+	
+	
 	
 }
 #endif

@@ -25,6 +25,12 @@ namespace ctruncate {
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig, 
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
 				 CSym::CCP4SPG *spg1, int& nrej, bool debug);
+	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig,
+				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
+				 CSym::CCP4SPG *spg1, int& nrej, bool debug);
+	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig, 
+				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
+				 CSym::CCP4SPG *spg1, int& nrej, bool debug);
 
 }
 

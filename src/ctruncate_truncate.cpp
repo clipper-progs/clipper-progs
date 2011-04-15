@@ -324,5 +324,122 @@ namespace ctruncate {
 		return(1);
 	}
 	
+	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
+				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		//FILE *checkfile;
+		//checkfile = fopen("checku.txt", "w");
+		float J, sigJ, F, sigF;
+		int iflag;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ) {
+				float I = isig[ih].I();
+				float sigma = isig[ih].sigI();
+				float S = Sigma[ih].I();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				// handle acentric and centric reflections separately
+				if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+				else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+				//if ( !ih.hkl_class().centric()  && I < 0 ) 
+				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+				//ih.hkl_class().epsilon());
+				if (iflag) {
+					jsig[ih].I() = J;
+					jsig[ih].sigI() = sigJ;
+					fsig[ih].f() = F*scalef*sqwt;
+					fsig[ih].sigf() = sigF*scalef*sqwt;
+					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				}
+			}
+		}
+		//fclose(checkfile);
+		return(1);
+	}
+	
+	
+	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
+				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+	
+	// takes anomalous I's as input. 
+	
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		//FILE *checkfile;
+		//checkfile = fopen("checku.txt", "w");
+		float J, sigJ, F, sigF;
+		int iflag;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
+				float I = isig[ih].I_pl();
+				float sigma = isig[ih].sigI_pl();
+				float S = Sigma[ih].I();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				// handle acentric and centric reflections separately
+				if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+				else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+				//if ( !ih.hkl_class().centric()  && I < 0 ) 
+				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+				//ih.hkl_class().epsilon());
+				if (iflag) {
+					jsig[ih].I_pl() = J;
+					jsig[ih].sigI_pl() = sigJ;
+					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+					fsig[ih].f_pl() = F*scalef*sqwt;
+					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				}
+			}
+			
+			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
+				float I = isig[ih].I_mi();
+				float sigma = isig[ih].sigI_mi();
+				float S = Sigma[ih].I();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				// handle acentric and centric reflections separately
+				if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+				else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+				//if ( !ih.hkl_class().centric()  && I < 0 ) 
+				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+				//ih.hkl_class().epsilon());
+				if (iflag) {
+					jsig[ih].I_mi() = J;
+					jsig[ih].sigI_mi() = sigJ;
+					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+					fsig[ih].f_mi() = F*scalef*sqwt;
+					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				}
+			}
+		}
+		//fclose(checkfile);
+		return(1);
+	}
+	
 
 } //end namespace

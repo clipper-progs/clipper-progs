@@ -18,6 +18,8 @@ namespace ctruncate {
 	
 	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::ResolutionFn& Sigma);
 	
+	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma);
+	
 	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog);
 	
 	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog);
@@ -30,6 +32,7 @@ namespace ctruncate {
 		PattPeak( float maxinvres, int nbins = 20, float temp = -1.0f );
 		
 		float operator() (clipper::BasisFn_spline& basis_fo, clipper::ResolutionFn& resol_fn);
+		float operator() (clipper::HKL_data<clipper::data32::I_sigI>& Sigma);
 		void setBins(int nbins) { _nbins = nbins; _patterson.resize(nbins); }
 		void setMaxInvRes(float maxinvres) { _maxinvres = maxinvres; }
 		void setWidth(float width) { _width = width; }
