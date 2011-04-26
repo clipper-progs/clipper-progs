@@ -402,16 +402,32 @@ namespace ctruncate {
 		// calculate completeness
 		std::vector<float> sumov(nbins,0.0);
 		std::vector<float> summeas(nbins,0.0);
+		std::vector<float> summeas1(nbins,0.0);
+		std::vector<float> summeas2(nbins,0.0);
+		std::vector<float> summeas3(nbins,0.0);
 		std::vector<float> completeness(nbins,0.0);
+		std::vector<float> completeness1(nbins,0.0);
+		std::vector<float> completeness2(nbins,0.0);
+		std::vector<float> completeness3(nbins,0.0);
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			// bin number different in C because arrays start at zero
+			float mult = ih.hkl_class().epsilonc();
 			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
 			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-			if ( bin < nbins && bin >= 0 ) sumov[bin] += 1.0;
-			if ( !isig[ih].missing() && bin < nbins && bin >= 0) summeas[bin] += 1.0;
+			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
+			if ( !isig[ih].missing() && bin < nbins && bin >= 0) {
+				summeas[bin] += mult;
+				float isigi = isig[ih].I()/isig[ih].sigI();
+				if (isigi >= 1.0f ) summeas1[bin] += mult;
+				if (isigi >= 2.0f ) summeas2[bin] += mult;
+				if (isigi >= 3.0f ) summeas3[bin] += mult;
+			}
 		}
-		for (int i=1; i<nbins; i++) {
+		for (int i=1; i!=nbins; ++i) {
 			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
 		}
 		
 		
@@ -420,9 +436,9 @@ namespace ctruncate {
 		printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
 		printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
 		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-		printf(": Completeness v resolution:N:1,14:\n");
+		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
 		printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness$$\n$$\n");
+		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
 		
 		
 		for(int i=0;i<nbins;i++){
@@ -430,7 +446,7 @@ namespace ctruncate {
 			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
 			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
 			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
-			printf("%8.4f\n",completeness[i]);
+			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
 		}
 		printf("$$\n\n");
 	}
