@@ -316,19 +316,19 @@ static float best[300] =
 		6920.931,
 		6939.107};
 	
-float BEST(float ssqr)
-{
-// magic scale factor to put best data on scale for average electron squared
-  float k = 8.563714792513845e-06; 
-  int s1 = ((ssqr - 0.009)/0.004091973); //truncations to lower value
-  if (s1 < 0) return k*best[0]; //lower than 10.5409 A resolution
-  if (s1 >= 299) return k*best[299]; //beyond highest resolution for BEST data (about 0.9 A)
- //linear interpolation
-  int s2 = s1 + 1;
-  float ssqr1 = s1*0.004091973 + 0.009;
-  float ssqr2 = s2*0.004091973 + 0.009;
- // floatType k = 8.4961e-06;
-  return  k*(best[s1] + (ssqr-ssqr1)*(best[s2]-best[s1])/(ssqr2-ssqr1));
-}
-
+	float BEST(float ssqr)
+	{
+		// magic scale factor to put best data on scale for average electron squared
+		const double k = 8.563714792513845e-06;
+		const double offset = 0.009; // low resolution shell at 10.5409 A resolution
+		const double step = 0.004091973;
+		int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
+		if (s1 < 0) return k*best[0]; //lower than 10.5409 A resolution
+		if (s1 >= 299) return k*best[299]; //beyond highest resolution for BEST data (about 0.9 A)
+		//linear interpolation
+		double ssqr1 = s1*step + offset;
+		double frac = (ssqr - ssqr1)/step;
+		return k*((1.0-frac)*best[s1]+frac*best[s1+1]);
+	}
+	
 }
