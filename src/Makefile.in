@@ -131,7 +131,8 @@ am_ctruncate_OBJECTS = ctruncate.$(OBJEXT) ctruncate_utils.$(OBJEXT) \
 	ctruncate_truncate.$(OBJEXT) ctruncate_twin.$(OBJEXT) \
 	ctruncate_parity.$(OBJEXT) ctruncate_moments.$(OBJEXT) \
 	ctruncate_analyse.$(OBJEXT) ctruncate_matthews.$(OBJEXT) \
-	ctruncate_wilson.$(OBJEXT) intensity_scale.$(OBJEXT)
+	ctruncate_wilson.$(OBJEXT) intensity_scale.$(OBJEXT) \
+	best.$(OBJEXT)
 ctruncate_OBJECTS = $(am_ctruncate_OBJECTS)
 ctruncate_LDADD = $(LDADD)
 ctruncate_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
@@ -144,10 +145,6 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-F77COMPILE = $(F77) $(AM_FFLAGS) $(FFLAGS)
-F77LD = $(F77)
-F77LINK = $(F77LD) $(AM_FFLAGS) $(FFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
-	$@
 SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
 	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmaplocal_SOURCES) \
 	$(cmodeltoseq_SOURCES) $(cncsfrommodel_SOURCES) \
@@ -326,7 +323,7 @@ cphasecombine_SOURCES = cphasecombine.cpp
 cpatterson_SOURCES = cpatterson.cpp
 caniso_SOURCES = caniso.cpp
 convert2mtz_SOURCES = convert2mtz.cpp
-ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.f ctruncate_truncate.cpp ctruncate_twin.cpp ctruncate_parity.cpp ctruncate_moments.cpp ctruncate_analyse.cpp ctruncate_matthews.cpp ctruncate_wilson.cpp intensity_scale.cpp
+ctruncate_SOURCES = ctruncate.cpp ctruncate_utils.cpp cpsf_utils.cpp twinlaws.cpp ctruncate_truncate.cpp ctruncate_twin.cpp ctruncate_parity.cpp ctruncate_moments.cpp ctruncate_analyse.cpp ctruncate_matthews.cpp ctruncate_wilson.cpp intensity_scale.cpp best.cpp
 csymmatch_SOURCES = csymmatch.cpp
 cmaplocal_SOURCES = cmaplocal.cpp
 cncsfrommodel_SOURCES = cncsfrommodel.cpp
@@ -338,7 +335,7 @@ INCLUDES = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAG
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .cpp .f .o .obj
+.SUFFIXES: .cpp .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -446,6 +443,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/best.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/caniso.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cecalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfft.Po@am__quote@
@@ -472,6 +470,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ctruncate_wilson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/intensity_scale.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/twinlaws.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -486,12 +485,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.f.o:
-	$(F77COMPILE) -c -o $@ $<
-
-.f.obj:
-	$(F77COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
