@@ -11,6 +11,7 @@
 
 
 #include "best.h"
+#include <cmath>
 
 namespace ctruncate {
 
