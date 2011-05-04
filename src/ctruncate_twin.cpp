@@ -12,14 +12,7 @@
 #include "ctruncate_utils.h"
 #include "ccp4_fortran.h"
 #include "csymlib.h"
-
-extern "C" void FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
-							  ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-							   int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
-							  ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-							   int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ),
-							  ( clipper::Cell& cell, double& sc_tol, int& ng, int *uu_g, int *u_g, 
-							   int& lc, int& nc, int& nc2, int *uu_c, double *sc_c, int& ivb, int& ierr ));
+#include "twinlaws.h"
 
 namespace ctruncate {
 	
@@ -209,7 +202,7 @@ namespace ctruncate {
 		
 		std::vector< clipper::Vec3<int> > trans;
 		std::vector< clipper::Mat33<int> > rot;
-		std::vector< clipper::Mat33<int> > twin(lc);   // NB need to dimension these o/w output from fortran corrupted
+		//std::vector< clipper::Mat33<int> > twin(lc);   // NB need to dimension these o/w output from fortran corrupted
 		std::vector<double> score(lc);
 		
 		int nsymops = spgr.num_symops();
@@ -226,16 +219,23 @@ namespace ctruncate {
 			rot.push_back( isymop.rot().transpose() );
 		}
 		
-		int *vv = &trans[0][0];
-		int *ww = &rot[0](0,0);
-		int *uu_c = &twin[0](0,0);
+		int vv[nsymops][3][3];
+		int ww[nsymops][3];
+		int uu_c[lc][3][3];
 		double *sc_c = &score[0];
+		double twin_cell[6];
+		{ 
+			twin_cell[0] = cell.a();
+			twin_cell[1] = cell.b();
+			twin_cell[2] = cell.c();
+			twin_cell[3] = cell.alpha();
+			twin_cell[4] = cell.beta();
+			twin_cell[5] = cell.gamma();
+			for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) for (int k = 0 ; k != 3 ; ++k ) vv[i][j][k] = rot[i](j,k);
+			for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) ww[i][j] = trans[i][j];
+		}
 		
-		
-		FORTRAN_CALL ( YYY_CELL2TG, yyy_cell2tg,
-					  (cell, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr),
-					  (cell, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr),
-					  (cell, sc_tol, nsymops, ww, vv, lc, nc, nc2, uu_c, sc_c, ivb, ierr));
+		yyy_cell2tg(twin_cell, sc_tol, nsymops, vv, ww, lc, nc, nc2, uu_c, sc_c, ivb, ierr);
 		
 		//printf("nc = %d  ierr = %d\n",nc,ierr);
 		printf("First principles calculation of potential twinning operators using code by Andrey Lebedev:\n");
@@ -247,7 +247,8 @@ namespace ctruncate {
 				// Transpose matrix once because passed from Fortran to C, then a second time because Andrey's
 				// convention is that (h,k,l) is postmultiplied by the twinning operator, whereas mine is that
 				// (h,k,l) is premultiplied by the the twinning operator. Net result: don't do anything!
-				clipper::Mat33<int> twinoper = twin[k];
+				clipper::Mat33<int> twinoper = clipper::Mat33<int>(uu_c[k][0][0],uu_c[k][0][1],uu_c[k][0][2],uu_c[k][1][0],uu_c[k][1][1]
+																   ,uu_c[k][1][2],uu_c[k][2][0],uu_c[k][2][1],uu_c[k][2][2]);
 				clipper::String s;
 				MatrixToString(twinoper,s);
 				std::cout << "Twinning operator: " << s << "\n";
