@@ -831,12 +831,12 @@ int main(int argc, char **argv)
 	  else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
 	  mtzout.export_hkl_data( fsig, labels );
       if (anomalous) {
+		  if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
+	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+		  mtzout.export_hkl_data( Dano, labels );
 	      if (appendcol == "") labels = outcol + "[F(+),SIGF(+),F(-),SIGF(-)]";
 	      else labels = outcol + "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
 	      mtzout.export_hkl_data( fsig_ano, labels );
-	      if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
-	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
-		  mtzout.export_hkl_data( Dano, labels );
 	      if (appendcol == "") labels = outcol + "[ISYM]";
 	      else labels = outcol + "[ISYM_" + appendcol + "]";
 		  mtzout.export_hkl_data( freidal_sym, labels );
