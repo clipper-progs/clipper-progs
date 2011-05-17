@@ -584,7 +584,7 @@ int main(int argc, char **argv)
 	for (int i = 0; i != icerings.Nrings(); ++i) icerings.SetReject(i, true);
 	
   //Wilson pre
-	std::vector<float> wilson(2,0.0f);
+	//std::vector<float> wilson(2,0.0f);
 	std::vector<double> param_gauss( 2, 0.0 );
 	//int nprm2 = std::floor(nprm/3.0);
 	int nprm2 = 12;
@@ -691,20 +691,30 @@ int main(int argc, char **argv)
 	
 	//Wilson plot
 	//std::vector<float> wilson(2,0.0f);
-	nprm = std::max(int(sqrt(float(Nreflections))),nbins );
+	//nprm = 60*std::max(int(sqrt(float(Nreflections))),nbins );
 	clipper::MMoleculeSequence seq;
+	
+	WilsonB wilson( WilsonB::BEST);
 	if ( ipseq != "NONE" ) {
 		clipper::SEQfile seqf;
 		seqf.read_file( ipseq );
 		seqf.import_molecule_sequence( seq );
 		MPolymerSequence poly = seq[0];
-		wilson = wilson_plot(isig,poly,maxres,nprm, prog, xsig);
+		//wilson = wilson_plot(isig,poly,maxres,nprm, prog, xsig);
+		wilson(isig,poly,&icerings);
 	} else if (nresidues > 0) {
-		wilson = wilson_plot(isig,nresidues,maxres,nprm, prog, xsig);	}
-	else {
-		wilson = wilson_plot(isig,maxres,nprm, prog, xsig);
+		//wilson = wilson_plot(isig,nresidues,maxres,nprm, prog, xsig);
+		wilson(isig,nresidues,&icerings);
+	} else {
+		//wilson = wilson_plot(isig,maxres,nprm, prog, xsig);
+		wilson(isig,&icerings);
 	}		
 	// end of Norm calc
+	clipper::String comment("Smooth");
+	prog.summary_beg();
+	wilson.summary();
+	prog.summary_end();
+	wilson.plot(xsig,comment);
  
   // apply the Truncate procedure, unless amplitudes have been input
 
@@ -712,7 +722,7 @@ int main(int argc, char **argv)
   // so only scale if B positive
   float scalef = 1.0;
 
-  if ( wilson[0] > 0 ) scalef = sqrt(exp(wilson[0]));
+  if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
   int nrej = 0; 
 
   if (!amplitudes) {
