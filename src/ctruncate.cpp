@@ -398,46 +398,29 @@ int main(int argc, char **argv)
 	  prog.summary_beg();
 	  printf("\n\nANISOTROPY CORRECTION (using intensities):\n");
 
-/*
-      clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
-      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-		  if ( !isig[ih].missing() ) {
-	          double I = isig[ih].I();
-	          double sigI = isig[ih].sigI();
-			  if ( I > 0.0 ) {
-			      Itotal += I;
-	              faniso[ih] = clipper::data32::F_sigF( sqrt(I), 0.5*sigI/sqrt(I) );
-			  }
-          }
-	  }  
-
-      // scale structure factors
-      clipper::SFscale_aniso<float> sfscl( 3.0 );
-      sfscl( faniso );  
-*/
+	  
 	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  
 	  	  double I = isig[ih].I();
 	      double sigI = isig[ih].sigI();
 	      if ( I > 0.0 ) Itotal += I;
      	  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
 	  }
-
-      // scale intensities 
-	  //clipper::Iscale_aniso<float> sfscl( 3.0 );
-	  //sfscl( ianiso );
+	  
+	  /*
+	   clipper::Iscale_aniso<float> sfscl( 3.0 );
+	   sfscl( ianiso );
+	   */
+	  
 	  clipper::SFscale_aniso<float> sfscl( 3.0 );
 	  sfscl( ianiso, -1.0f, 12 );                                        
 
-      
-
-      //std::cout << "\nAnisotropic scaling:\n" << sfscl.u_aniso_orth().format() << "\n";
 	  printf("\nAnisotropic scaling (orthogonal coords):\n\n");
 
-	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(0,0), sfscl.u_aniso_orth()(0,1), sfscl.u_aniso_orth()(0,2) );
-	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(1,0), sfscl.u_aniso_orth()(1,1), sfscl.u_aniso_orth()(1,2) );
-	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth()(2,0), sfscl.u_aniso_orth()(2,1), sfscl.u_aniso_orth()(2,2) );
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(0,0), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(0,1), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(0,2) );
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(1,0), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(1,1), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(1,2) );
+	  printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(2,0), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(2,1), sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I)(2,2) );
 
-	  clipper::U_aniso_orth uao = sfscl.u_aniso_orth();
+	  clipper::U_aniso_orth uao = sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I);
 	  clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
 
       printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
@@ -479,24 +462,6 @@ int main(int argc, char **argv)
 	  prog.summary_end();
 	  printf("\n");
 
-/*
-      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-		  if ( !isig[ih].missing() ) {
-			  double I = isig[ih].I();
-			  double sigI = isig[ih].sigI();
-	          double F = faniso[ih].f();
-	          double sigF = faniso[ih].sigf();
-			  if ( I > 0.0 ) {
-		          FFtotal += F*F;
-	              ianiso[ih] = clipper::data32::I_sigI( F*F, 2.0*F*sigF );
-			  }
-			  else {
-                  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-			  }
-		  }
-      }
-*/
-
       for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {    
 		  if ( !isig[ih].missing() ) {
 		      FFtotal += ianiso[ih].I();
@@ -512,13 +477,6 @@ int main(int argc, char **argv)
 		  }
 	  }
   }
-  else {  // copy isig to aniso - is there a slicker way?
-	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	  	  double I = isig[ih].I();
-	      double sigI = isig[ih].sigI();
-     	  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-	  }
-  }
 
   // truncate anisotropically corrected data at resolution limit in weakest direction
   for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
@@ -531,6 +489,9 @@ int main(int argc, char **argv)
 	moments_Z(isig, maxres, nbins);
 
   prog.summary_beg();
+	
+	HKL_data<data32::I_sigI>& iptr = (aniso) ? ianiso : isig;
+	
   printf("\n\nTWINNING ANALYSIS:\n\n");
   bool itwin = false;
 
@@ -543,11 +504,11 @@ int main(int argc, char **argv)
   // H test for twinning
 
   if (twintest != "table") {
-	  itwin = Htest_driver_fp(ianiso, prog, debug);
+	  itwin = Htest_driver_fp(iptr, prog, debug);
   }
 
   if (twintest != "first_principles") {
-	  itwin = Htest_driver_fp(ianiso, prog, debug);
+	  itwin = Htest_driver_fp(iptr, prog, debug);
   }
 
 	 // L test for twinning
@@ -557,7 +518,7 @@ int main(int argc, char **argv)
 		else printf("Anisotropy correction has not been applied before calculating L-test\n\n");
 	}
  
-	itwin = Ltest_driver(ianiso, prog, debug);
+	itwin = Ltest_driver(iptr, prog, debug);
    
 
   //printf("Starting parity group analysis:\n");
