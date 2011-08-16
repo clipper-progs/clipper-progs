@@ -9,6 +9,7 @@
 //
 
 #include "ctruncate_utils.h"
+#include <cstdlib>
 
 int bisect(double (*f)(double), double x1, double x2, double &xmid)
 {
@@ -124,7 +125,7 @@ void MatrixToString( clipper::Mat33<int>& op, clipper::String &s )
 		for ( int j = 0; j < 3; j++ ) {
 			if ( op(i,j) != 0 ) {
 				t += ( op(i,j) > 0 ) ? "+" : "-";
-				if ( abs( op(i,j) ) != 12 )
+				if ( std::abs( op(i,j) ) != 12 )
 					t += clipper::String::rational( fabs( float( op(i,j) )/12.0 ), 24 );
 				t += hkl[j];
 			}
