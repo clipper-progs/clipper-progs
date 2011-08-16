@@ -9,6 +9,7 @@
 //
 
 #include "ctruncate_truncate.h"
+#include <cstdio>
 
 namespace ctruncate {
 

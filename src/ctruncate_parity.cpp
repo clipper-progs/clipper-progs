@@ -9,6 +9,8 @@
 //
 
 #include "ctruncate_parity.h"
+#include <cstdlib>
+#include <cstdio>
 
 namespace ctruncate {
 	

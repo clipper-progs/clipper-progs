@@ -9,6 +9,7 @@
 //
 
 #include "ctruncate_moments.h"
+#include <cstdio>
 
 namespace ctruncate {
 	
