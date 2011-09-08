@@ -91,6 +91,8 @@ cmodeltoseq_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 am_cncsfrommodel_OBJECTS = cncsfrommodel.$(OBJEXT)
 cncsfrommodel_OBJECTS = $(am_cncsfrommodel_OBJECTS)
 cncsfrommodel_LDADD = $(LDADD)
+cncsfrommodel_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(cncsfrommodel_LDFLAGS) $(LDFLAGS) -o $@
 am_convert2mtz_OBJECTS = convert2mtz.$(OBJEXT)
 convert2mtz_OBJECTS = $(am_convert2mtz_OBJECTS)
 convert2mtz_LDADD = $(LDADD)
@@ -261,7 +263,7 @@ cinvfft_LDFLAGS = @cinvfft_LDFLAGS@
 cmakereference_LDFLAGS = @cmakereference_LDFLAGS@
 cmaplocal_LDFLAGS = @cmaplocal_LDFLAGS@
 cmodeltoseq_LDFLAGS = @cmodeltoseq_LDFLAGS@
-cnsfrommodel_LDFLAGS = @cnsfrommodel_LDFLAGS@
+cncsfrommodel_LDFLAGS = @cncsfrommodel_LDFLAGS@
 convert2mtz_LDFLAGS = @convert2mtz_LDFLAGS@
 cparrot_LDFLAGS = @cparrot_LDFLAGS@
 cpatterson_LDFLAGS = @cpatterson_LDFLAGS@
@@ -411,7 +413,7 @@ cmodeltoseq$(EXEEXT): $(cmodeltoseq_OBJECTS) $(cmodeltoseq_DEPENDENCIES)
 	$(cmodeltoseq_LINK) $(cmodeltoseq_OBJECTS) $(cmodeltoseq_LDADD) $(LIBS)
 cncsfrommodel$(EXEEXT): $(cncsfrommodel_OBJECTS) $(cncsfrommodel_DEPENDENCIES) 
 	@rm -f cncsfrommodel$(EXEEXT)
-	$(CXXLINK) $(cncsfrommodel_OBJECTS) $(cncsfrommodel_LDADD) $(LIBS)
+	$(cncsfrommodel_LINK) $(cncsfrommodel_OBJECTS) $(cncsfrommodel_LDADD) $(LIBS)
 convert2mtz$(EXEEXT): $(convert2mtz_OBJECTS) $(convert2mtz_DEPENDENCIES) 
 	@rm -f convert2mtz$(EXEEXT)
 	$(convert2mtz_LINK) $(convert2mtz_OBJECTS) $(convert2mtz_LDADD) $(LIBS)

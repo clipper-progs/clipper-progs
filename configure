@@ -716,7 +716,7 @@ csequins_LDFLAGS
 cmaplocal_LDFLAGS
 cmakereference_LDFLAGS
 cmodeltoseq_LDFLAGS
-cnsfrommodel_LDFLAGS
+cncsfrommodel_LDFLAGS
 csloop_LDFLAGS
 LIBOBJS
 LTLIBOBJS'
@@ -7137,7 +7137,7 @@ csequins_LDFLAGS!$csequins_LDFLAGS$ac_delim
 cmaplocal_LDFLAGS!$cmaplocal_LDFLAGS$ac_delim
 cmakereference_LDFLAGS!$cmakereference_LDFLAGS$ac_delim
 cmodeltoseq_LDFLAGS!$cmodeltoseq_LDFLAGS$ac_delim
-cnsfrommodel_LDFLAGS!$cnsfrommodel_LDFLAGS$ac_delim
+cncsfrommodel_LDFLAGS!$cncsfrommodel_LDFLAGS$ac_delim
 csloop_LDFLAGS!$csloop_LDFLAGS$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
