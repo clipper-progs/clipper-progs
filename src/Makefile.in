@@ -38,7 +38,7 @@ bin_PROGRAMS = chltofom$(EXEEXT) cphasematch$(EXEEXT) csfcalc$(EXEEXT) \
 	cecalc$(EXEEXT) cphasecombine$(EXEEXT) cpatterson$(EXEEXT) \
 	caniso$(EXEEXT) convert2mtz$(EXEEXT) ctruncate$(EXEEXT) \
 	csymmatch$(EXEEXT) cmaplocal$(EXEEXT) cncsfrommodel$(EXEEXT) \
-	cmodeltoseq$(EXEEXT)
+	cmodeltoseq$(EXEEXT) cmapcut$(EXEEXT)
 subdir = src
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -78,6 +78,9 @@ cinvfft_OBJECTS = $(am_cinvfft_OBJECTS)
 cinvfft_LDADD = $(LDADD)
 cinvfft_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(cinvfft_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_cmapcut_OBJECTS = cmapcut.$(OBJEXT)
+cmapcut_OBJECTS = $(am_cmapcut_OBJECTS)
+cmapcut_LDADD = $(LDADD)
 am_cmaplocal_OBJECTS = cmaplocal.$(OBJEXT)
 cmaplocal_OBJECTS = $(am_cmaplocal_OBJECTS)
 cmaplocal_LDADD = $(LDADD)
@@ -148,19 +151,19 @@ CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
-	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmaplocal_SOURCES) \
-	$(cmodeltoseq_SOURCES) $(cncsfrommodel_SOURCES) \
-	$(convert2mtz_SOURCES) $(cpatterson_SOURCES) \
-	$(cphasecombine_SOURCES) $(cphasematch_SOURCES) \
-	$(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) \
-	$(ctruncate_SOURCES)
+	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmapcut_SOURCES) \
+	$(cmaplocal_SOURCES) $(cmodeltoseq_SOURCES) \
+	$(cncsfrommodel_SOURCES) $(convert2mtz_SOURCES) \
+	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
+	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
+	$(csymmatch_SOURCES) $(ctruncate_SOURCES)
 DIST_SOURCES = $(caniso_SOURCES) $(cecalc_SOURCES) $(cfft_SOURCES) \
-	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmaplocal_SOURCES) \
-	$(cmodeltoseq_SOURCES) $(cncsfrommodel_SOURCES) \
-	$(convert2mtz_SOURCES) $(cpatterson_SOURCES) \
-	$(cphasecombine_SOURCES) $(cphasematch_SOURCES) \
-	$(csfcalc_SOURCES) $(csigmaa_SOURCES) $(csymmatch_SOURCES) \
-	$(ctruncate_SOURCES)
+	$(chltofom_SOURCES) $(cinvfft_SOURCES) $(cmapcut_SOURCES) \
+	$(cmaplocal_SOURCES) $(cmodeltoseq_SOURCES) \
+	$(cncsfrommodel_SOURCES) $(convert2mtz_SOURCES) \
+	$(cpatterson_SOURCES) $(cphasecombine_SOURCES) \
+	$(cphasematch_SOURCES) $(csfcalc_SOURCES) $(csigmaa_SOURCES) \
+	$(csymmatch_SOURCES) $(ctruncate_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -330,6 +333,7 @@ csymmatch_SOURCES = csymmatch.cpp
 cmaplocal_SOURCES = cmaplocal.cpp
 cncsfrommodel_SOURCES = cncsfrommodel.cpp
 cmodeltoseq_SOURCES = cmodeltoseq.cpp
+cmapcut_SOURCES = cmapcut.cpp
 EXTRA_DIST = README
 INCLUDES = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
 	   $(BOOST_CXXFLAGS) -I$(includedir)
@@ -405,6 +409,9 @@ chltofom$(EXEEXT): $(chltofom_OBJECTS) $(chltofom_DEPENDENCIES)
 cinvfft$(EXEEXT): $(cinvfft_OBJECTS) $(cinvfft_DEPENDENCIES) 
 	@rm -f cinvfft$(EXEEXT)
 	$(cinvfft_LINK) $(cinvfft_OBJECTS) $(cinvfft_LDADD) $(LIBS)
+cmapcut$(EXEEXT): $(cmapcut_OBJECTS) $(cmapcut_DEPENDENCIES) 
+	@rm -f cmapcut$(EXEEXT)
+	$(CXXLINK) $(cmapcut_OBJECTS) $(cmapcut_LDADD) $(LIBS)
 cmaplocal$(EXEEXT): $(cmaplocal_OBJECTS) $(cmaplocal_DEPENDENCIES) 
 	@rm -f cmaplocal$(EXEEXT)
 	$(cmaplocal_LINK) $(cmaplocal_OBJECTS) $(cmaplocal_LDADD) $(LIBS)
@@ -451,6 +458,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cinvfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cmapcut.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cmaplocal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cmodeltoseq.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cncsfrommodel.Po@am__quote@

@@ -1,7 +1,7 @@
 DIST_SUBDIRS = pirate buccaneer parrot sloop
 SUBDIRS = pirate buccaneer parrot sloop
 
-bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch cmaplocal cncsfrommodel cmodeltoseq
+bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut
 
 chltofom_SOURCES = chltofom.cpp
 
@@ -34,6 +34,8 @@ cmaplocal_SOURCES = cmaplocal.cpp
 cncsfrommodel_SOURCES = cncsfrommodel.cpp
 
 cmodeltoseq_SOURCES = cmodeltoseq.cpp
+
+cmapcut_SOURCES = cmapcut.cpp
 
 EXTRA_DIST = README
 
