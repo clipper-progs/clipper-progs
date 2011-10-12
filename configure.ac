@@ -4,11 +4,7 @@
 dnl package-name version-number bugs-to:
 AC_INIT(clipper_progs, 0.1.0, ccb@dl.ac.uk) 
 
-AC_CANONICAL_TARGET
-
-dnl package-name version-number, the gzip'd tar file is named
-dnl package-version.tar.gz.  
-AM_INIT_AUTOMAKE(clipper_progs, 0.1.0)
+AM_INIT_AUTOMAKE([-Wall foreign])
 
 AC_CONFIG_SRCDIR([src/buccaneer])
 
