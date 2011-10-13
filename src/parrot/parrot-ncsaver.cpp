@@ -5,6 +5,10 @@
 
 #include <algorithm>
 
+#ifdef rad2 // defined on Windows
+# undef rad2
+#endif
+
 
 /*
 void print_stats( const clipper::NXmap<float>& map )

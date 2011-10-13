@@ -10,6 +10,11 @@ extern "C" {
   #include <stdlib.h>
 }
 
+#ifdef scr1 // defined on Windows
+# undef scr1
+# undef scr2
+#endif
+
 
 int main( int argc, char** argv )
 {

@@ -5,6 +5,10 @@
 
 #include <algorithm>
 
+#ifdef near // defined on Windows
+# undef near
+#endif
+
 extern "C" {
 #include <string.h>
 }
