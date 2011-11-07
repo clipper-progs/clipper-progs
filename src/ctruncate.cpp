@@ -53,6 +53,7 @@ int main(int argc, char **argv)
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
   clipper::String outcol = "";
+  clipper::String freecol = "/*/*/[FreeR_flag]";
   clipper::String appendcol = "";
   clipper::String meancol = "/*/*/[IMEAN,SIGIMEAN]";
   //clipper::String meancol = "NONE";
@@ -65,6 +66,7 @@ int main(int argc, char **argv)
 
   bool aniso = true;
   bool debug = false;
+  bool freein = false;
   bool amplitudes = false;
   bool anomalous = false;
 
@@ -116,6 +118,9 @@ int main(int argc, char **argv)
     } else if ( args[arg] == "-colano" ) {
       if ( ++arg < args.size() ) anocols = args[arg];
 	  anomalous = true;
+    } else if ( args[arg] == "-freein" ) {
+      freein = true;
+      if ( ++arg < args.size() ) freecol = args[arg];
     } else if ( args[arg] == "-colout" ) {
       if ( ++arg < args.size() ) appendcol = args[arg];
     } else if ( args[arg] == "-nbins" ) {
@@ -170,6 +175,7 @@ int main(int argc, char **argv)
   HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
   HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
   HKL_data<data32::ISym> freidal_sym(hklinf);
+  HKL_data<data32::Flag> free(hklinf);
 
 //  clipper::MTZcrystal cxtl;
 //  mtzfile.import_crystal( cxtl, meancol );
@@ -191,6 +197,7 @@ int main(int argc, char **argv)
 	      //mtzfile.import_hkl_data( isig_minus, minuscol );
       }
   }
+  if (freein) mtzfile.import_hkl_data( free, freecol );
 
   prog.summary_beg();
   printf("\n\nCRYSTAL INFO:\n\n");
@@ -805,6 +812,15 @@ int main(int argc, char **argv)
 	  if (appendcol == "") labels = outcol + "[F,SIGF]";
 	  else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
 	  mtzout.export_hkl_data( fsig, labels );
+
+      if (freein) {
+	  if (appendcol != "") {
+		  String::size_type loc = freecol.find("]",0);
+		  freecol.insert(loc,"_"+appendcol);
+	  }
+	  mtzout.export_hkl_data( free, outcol + freecol.tail() );
+      }
+
       if (anomalous) {
 		  if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
 	      else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
