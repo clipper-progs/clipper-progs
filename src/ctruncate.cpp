@@ -16,6 +16,7 @@
 #include "clipper/core/atomsf.h"
 #include "clipper/core/coords.h"
 #include "ccp4_general.h"
+#include "ccp4_program.h"
 #include "clipper/ccp4/ccp4_mtz_io.h"
 #include "cmtzlib.h"
 #include "csymlib.h"
@@ -131,12 +132,15 @@ int main(int argc, char **argv)
       aniso = false;
     } else if ( args[arg] == "-amplitudes" ) {
       amplitudes = true;
-	} else if ( args[arg] == "-debug" ) {
+    } else if ( args[arg] == "-debug" ) {
       debug = true;
-	} else {
-	  printf("Unrecognised argument\n");
-	  return(0);
-	}
+    } else if ( args[arg] == "-i" ) {
+      CCP4::ccp4_prog_info();
+      return(0);
+    } else {
+      printf("Unrecognised argument\n");
+      return(0);
+    }
 
   }
   if (anomalous) {
