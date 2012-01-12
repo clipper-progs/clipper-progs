@@ -23,10 +23,10 @@
 
 // -----------------------------------------------------------------------------
 
-void yyy_cell2met(double cell[3], double met[3][3])
+void yyy_cell2met(double cell[6], double met[3][3])
 {
 	
-	double d2r = std::atan( 1.0 )/ 45 ;
+	double d2r = std::atan( 1.0 )/ 45.0 ;
 	int m3[6] = { 0, 1, 2, 0, 1, 2 } ;
 	
 	bool rad = true ;
@@ -43,34 +43,34 @@ void yyy_cell2met(double cell[3], double met[3][3])
 		throw "yyy_cell2met_:a" ;
 	}
 	
-	for( int i = 0 ; i < 3 ; i++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
 		int i1 = m3[i+1] ;
 		int i2 = m3[i+2] ;
-		met[i][i] = 1 ;
-		met[i1][i2] = cos( cell[i+3]* d2r ) ;
+        met[i][i] = 1.0 ;
+        met[i1][i2] = std::cos( cell[i+3]* coef ) ;
 		met[i2][i1] = met[i1][i2] ;
 	}
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             met[j][i] = cell[j]* met[j][i]* cell[i] ;
 		}
 	}
 }
 // -----------------------------------------------------------------------------
 
-void yyy_met2cell(double cell[3], double met[3][3])
+void yyy_met2cell(double cell[6], double met[3][3])
 {
 	
 	double r2d = 45.0/ atan( 1.0 ) ;
 	int m3[6] = { 0, 1, 2, 0, 1, 2 } ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
 		if( met[i][i] <= 0 )                          throw "yyy_met2cell_:a" ;
 		cell[i] = sqrt( met[i][i] ) ;
 	}
 	
-	for( int i = 0 ; i < 3 ; i++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
 		int i1 = m3[i+1] ;
 		int i2 = m3[i+2] ;
 		cell[i+3] = met[i1][i2]/ ( cell[i1]* cell[i2] ) ;
@@ -91,7 +91,7 @@ void yyy_divide_int(int &n, int v[], int &d, bool &ok)
 	
 	ok = false ;
 	if( d == 0 )                                                      return ;
-	for( int iv = 0 ; iv < n ; iv++ ){
+	for( int iv = 0 ; iv != n ; ++iv ){
 		int j = v[iv]/ d ;
 		if( v[iv] != d* j )                                            return ;
 		v[iv] = j ;
@@ -105,17 +105,17 @@ void yyy_invert_int( int b[3][3], int r[3][3], int &d)
 	
 	int c3[5] = { 0, 1, 2, 0, 1 } ;
 	
-	for( int i1 = 0 ; i1 < 3 ; i1++ ){
+	for( int i1 = 0 ; i1 != 3 ; ++i1 ){
 		int i2 = c3[i1+1] ;
 		int i3 = c3[i1+2] ;
-		for( int j1 = 0 ; j1 < 3 ; j1++ ){
+		for( int j1 = 0 ; j1 != 3 ; ++j1 ){
             int j2 = c3[j1+1] ;
             int j3 = c3[j1+2] ;
             r[i1][j1] = b[j2][i2]* b[j3][i3] - b[j3][i2]* b[j2][i3] ;
 		}
 	}
 	d = 0 ;
-	for( int i1 = 0 ; i1 < 3 ; i1++ ){
+	for( int i1 = 0 ; i1 != 3 ; ++i1 ){
 		d = d + b[0][i1]* r[i1][0] ;
 	}
 }
@@ -125,8 +125,8 @@ void yyy_find_base(int &ng, int uu_g[][3][3], int u_g[][3], int u_b[3][3]){
 	
 	int u[3], v[3], r[3][3] ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             u_b[i][j] = 0 ;
             r[i][j] = 0 ;
 		}
@@ -138,13 +138,13 @@ void yyy_find_base(int &ng, int uu_g[][3][3], int u_g[][3], int u_b[3][3]){
 	bool found = true ;
 	while( found & ( ig < ng ) ){
 		int tr = 0 ;
-		for( int i = 0 ; i < 3 ; i++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
             tr = tr + uu_g[ig][i][i] ;
 		}
 		if( tr == 3 ){
-            for( int i = 0 ; i < 3 ; i++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
 				v[i] = 0 ;
-				for( int j = 0 ; j < 3 ; j++ ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					v[i] = v[i] + r[j][i]* u_g[ig][j] ;
 				}
             }
@@ -152,21 +152,21 @@ void yyy_find_base(int &ng, int uu_g[][3][3], int u_g[][3], int u_b[3][3]){
             int ilen = 3 ;
             yyy_divide_int( ilen, v, d, found ) ;
             while( ! found & ( ib < 3 ) ){
-				for( int i = 0 ; i < 3 ; i++ ){
+				for( int i = 0 ; i != 3 ; ++i ){
 					u[i] = u_b[ib][i] ;
 					u_b[ib][i] = u_g[ig][i] ;
 				}
 				yyy_invert_int( u_b, r, d ) ;
-				for( int i = 0 ; i < 3 ; i++ ){
+				for( int i = 0 ; i != 3 ; ++i ){
 					v[i] = 0 ;
-					for( int j = 0 ; j < 3 ; j++ ){
+					for( int j = 0 ; j != 3 ; ++j ){
 						v[i] = v[i] + r[j][i]* u[j] ;
 					}
 				}
 				int ilen = 3 ;
 				yyy_divide_int( ilen, v, d, found ) ;
 				if( ! found ){
-					for( int i = 0 ; i < 3 ; i++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
 						u_b[ib][i] = u[i] ;
 					}
 				}
@@ -183,18 +183,18 @@ void yyy_transform_m(int db[3][3], double m[3][3] ){
 	
 	double mdb[3][3] ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             mdb[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				mdb[i][j] = mdb[i][j] + m[k][j]* db[i][k] ;
             }
 		}
 	}
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             m[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				m[i][j] = m[i][j] + db[j][k]* mdb[i][k] ;
             }
 		}
@@ -206,16 +206,16 @@ void yyy_transform_b(int db[3][3], int b[3][3] ){
 	
 	int bdb[3][3] ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             bdb[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				bdb[i][j] = bdb[i][j] + b[k][j]* db[i][k] ;
             }
 		}
 	}
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             b[i][j] = bdb[i][j] ;
 		}
 	}
@@ -257,13 +257,13 @@ void yyy_short_base(double muu[3][3], int uSv[3][3], double mvv[3][3], int vSu[3
 		{  0, 0, 0 },
 	} ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             mvv[i][j] = muu[i][j]/ 144 ;
 		}
 	}
-	for( int it = 13 ; it < 26 ; it++ ){
-		for( int i = 0 ; i < 3 ; i++ ){
+	for( int it = 13 ; it != 26 ; ++it ){
+		for( int i = 0 ; i != 3 ; ++i ){
             v_t[it][i] = - v_t[it-13][i] ;
 		}
 	}
@@ -274,11 +274,11 @@ void yyy_short_base(double muu[3][3], int uSv[3][3], double mvv[3][3], int vSu[3
 		icy = icy + 1 ;
 		if( icy >= 1000 )                           throw "yyy_short_base_:a" ;
 		double sc_max = 0 ;
-		for( int it = 0 ; it < 13 ; it++ ){
+		for( int it = 0 ; it != 13 ; ++it ){
             b_t[it] = 0 ;
             sc_t[it] = 0 ;
-            for( int i = 0 ; i < 3 ; i++ ){
-				for( int j = 0 ; j < 3 ; j++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					sc_t[it] = sc_t[it] + v_t[it][j]* mvv[i][j]* v_t[it][i] ;
 				}
             }
@@ -286,12 +286,12 @@ void yyy_short_base(double muu[3][3], int uSv[3][3], double mvv[3][3], int vSu[3
 		}
 		
 		found = true ;
-		for( int ib = 0 ; ib < 3 ; ib++ ){
+		for( int ib = 0 ; ib != 3 ; ++ib ){
             double sc_min = sc_max* 2 + 1 ;
             int jt = - 1 ;
-            for( int it = 0 ; it < 13 ; it++ ){
+            for( int it = 0 ; it != 13 ; ++it ){
 				if( ( b_t[it] == 0 ) & ( sc_t[it] < sc_min ) ){
-					for( int i = 0 ; i < 3 ; i++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
 						v_b[ib][i] = v_t[it][i] ;
 					}
 					bool ok = true ;
@@ -309,7 +309,7 @@ void yyy_short_base(double muu[3][3], int uSv[3][3], double mvv[3][3], int vSu[3
             }
             if( ( jt < 0 ) | ( jt > 12 ) )           throw "yyy_short_base_:b" ;
             b_t[jt] = ib + 1 ;
-            for( int i = 0 ; i < 3 ; i++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
 				v_b[ib][i] = v_t[jt][i] ;
             }
             found = found & ( jt < 3 ) ;
@@ -322,8 +322,8 @@ void yyy_short_base(double muu[3][3], int uSv[3][3], double mvv[3][3], int vSu[3
 	if( ! found | ( detx == 0 ) )                  throw "yyy_short_base_:c" ;
 	int dety = detx/ 12 ;
 	if( detx != dety* 12 )                         throw "yyy_short_base_:d" ;
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             detx = vSu[i][j]/ dety ;
             if( vSu[i][j] != detx* dety )            throw "yyy_short_base_:e" ;
             vSu[i][j] = detx ;
@@ -366,24 +366,24 @@ void yyy_generate_ops(int &mo, int &no, int vv_o[][3][3])
 	
 	int  w[3][3], ww[3][3], www[3][3], wr[3][3] ;
 	
-	for( int it = 0 ; it < 13 ; it++ ){
-		for( int i = 0 ; i < 3 ; i++ ){
+	for( int it = 0 ; it != 13 ; ++it ){
+		for( int i = 0 ; i != 3 ; ++i ){
             v_t[it+13][i] = - v_t[it][i] ;
 		}
 	}
 	
 	no = 0 ;
-	for( int it = 0 ; it < 26 ; it++ ){
-		for( int jt = 0 ; jt < 26 ; jt++ ){
-            for( int kt = 0 ; kt < 26 ; kt++ ){
-				for( int i = 0 ; i < 3 ; i++ ){
+	for( int it = 0 ; it != 26 ; ++it ){
+		for( int jt = 0 ; jt != 26 ; ++jt ){
+            for( int kt = 0 ; kt != 26 ; ++kt ){
+				for( int i = 0 ; i != 3 ; ++i ){
 					w[0][i] = v_t[it][i] ;
 					w[1][i] = v_t[jt][i] ;
 					w[2][i] = v_t[kt][i] ;
 				}
 				
-				for( int i = 0 ; i < 3 ; i++ ){
-					for( int j = 0 ; j < 3 ; j++ ){
+				for( int i = 0 ; i != 3 ; ++i ){
+					for( int j = 0 ; j != 3 ; ++j ){
 						ww[i][j] = w[i][j] ;
 					}
 				}
@@ -391,7 +391,7 @@ void yyy_generate_ops(int &mo, int &no, int vv_o[][3][3])
 				yyy_invert_int( w, wr, det ) ;
 				int tr = 0 ;
 				int trr = 0 ;
-				for( int i = 0 ; i < 3 ; i++ ){
+				for( int i = 0 ; i != 3 ; ++i ){
 					tr = tr + w[i][i] ;
 					trr = trr + wr[i][i] ;
 				}
@@ -399,28 +399,28 @@ void yyy_generate_ops(int &mo, int &no, int vv_o[][3][3])
 				int cou = 0 ;
 				while( found & ( cou < tr + 3 ) ){
 					cou = cou + 1 ;
-					for( int i = 0 ; i < 3 ; i++ ){
-						for( int j = 0 ; j < 3 ; j++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
+						for( int j = 0 ; j != 3 ; ++j ){
 							www[i][j] = 0 ;
-							for( int k = 0 ; k < 3 ; k++ ){
+							for( int k = 0 ; k != 3 ; ++k ){
 								www[i][j] = www[i][j] + ww[k][j]* w[i][k] ;
 							}
 						}
 					}
-					for( int i = 0 ; i < 3 ; i++ ){
-						for( int j = 0 ; j < 3 ; j++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
+						for( int j = 0 ; j != 3 ; ++j ){
 							ww[i][j] = www[i][j] ;
 						}
 					}
-					for( int i = 0 ; i < 3 ; i++ ){
-						for( int j = 0 ; j < 3 ; j++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
+						for( int j = 0 ; j != 3 ; ++j ){
 							found = found & ( abs( www[i][j] ) <= 1 ) ;
 						}
 					}
 				}
 				if( found ){
-					for( int i = 0 ; i < 3 ; i++ ){
-						for( int j = 0 ; j < 3 ; j++ ){
+					for( int i = 0 ; i != 3 ; ++i ){
+						for( int j = 0 ; j != 3 ; ++j ){
 							vv_o[no][i][j] = w[i][j] ;
 						}
 					}
@@ -447,8 +447,8 @@ void yyy_eigv3(double w[3][3], double a[3][3], double r[3], double b[3][3])
 	double     cosx, sinx, tanx, m2, m3 ;
 	double     tmax, tplus ;
 	
-	for( int i1 = 0 ; i1 < 3 ; i1++ ){
-		for( int j1 = 0 ; j1 < 3 ; j1++ ){
+	for( int i1 = 0 ; i1 != 3 ; ++i1 ){
+		for( int j1 = 0 ; j1 != 3 ; ++j1 ){
             m[i1][j1] = w[i1][j1] ;
             a[i1][j1] = 0 ;
             b[i1][j1] = 0 ;
@@ -460,8 +460,7 @@ void yyy_eigv3(double w[3][3], double a[3][3], double r[3], double b[3][3])
 	int icy = 0 ;
 	bool more[3] = { true, true, true } ;
 	while( more[0] | more[1] | more[2] ){
-		icy = icy + 1 ;
-		if( icy > 40 )                                   throw "yyy_eigv3_:a" ;
+		if( ++icy > 40 )          throw "yyy_eigv3_:a" ;
 		
 		int i2 = c3[i1+1] ;
 		int i3 = c3[i1+2] ;
@@ -528,10 +527,10 @@ void yyy_eigv3(double w[3][3], double a[3][3], double r[3], double b[3][3])
 		
 		int ja = - 1 ;
 		int jb = - 1 ;
-		maxab = - 100 ;
-		for( int ib = 0 ; ib < 2 ; ib++ ){
-            for( int ia = 0 ; ia < 2 ; ia++ ){
-				abc = abs( ab[ib][ia] ) ;
+		maxab = 0.0 ;
+		for( int ib = 0 ; ib != 2 ; ++ib ){
+            for( int ia = 0 ; ia != 2 ; ++ia ){
+				abc = std::fabs( ab[ib][ia] ) ;
 				if( maxab < abc ){
 					ja = ia ;
 					jb = ib ;
@@ -583,7 +582,7 @@ void yyy_eigv3(double w[3][3], double a[3][3], double r[3], double b[3][3])
 		m[i2][i1] = cosb* m2 + sinb* m3 ;
 		m[i3][i1] = cosb* m3 - sinb* m2 ;
 		
-		for( int j1 = 0 ; j1 < 3 ; j1++ ){
+		for( int j1 = 0 ; j1 != 3 ; ++j1 ){
             m2 = a[i2][j1] ;
             m3 = a[i3][j1] ;
             a[i2][j1] = cosa* m2 + sina* m3 ;
@@ -596,7 +595,7 @@ void yyy_eigv3(double w[3][3], double a[3][3], double r[3], double b[3][3])
 		more[i1] = ( testa != 1 ) | ( testb != 1 ) ;
 		i1 = c3[i1+1] ;
 	}
-	for( int i1 = 0 ; i1 < 3 ; i1++ ){
+	for( int i1 = 0 ; i1 != 3 ; ++i1 ){
 		r[i1] = m[i1][i1] ;
 	}
 	//    for( int i1 = 0 ; i1 < 3 ; i1++ ){
@@ -620,48 +619,48 @@ void yyy_score_ops(double mvv[3][3],int &no, int vv_o[][3][3], double sc_o[])
 	
 	yyy_eigv3( mvv, a, r, b ) ;
 	
-	for( int i = 0 ; i < 3 ; i++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
 		r[i] = sqrt( r[i] ) ;
 	}
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             of[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				of[i][j] = of[i][j] + a[k][j]* r[k]* b[i][k] ;
             }
 		}
 	}
-	for( int i = 0 ; i < 3 ; i++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
 		r[i] = 1/ r[i] ;
 	}
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             fo[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				fo[i][j] = fo[i][j] + a[k][j]* r[k]* b[i][k] ;
             }
 		}
 	}
-	for( int io = 0 ; io < no ; io++ ){
-		for( int i = 0 ; i < 3 ; i++ ){
-            for( int j = 0 ; j < 3 ; j++ ){
+	for( int io = 0 ; io != no ; ++io ){
+		for( int i = 0 ; i != 3 ; ++i ){
+            for( int j = 0 ; j != 3 ; ++j ){
 				qo[i][j] = 0 ;
-				for( int k = 0 ; k < 3 ; k++ ){
+				for( int k = 0 ; k != 3 ; ++k ){
 					qo[i][j] = qo[i][j] + vv_o[io][k][j]* fo[i][k] ;
 				}
             }
 		}
-		for( int i = 0 ; i < 3 ; i++ ){
-            for( int j = 0 ; j < 3 ; j++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
+            for( int j = 0 ; j != 3 ; ++j ){
 				oqo[i][j] = 0 ;
-				for( int k = 0 ; k < 3 ; k++ ){
+				for( int k = 0 ; k != 3 ; ++k ){
 					oqo[i][j] = oqo[i][j] + of[k][j]* qo[i][k] ;
 				}
             }
 		}
 		yyy_eigv3( oqo, a, r, b ) ;
 		sc_o[io] = 0 ;
-		for( int i = 0 ; i < 3 ; i++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
             sc_o[io] = sc_o[io] + pow( ( 1 - r[i] ), 2 ) ;
 		}
 		sc_o[io] = sqrt( sc_o[io]/ 3 ) ;
@@ -672,7 +671,7 @@ void yyy_score_ops(double mvv[3][3],int &no, int vv_o[][3][3], double sc_o[])
 void yyy_sort_key(int &nc, int c[], double rc[])
 {
 	
-	for( int ic = 0 ; ic < nc ; ic++ ){
+	for( int ic = 0 ; ic != nc ; ++ic ){
 		c[ic] = ic ;
 		c[ic+nc] = ic ;                           // for nc = 1
 	}
@@ -709,7 +708,7 @@ void yyy_sort_key(int &nc, int c[], double rc[])
             ia = ia + kc ;
             ib = ib + kc ;
 		}
-		for( int ic = 0 ; ic < nc ; ic++ ){
+		for( int ic = 0 ; ic != nc ; ++ic ){
             c[ic] = c[ic+nc] ;
 		}
 		kc = kc* 2 ;
@@ -720,10 +719,10 @@ void yyy_sort_key(int &nc, int c[], double rc[])
 void yyy_multiply_ops(int a[3][3], int b[3][3], int c[3][3])
 {
 	
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             c[i][j] = 0 ;
-            for( int k = 0 ; k < 3 ; k++ ){
+            for( int k = 0 ; k != 3 ; ++k ){
 				c[i][j] = c[i][j] + a[k][j]* b[i][k] ;
             }
 		}
@@ -735,8 +734,8 @@ void yyy_the_same_ops(int a[3][3], int b[3][3], bool &found)
 {
 	
 	found = false ;
-	for( int i = 0 ; i < 3 ; i++ ){
-		for( int j = 0 ; j < 3 ; j++ ){
+	for( int i = 0 ; i != 3 ; ++i ){
+		for( int j = 0 ; j != 3 ; ++j ){
             if( a[i][j] != b[i][j] )                                    return ;
 		}
 	}
@@ -754,7 +753,7 @@ void yyy_collect_group(int &ivb, double &sc_tol,int &no, int h_s[], int o_s[], i
 	int vv_x[3][3] ;
 	
 	if( ivb >= 3 ){
-		for( int i = 0 ; i < 32 ; i++ ) std::cout << '-' ;
+		for( int i = 0 ; i != 32 ; ++i ) std::cout << '-' ;
 		std::cout << std::endl ;
 	}
 	
@@ -816,12 +815,12 @@ void yyy_collect_group(int &ivb, double &sc_tol,int &no, int h_s[], int o_s[], i
 		}
 		
 		if( ivb >= 3 ){
-			for( int i = 0 ; i < 32 ; i++ ) std::cout << '-' ;
+			for( int i = 0 ; i != 32 ; ++i ) std::cout << '-' ;
 			std::cout << std::endl ;
             for( int jh = 0 ; jh <= ih ; jh++ ) printf( "%4d", s_h[jh] + 1 ) ;
             for( int jh = 0 ; jh + 1 <= nh ; jh++ ) printf( "%4d", s_h[jh] + 1 ) ;
 			std::cout << std::endl ;
-			for( int i = 0 ; i < 32 ; i++ ) std::cout << '-' ;
+			for( int i = 0 ; i != 32 ; ++i ) std::cout << '-' ;
 			std::cout << std::endl ;
 		}
 		
@@ -842,8 +841,8 @@ void yyy_collect_group(int &ivb, double &sc_tol,int &no, int h_s[], int o_s[], i
             s_h[ih] = is ;
             sc_h[ih] = sc_o[o_s[is]] ;
 			
-            for( int i = 0 ; i < 3 ; i++ ){
-				for( int j = 0 ; j < 3 ; j++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					vv_h[ih][i][j] = vv_o[o_s[is]][i][j] ;
 				}
             }
@@ -854,7 +853,7 @@ void yyy_collect_group(int &ivb, double &sc_tol,int &no, int h_s[], int o_s[], i
 	if( ivb >= 3 ){
 		for( int jh = 0 ; jh + 1 <= nh ; jh++ ) printf( "%4d", s_h[jh] + 1 ) ;
 		std::cout << std::endl ;
-		for( int i = 0 ; i < 32 ; i++ ) std::cout << '-' ;
+		for( int i = 0 ; i != 32 ; ++i ) std::cout << '-' ;
 		std::cout << std::endl ;
 	}
 }
@@ -937,7 +936,7 @@ void yyy_test_group( int &nh, int vv_h[24][3][3], int h_hh[24][24], int h_h[24],
 	
 	for( int ih = 0 ; ih < nh ; ih++ ){
 		tr_h[ih] = 0 ;
-		for( int i = 0 ; i < 3 ; i++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
             tr_h[ih] = tr_h[ih] + vv_h[ih][i][i] ;
 		}
 	}
@@ -958,14 +957,14 @@ void yyy_write_group( char ch[],
 	std::cout << "    no    tr" << std::endl ;
 	for( int ih = 0 ; ih < nh ; ih++ ){
 		std::cout << std::endl ;
-		for( int j = 0 ; j < 3 ; j++ ){
+		for( int j = 0 ; j != 3 ; ++j ){
             if( j == 0 ){
 				printf( "%6d%6d", ih + 1, tr_h[ih] ) ;
             }
             else{
 				std::cout << "            " ;
             }
-            for( int i = 0 ; i < 3 ; i++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
 				printf( "%4d", vv_h[ih][i][j] ) ;
             }
 			std::cout << std::endl ;
@@ -1027,8 +1026,8 @@ void yyy_test_group12(int &nh, int uu_h[24][3][3], int h_hh[24][24], int tr_h[24
 		for( int jh = 0 ; jh < nh ; jh++ ){
             yyy_multiply_ops( uu_h[jh], uu_h[ih], uu_x ) ;
             int kh = h_hh[ih][jh] ;
-            for( int i = 0 ; i < 3 ; i++ ){
-				for( int j = 0 ; j < 3 ; j++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					uu_y[i][j] = uu_h[kh][i][j]* 12 ;
 				}
             }
@@ -1040,7 +1039,7 @@ void yyy_test_group12(int &nh, int uu_h[24][3][3], int h_hh[24][24], int tr_h[24
 	
 	for( int ih = 0 ; ih < nh ; ih++ ){
 		int tr_x = 0 ;
-		for( int i = 0 ; i < 3 ; i++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
             tr_x = tr_x + uu_h[ih][i][i] ;
 		}
 		if( tr_x != tr_h[ih]* 12 )                throw "yyy_test_group12_:b" ;
@@ -1060,16 +1059,16 @@ void yyy_map_subgroup(int &ng, int uu_g[][3][3],
 	}
 	int ip = - 1 ;
 	for( int ig = 0 ; ig < ng ; ig++ ){
-		for( int i = 0 ; i < 3 ; i++ ){
-            for( int j = 0 ; j < 3 ; j++ ){
+		for( int i = 0 ; i != 3 ; ++i ){
+            for( int j = 0 ; j != 3 ; ++j ){
 				uu_x[i][j] = uu_g[ig][i][j]* 12 ;
             }
 		}
 		int d_x ;
 		yyy_invert_int( uu_x, uu_y, d_x ) ;
 		if( d_x < 0 ){
-            for( int i = 0 ; i < 3 ; i++ ){
-				for( int j = 0 ; j < 3 ; j++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					uu_x[i][j] = - uu_x[i][j] ;
 				}
             }
@@ -1326,15 +1325,15 @@ void yyy_cell2tg( double cell[6], double &sc_tol,
 		if( nc > lc )                                  throw "yyy_cell2tg_:a" ;
 		for( int ic = 0 ; ic < nc ; ic++ ){
             sc_c[ic] = sc_h[h_c[ic]] ;
-            for( int i = 0 ; i < 3 ; i++ ){
-				for( int j = 0 ; j < 3 ; j++ ){
+            for( int i = 0 ; i != 3 ; ++i ){
+				for( int j = 0 ; j != 3 ; ++j ){
 					uu_c[ic][i][j] = uu_h[h_c[ic]][i][j] ;
 				}
             }
 		}
 		ierr = 0 ;
 	}
-	catch( char *msg ){
+	catch( const char *msg ){
 		ierr = 1 ;
 		if( ivb > 0 ){
 			std::cerr << msg << std::endl ;
