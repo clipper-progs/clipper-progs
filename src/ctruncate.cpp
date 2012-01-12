@@ -515,7 +515,7 @@ int main(int argc, char **argv)
   // H test for twinning
 
   if (twintest != "table") {
-	  itwin = Htest_driver_fp(iptr, prog, debug);
+	  itwin = Htest_driver_table(iptr, prog, debug);
   }
 
   if (twintest != "first_principles") {
