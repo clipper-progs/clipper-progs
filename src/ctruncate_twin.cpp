@@ -193,7 +193,7 @@ namespace ctruncate {
 		clipper::Cell      cell = isig.hkl_info().cell();
 		
 		const int scalefac = 12;           // scale factor for integer symops
-		double sc_tol = 0.05;    // tolerance for determining candidate twinops
+		double sc_tol = 3.5;    // tolerance for determining candidate twinops, obliquity in degrees
 		int lc = 48;             // maximum number of twinops that can be stored
 		int nc = 0;
 		int ivb = 0;
@@ -208,15 +208,14 @@ namespace ctruncate {
 		int nsymops = spgr.num_symops();
 		//printf("nsymops = %d\n",nsymops);
 		clipper::Grid g( 12, 12, 12 );
-		for (int i=0; i<nsymops; i++) {
+		for (int i=0; i!=nsymops; ++i) {
 			clipper::Isymop isymop( spgr.symop(i), g );
 			/*for (int j=0; j<3; j++) {
 			 printf("%6d %6d %6d   %6d\n", isymop.rot()(j,0), isymop.rot()(j,1), isymop.rot()(j,2), isymop.trn()[j] );
 			 }
 			 printf("\n");*/
 			trans.push_back( isymop.trn() );
-			// need to transpose matrix before passing to fortran
-			rot.push_back( isymop.rot().transpose() );
+			rot.push_back( isymop.rot() );
 		}
 		
 		int vv[nsymops][3][3];
@@ -243,7 +242,7 @@ namespace ctruncate {
 		
 		
 		if (nc > 1) {
-			for (int k=1; k<nc; k++) {
+			for (int k=1; k!=nc; ++k) {
 				// Transpose matrix once because passed from Fortran to C, then a second time because Andrey's
 				// convention is that (h,k,l) is postmultiplied by the twinning operator, whereas mine is that
 				// (h,k,l) is premultiplied by the the twinning operator. Net result: don't do anything!
@@ -251,7 +250,9 @@ namespace ctruncate {
 																   ,uu_c[k][1][2],uu_c[k][2][0],uu_c[k][2][1],uu_c[k][2][2]);
 				clipper::String s;
 				MatrixToString(twinoper,s);
-				std::cout << "Twinning operator: " << s << "\n";
+				std::cout << "Twinning operator: " << s << std::endl;
+                std::cout << "      Obliquity of the twin operator is " << sc_o[k] << " degrees" << std::endl;
+                std::cout << "      (above 2 degrees probably be ignored)" << std::endl;
 				/*for (int i=0; i<3; i++) {
 				 // Divide by 12 (scale factor for integer syops)
 				 printf("%7.4f %7.4f %7.4f\n",double(twinoper(i,0))/12.0, double(twinoper(i,1))/12.0, double(twinoper(i,2))/12.0 );
