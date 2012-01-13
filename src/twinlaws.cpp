@@ -1277,7 +1277,7 @@ void yyy_write_classes( int &np, int &nc, int h_c[24], int h_pc[24][24], int tr_
 //-   13/01/2012 ------
 //-   new_score (obliquity) = 70.175* old_score
 //-   (see commented lines at the end of "subroutine yyy_score_ops")
-//-   e.g. score 0.03 approximatel corresponds to obliquity 2 degrees
+//-   e.g. score 0.03 approximately corresponds to obliquity 2 degrees
 
 void yyy_cell2tg(
 	double cell[6], double &sc_tol,
