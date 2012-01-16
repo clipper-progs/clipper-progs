@@ -251,7 +251,7 @@ namespace ctruncate {
 				clipper::String s;
 				MatrixToString(twinoper,s);
 				std::cout << "Twinning operator: " << s << std::endl;
-                std::cout << "      Obliquity of the twin operator is " << sc_o[k] << " degrees" << std::endl;
+                std::cout << "      Obliquity of the twin operator is " << sc_c[k] << " degrees" << std::endl;
                 std::cout << "      (above 2 degrees probably be ignored)" << std::endl;
 				/*for (int i=0; i<3; i++) {
 				 // Divide by 12 (scale factor for integer syops)
