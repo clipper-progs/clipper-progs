@@ -178,141 +178,27 @@ namespace ctruncate {
 		return ntw;
 	}
 	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog)
+    void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth& uao )
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		
-		clipper::Cell cell = fsig.hkl_info().cell();
-		clipper::Spacegroup spg = fsig.hkl_info().spacegroup();
-		
-		std::vector<float> somov(nbins,0.0);
-		std::vector<float> somsdov(nbins,0.0);
-		std::vector<int> numov(nbins,0);
-		std::vector<float> enumov(nbins,0.0);
-		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
+		// get eigenvectors of aniso_U
+		clipper::Mat33<float> e123;
+		{
+			clipper::Matrix<float> m(3,3);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					m(i,j) = uao(i,j);
+			m.eigen();
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					e123(i,j) = m(i,j);
 		}
 		
-		int nzerosigma = 0;
-		float cone = 30.0; //hardwired for now
-		float ang;
-		float cosang;
-		
-		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-			if ( !fsig[ih].missing() ) {
-				// bin number different in C because arrays start at zero
-				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
-				float epsiln = 1.0f/ih.hkl_class().epsilonc();
-				
-				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
-					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
-						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
-						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
-						
-						clipper::Coord_reci_orth hc(rj.coord_reci_orth(cell) );
-						
-						for (int j=0;j!=3;++j) {
-							cosang = fabs(hc[j])/sqrt(ih.invresolsq());
-							// cosang can stray just past 1.0
-							cosang = std::min(cosang, 1.0f);
-							ang = acos(cosang);
-							if ( ang < clipper::Util::d2rad(cone) ) {
-								somdir[j][bin] += fsig[ih].f()*epsiln;
-								if ( fsig[ih].sigf() > 0.0f ) somsddir[j][bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
-								enumdir[j][bin] += epsiln;
-								numdir[j][bin]++;
-							}
-						}
-						somov[bin] += fsig[ih].f()*epsiln;
-						if ( fsig[ih].sigf() > 0.0f ) somsdov[bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
-						else nzerosigma++;
-						enumov[bin] += epsiln;
-						numov[bin]++;
-					}
-				}
-			}
-		}
-		
-		for (int i=0;i != nbins; ++i) {
-			for (int j=0;j!=3;++j) {
-				if (numdir[j][i] == 0) {
-					somdir[j][i] = 0;
-					somsddir[j][i] = 0;
-				}
-				else {
-					somdir[j][i] /= enumdir[j][i];
-					somsddir[j][i] /= enumdir[j][i];
-				}
-			}
-			if (numov[i] == 0) {
-				somov[i] = 0.0;
-				somsdov[i] = 0.0;
-			}
-			else {
-				somov[i] /= enumov[i];
-				somsdov[i] /= enumov[i];
-			}
-		}
-		
-		if (nzerosigma > 0) {
-			prog.summary_beg();
-			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
-			prog.summary_end();
-		}
-		
-		// calculate completeness
-		std::vector<float> sumov(nbins,0.0);
-		std::vector<float> summeas(nbins,0.0);
-		std::vector<float> completeness(nbins,0.0);
-		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-			// bin number different in C because arrays start at zero
-			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-			if ( bin < nbins && bin >= 0 ) sumov[bin] += 1.0;
-			if ( !fsig[ih].missing() && bin < nbins && bin >= 0) summeas[bin] += 1.0;
-		}
-		for (int i=1; i<nbins; i++) {
-			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
-		}
-		
-		
-		printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
-		printf("$GRAPHS");
-		printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
-		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
-		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-		printf(": Completeness v resolution:N:1,14:\n");
-		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness$$\n$$\n");
-		
-		
-		for(int i=0;i<nbins;i++){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
-			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
-			printf("%8.4f\n",completeness[i]);
-		}
-		printf("$$\n\n");
-	}
-	
-	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog)
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		
 		clipper::Cell cell = isig.hkl_info().cell();
 		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
+		
 		
 		std::vector<float> somov(nbins,0.0);
 		std::vector<float> somsdov(nbins,0.0);
@@ -348,10 +234,10 @@ namespace ctruncate {
 						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
 						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
 						
-						clipper::Coord_reci_orth hc(rj.coord_reci_orth(cell) );
+						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
 						
 						for (int j=0;j!=3;++j) {
-							cosang = fabs(hc[j])/sqrt(ih.invresolsq());
+							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
 							// cosang can stray just past 1.0
 							cosang = std::min(cosang, 1.0f);
 							ang = acos(cosang);
@@ -451,6 +337,168 @@ namespace ctruncate {
 		printf("$$\n\n");
 	}
 
+    
+	
+    void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth& uao )
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		// get eigenvectors of aniso_U
+		clipper::Mat33<float> e123;
+		{
+			clipper::Matrix<float> m(3,3);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					m(i,j) = uao(i,j);
+			m.eigen();
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					e123(i,j) = m(i,j);
+		}
+		
+		
+		clipper::Cell cell = isig.hkl_info().cell();
+		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
+		
+		
+		std::vector<float> somov(nbins,0.0);
+		std::vector<float> somsdov(nbins,0.0);
+		std::vector<int> numov(nbins,0);
+		std::vector<float> enumov(nbins,0.0);
+		
+		float somdir[3][nbins];
+		float somsddir[3][nbins];
+		int numdir[3][nbins];
+		float enumdir[3][nbins];
+		
+		for (int i=0;i<3;i++){
+			for (int j=0;j<nbins;j++){
+				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
+				numdir[i][j] = 0;
+			}
+		}
+		
+		int nzerosigma = 0;
+		float cone = 30.0; //hardwired for now
+		float ang;
+		float cosang;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ) {
+				// bin number different in C because arrays start at zero
+				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
+				float epsiln = 1.0f/ih.hkl_class().epsilonc();
+				
+				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
+					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
+						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
+						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
+						
+						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
+						
+						for (int j=0;j!=3;++j) {
+							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
+							// cosang can stray just past 1.0
+							cosang = std::min(cosang, 1.0f);
+							ang = acos(cosang);
+							if ( ang < clipper::Util::d2rad(cone) ) {
+								somdir[j][bin] += isig[ih].f()*epsiln;
+								if ( isig[ih].sigf() > 0.0f ) somsddir[j][bin] += epsiln*isig[ih].f()/isig[ih].sigf();
+								enumdir[j][bin] += epsiln;
+								numdir[j][bin]++;
+							}
+						}
+						somov[bin] += isig[ih].f()*epsiln;
+						if ( isig[ih].sigf() > 0.0f ) somsdov[bin] += epsiln*isig[ih].f()/isig[ih].sigf();
+						else nzerosigma++;
+						enumov[bin] += epsiln;
+						numov[bin]++;
+					}
+				}
+			}
+		}
+		
+		for (int i=0;i != nbins; ++i) {
+			for (int j=0;j!=3;++j) {
+				if (numdir[j][i] == 0) {
+					somdir[j][i] = 0;
+					somsddir[j][i] = 0;
+				}
+				else {
+					somdir[j][i] /= enumdir[j][i];
+					somsddir[j][i] /= enumdir[j][i];
+				}
+			}
+			if (numov[i] == 0) {
+				somov[i] = 0.0;
+				somsdov[i] = 0.0;
+			}
+			else {
+				somov[i] /= enumov[i];
+				somsdov[i] /= enumov[i];
+			}
+		}
+		
+		if (nzerosigma > 0) {
+			prog.summary_beg();
+			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
+			prog.summary_end();
+		}
+		
+		// calculate completeness
+		std::vector<float> sumov(nbins,0.0);
+		std::vector<float> summeas(nbins,0.0);
+		std::vector<float> summeas1(nbins,0.0);
+		std::vector<float> summeas2(nbins,0.0);
+		std::vector<float> summeas3(nbins,0.0);
+		std::vector<float> completeness(nbins,0.0);
+		std::vector<float> completeness1(nbins,0.0);
+		std::vector<float> completeness2(nbins,0.0);
+		std::vector<float> completeness3(nbins,0.0);
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			// bin number different in C because arrays start at zero
+			float mult = ih.hkl_class().epsilonc();
+			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
+			if ( !isig[ih].missing() && bin < nbins && bin >= 0) {
+				summeas[bin] += mult;
+				float isigi = isig[ih].f()/isig[ih].sigf();
+				if (isigi >= 1.0f ) summeas1[bin] += mult;
+				if (isigi >= 2.0f ) summeas2[bin] += mult;
+				if (isigi >= 3.0f ) summeas3[bin] += mult;
+			}
+		}
+		for (int i=1; i!=nbins; ++i) {
+			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
+		}
+		
+		
+		printf("\n$TABLE: Structure amplitude statistics:\n");
+		printf("$GRAPHS");
+		printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
+		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
+		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
+		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
+		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
+		
+		
+		for(int i=0;i<nbins;i++){
+			double res = maxres*(double(i)+0.5)/double(nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
+			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
+			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
+		}
+		printf("$$\n\n");
+	}
+
+    
 	
 	//--------------------------------------------------------------
 	

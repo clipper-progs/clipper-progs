@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.1.0", "$Date: 2011/03/30" );
+  CCP4Program prog( "ctruncate", "1.4.0", "$Date: 2011/12/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
   prog.summary_end();
 
   // falloff and completeness for input intensities
-	if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
+	//if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
 	
 	// Ice rings
 	ctruncate::Rings icerings;
@@ -515,7 +515,9 @@ int main(int argc, char **argv)
  
     // anisotropy correction
     
-    if (aniso)  {
+    clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0);
+    
+    {
         double Itotal = 0.0;
         double FFtotal = 0.0;
         prog.summary_beg();
@@ -541,7 +543,7 @@ int main(int argc, char **argv)
         float beta = 2.0*wilson.B();
         clipper::U_aniso_orth ua0 = sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I);
         clipper::U_aniso_orth ua1(clipper::Util::b2u(beta),clipper::Util::b2u(beta),clipper::Util::b2u(beta),0.0,0.0,0.0);
-        clipper::U_aniso_orth uao = ua1+(-ua0);
+        uao = ua1+(-ua0);
         //uao=-ua0;
 
         
@@ -743,7 +745,7 @@ int main(int argc, char **argv)
 
 
   // falloff calculation (Yorgo Modis)
-	yorgo_modis_plot(fsig,maxres,60,prog);
+	yorgo_modis_plot(fsig,maxres,60,prog,uao);
     
     // anomalous signal
     if (anomalous ) {
