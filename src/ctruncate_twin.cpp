@@ -277,7 +277,7 @@ namespace ctruncate {
 		char pointgroup[20];
 		strcpy(pointgroup,spg1->point_group);
 		
-		printf("\n   Potential twinning operators found from tables:\n\n");
+		printf("\n   Potential twinning operators will be found from tables:\n\n");
 		clipper::Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
 		int scalefac = 1;
 		clipper::String s;
