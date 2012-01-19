@@ -549,5 +549,246 @@ namespace ctruncate {
 		return;	
 	}
 	
-	
+    // run on scaled on merged data, however the best stats will be from the unmerged set.
+    // get from aimless
+    template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::J_sigJ_ano<T> >& isig_ano, int nbins)
+    {
+        typedef clipper::HKL_data_base::HKL_reference_index HRI;
+        
+        _nbins = nbins;
+        std::vector<int> sumov(nbins,0.0);
+		std::vector<int> summeas(nbins,0.0);
+        std::vector<clipper::ftype> meandI(nbins,0.0);
+        std::vector<clipper::ftype> meandIsigdI(nbins,0.0);
+        std::vector<clipper::ftype> meanI(nbins,0.0);
+        
+        
+        clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
+        
+        for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
+            int eps = ih.hkl_class().epsilon();
+            int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
+            if ( ih.hkl_class().centric() ) {
+                //no anomalous information
+                sumov[bin] += eps;
+                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
+                    meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+                } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                    meanI[bin] += obs_pl(isig_ano[ih]);
+                } else {
+                    meanI[bin] += obs_mi(isig_ano[ih]);
+                }
+            } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                clipper::ftype Ip = obs_pl(isig_ano[ih]);
+                clipper::ftype sp = sigobs_pl(isig_ano[ih]);
+                clipper::ftype Im = obs_mi(isig_ano[ih]);
+                clipper::ftype sm = sigobs_mi(isig_ano[ih]);
+                clipper::ftype dI = Ip - Im;
+                clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
+                if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
+                    summeas[bin] += eps;
+                }
+                meandI[bin] += dI;
+                meandIsigdI[bin] += dI/ds;
+                meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+            } else  {
+                sumov[bin] += eps;
+                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                    meanI[bin] += obs_pl(isig_ano[ih]);
+                } else {
+                    meanI[bin] += obs_mi(isig_ano[ih]);
+                }
+            }
+        }
+        
+        for (int i= 0; i != nbins ; ++i ) {
+            meandI[i] /= (float) sumov[i];
+            meandIsigdI[i] /= (float) sumov[i];
+        }
+        
+        //assume values decrease monatomically.  Cut at measurability 5%
+        //Dauter Acta D62 (2006) 867
+        //Zwart Acta D61 (2005) 1437
+        clipper::ftype meas_limit;
+        int i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( float(summeas[i1])/float(sumov[i1]) < 0.05 ) break;
+        }
+        if ( i1 == nbins ) {
+            meas_limit = maxres;
+        } else {
+            meas_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        //assume values decrease monatomically.  Cut at DeltaAnom at 1.3
+        //Dauter Acta D62 (2006) 867
+        //Schneider Acta D58 (2002) 1772
+        clipper::ftype anom_limit;
+        i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( meandIsigdI[i1] < 1.3 ) break;
+        }
+        if ( i1 == nbins ) {
+            anom_limit = maxres;
+        } else {
+            anom_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        //assume values decrease monatomically.  Cut at deltaI/I 0.6%
+        //Zwart Acta D61 (2005) 1437
+        //Wang Methods Enzymol 115 (1985) 90
+        clipper::ftype wang_limit;
+        i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( meandI[i1]/meanI[i1] < 0.006 ) break;
+        }
+        if ( i1 == nbins ) {
+            wang_limit = maxres;
+        } else {
+            wang_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        std::cout << "Estimated limits of anomalous signal" << std::endl;
+ 
+        std::cout << "      Wang limit (deltaI/I) > 0.6% : " << 1.0/std::sqrt(wang_limit) << " A " << std::endl;
+        std::cout << "      anomalous limit (deltaI/sig) > 1.3 : " << 1.0/std::sqrt(anom_limit) << " A " << std::endl;
+        std::cout << "      measurability limit (Nanon/Nov) > 5% : " << 1.0/std::sqrt(meas_limit) << " A " << std::endl;
+         std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
+        
+        printf("\n$TABLE: Intensity anomalous analysis:\n");
+		printf("$GRAPHS");
+		printf(": Mn(dI) v resolution:N:1,2:\n");
+        printf(": Mn(dI/sigdI) v resolution:N:1,3:\n");
+		printf(": Mn(dI/I) v resolution:N:1,4:\n");
+		printf(": Mesurability v resolution:N:1,5:\n");
+		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
+		for(int i=0;i!=nbins;++i){
+			double res = maxres*(double(i)+0.5)/double(nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i1])/float(sumov[i1]));
+		}
+		printf("$$\n\n");
+
+    }
+    
+    template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::G_sigG_ano<T> >& isig_ano, int nbins)
+    {
+        typedef clipper::HKL_data_base::HKL_reference_index HRI;
+        
+        _nbins = nbins;
+        std::vector<int> sumov(nbins,0.0);
+		std::vector<int> summeas(nbins,0.0);
+        std::vector<clipper::ftype> meandI(nbins,0.0);
+        std::vector<clipper::ftype> meandIsigdI(nbins,0.0);
+        std::vector<clipper::ftype> meanI(nbins,0.0);
+        
+        
+        clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
+        
+        for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
+            int eps = ih.hkl_class().epsilon();
+            int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
+            if ( ih.hkl_class().centric() ) {
+                //no anomalous information
+                sumov[bin] += eps;
+                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
+                    meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+                } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                    meanI[bin] += obs_pl(isig_ano[ih]);
+                } else {
+                    meanI[bin] += obs_mi(isig_ano[ih]);
+                }
+            } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                clipper::ftype Ip = obs_pl(isig_ano[ih]);
+                clipper::ftype sp = sigobs_pl(isig_ano[ih]);
+                clipper::ftype Im = obs_mi(isig_ano[ih]);
+                clipper::ftype sm = sigobs_mi(isig_ano[ih]);
+                clipper::ftype dI = Ip - Im;
+                clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
+                if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
+                    summeas[bin] += eps;
+                }
+                meandI[bin] += dI;
+                meandIsigdI[bin] += dI/ds;
+                meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+            } else  {
+                sumov[bin] += eps;
+                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+                    meanI[bin] += obs_pl(isig_ano[ih]);
+                } else {
+                    meanI[bin] += obs_mi(isig_ano[ih]);
+                }
+            }
+        }
+        
+        for (int i= 0; i != nbins ; ++i ) {
+            meandI[i] /= (float) sumov[i];
+            meandIsigdI[i] /= (float) sumov[i];
+        }
+        
+        //assume values decrease monatomically.  Cut at measurability 5%
+        //Dauter Acta D62 (2006) 867
+        //Zwart Acta D61 (2005) 1437
+        clipper::ftype meas_limit;
+        int i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( float(summeas[i1])/float(sumov[i1]) < 0.05 ) break;
+        }
+        if ( i1 == nbins ) {
+            meas_limit = maxres;
+        } else {
+            meas_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        //assume values decrease monatomically.  Cut at DeltaAnom at 1.3
+        //Dauter Acta D62 (2006) 867
+        //Schneider Acta D58 (2002) 1772
+        clipper::ftype anom_limit;
+        i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( meandIsigdI[i1] < 1.3 ) break;
+        }
+        if ( i1 == nbins ) {
+            anom_limit = maxres;
+        } else {
+            anom_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        //assume values decrease monatomically.  Cut at deltaI/I 0.6%
+        //Zwart Acta D61 (2005) 1437
+        //Wang Methods Enzymol 115 (1985) 90
+        clipper::ftype wang_limit;
+        i1 = 0;
+        for (  ; i1 != nbins ; ++i1 ) {
+            if ( meandI[i1]/meanI[i1] < 0.006 ) break;
+        }
+        if ( i1 == nbins ) {
+            wang_limit = maxres;
+        } else {
+            wang_limit = maxres*(float(i1)+0.5)/float(nbins);
+        }
+        
+        std::cout << "Estimated limits of anomalous signal" << std::endl;
+        
+        std::cout << "      Wang limit (deltaF/F) > 0.6% : " << 1.0/std::sqrt(wang_limit) << " A " << std::endl;
+        std::cout << "      anomalous limit (deltaF/sig) > 1.3 : " << 1.0/std::sqrt(anom_limit) << " A " << std::endl;
+        std::cout << "      measurability limit (Nanon/Nov) > 5% : " << 1.0/std::sqrt(meas_limit) << " A " << std::endl;
+        std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
+        
+        printf("\n$TABLE: Structure factor anomalous analysis:\n");
+		printf("$GRAPHS");
+		printf(": Mn(dF) v resolution:N:1,2:\n");
+        printf(": Mn(dF/sigdF) v resolution:N:1,3:\n");
+		printf(": Mn(dF/F) v resolution:N:1,4:\n");
+		printf(": Mesurability v resolution:N:1,5:\n");
+		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
+		for(int i=0;i!=nbins;++i){
+			double res = maxres*(double(i)+0.5)/double(nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i1])/float(sumov[i1]));
+		}
+		printf("$$\n\n");
+    }
+
+    
+            template class AnomStats<clipper::ftype32>;
+            template class AnomStats<clipper::ftype64>;
 }

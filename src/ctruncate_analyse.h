@@ -13,6 +13,7 @@
 
 #include "clipper/clipper.h"
 #include "clipper/clipper-ccp4.h"
+#include "alt_hkl_datatypes.h"
 
 namespace ctruncate {
 	
@@ -54,6 +55,26 @@ namespace ctruncate {
 		std::vector<float> _patterson;
 	};
 	
+// vs resolution and half dataset CC
+template<class T> class AnomStats
+{
+public:
+    enum TYPE { F, I };
+    AnomStats(clipper::HKL_data<clipper::datatypes::J_sigJ_ano<T> >& hkl_data, int nbins=60);
+    AnomStats(clipper::HKL_data<clipper::datatypes::G_sigG_ano<T> >& hkl_data, int nbins=60);
+protected:
+    const T&    obs_pl( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.I_pl(); }
+    const T&    obs_mi( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.I_mi(); }
+    const T& sigobs_pl( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.sigI_pl(); }
+    const T& sigobs_mi( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.sigI_pl(); }
+    const T&    obs_pl( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.f_pl(); }
+    const T&    obs_mi( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.f_mi(); }
+    const T& sigobs_pl( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.sigf_pl(); }
+    const T& sigobs_mi( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.sigf_pl(); }
+ 
+private:
+    int _nbins;
+};
+    
 }
-
 #endif

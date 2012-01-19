@@ -744,6 +744,13 @@ int main(int argc, char **argv)
 
   // falloff calculation (Yorgo Modis)
 	yorgo_modis_plot(fsig,maxres,60,prog);
+    
+    // anomalous signal
+    if (anomalous ) {
+        if (amplitudes) AnomStats<float> anomstats(fsig_ano);
+        else AnomStats<float> anomstats(isig_ano);
+    }
+
 	
 	{
 		ctruncate::PattPeak patt_peak(std::sqrt(maxres));
