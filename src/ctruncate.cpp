@@ -348,15 +348,21 @@ int main(int argc, char **argv)
   float ratio = next_peak/top_peak;
   float dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
   // look for peaks > 20% of origin peak and at least 0.1 distant from origin
+  // precentage estimate is Zwartz CCP4 Newsletter 42
+  const double aval = 0.0679;
+  const double bval = 3.56;
+  double pval = (1.0 - std::exp(-std::pow(ratio/(aval*(1.0-ratio)),-bval)) )*100.0;;
   prog.summary_beg();
   printf("\n\nTRANSLATIONAL NCS:\n\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
-	  printf("Translational NCS has been detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
-      printf("Ratio = %f\n",ratio);
-      printf("Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
+	  printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %f5.2 (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],pval,reso_Patt.limit() );
+      printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
+      printf("Peak Ratio = %f \n",ratio);
+      printf("Peak Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
   }
   else {
 	  printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
+      printf("Top off origin peak at (%6.3f, %6.3f, %6.3f) with a probability of%f5.2\n",c0[0],c0[1],c0[2],pval); 
   }
   prog.summary_end();
 
