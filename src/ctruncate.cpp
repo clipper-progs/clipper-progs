@@ -362,7 +362,7 @@ int main(int argc, char **argv)
   }
   else {
 	  printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
-      printf("Top off origin peak at (%6.3f, %6.3f, %6.3f) with a probability of%f5.2\n",c0[0],c0[1],c0[2],pval); 
+      if ( dist2 > 0.01 ) printf("Top off origin peak at (%6.3f, %6.3f, %6.3f) with a probability of %5.2f\n",c0[0],c0[1],c0[2],pval); 
   }
   prog.summary_end();
 
