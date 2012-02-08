@@ -163,6 +163,7 @@ AC_CONFIG_FILES([Makefile
                  src/parrot/Makefile
                  src/buccaneer/Makefile
                  src/sloop/Makefile
+                 src/nautilus/Makefile
                  html/Makefile
                  ])
 

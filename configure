@@ -5710,7 +5710,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/parrot/Makefile src/buccaneer/Makefile src/sloop/Makefile html/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/pirate/Makefile src/parrot/Makefile src/buccaneer/Makefile src/sloop/Makefile src/nautilus/Makefile html/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -6462,6 +6462,7 @@ do
     "src/parrot/Makefile") CONFIG_FILES="$CONFIG_FILES src/parrot/Makefile" ;;
     "src/buccaneer/Makefile") CONFIG_FILES="$CONFIG_FILES src/buccaneer/Makefile" ;;
     "src/sloop/Makefile") CONFIG_FILES="$CONFIG_FILES src/sloop/Makefile" ;;
+    "src/nautilus/Makefile") CONFIG_FILES="$CONFIG_FILES src/nautilus/Makefile" ;;
     "html/Makefile") CONFIG_FILES="$CONFIG_FILES html/Makefile" ;;
 
   *) as_fn_error "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

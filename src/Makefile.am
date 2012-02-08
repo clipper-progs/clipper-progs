@@ -1,5 +1,5 @@
 DIST_SUBDIRS = pirate buccaneer parrot sloop
-SUBDIRS = pirate buccaneer parrot sloop
+SUBDIRS = pirate buccaneer parrot sloop nautilus
 
 bin_PROGRAMS = chltofom cphasematch csfcalc cfft cinvfft csigmaa cecalc cphasecombine cpatterson caniso convert2mtz ctruncate csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut comit
 
@@ -41,7 +41,7 @@ comit_SOURCES = comit.cpp
 
 EXTRA_DIST = README
 
-INCLUDES = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
+AM_CPPFLAGS = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
 	   $(BOOST_CXXFLAGS) -I$(includedir)
 
 LIBS = $(PTHREAD_CFLAGS) $(CLIPPER_LIBS) $(FFTW_LIBS) $(CCP4_LIBS) $(MMDB_LIBS) $(CCTBX_LIBS) $(PTHREAD_LIBS) @LIBS@

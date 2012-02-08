@@ -349,7 +349,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 DIST_SUBDIRS = pirate buccaneer parrot sloop
-SUBDIRS = pirate buccaneer parrot sloop
+SUBDIRS = pirate buccaneer parrot sloop nautilus
 chltofom_SOURCES = chltofom.cpp
 cphasematch_SOURCES = cphasematch.cpp
 csfcalc_SOURCES = csfcalc.cpp
@@ -369,7 +369,7 @@ cmodeltoseq_SOURCES = cmodeltoseq.cpp
 cmapcut_SOURCES = cmapcut.cpp
 comit_SOURCES = comit.cpp
 EXTRA_DIST = README
-INCLUDES = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
+AM_CPPFLAGS = $(PTHREAD_CFLAGS) $(CLIPPER_CXXFLAGS) $(FFTW_CXXFLAGS) $(MMDB_CXXFLAGS)  $(CCP4_CXXFLAGS) $(CCTBX_CXXFLAGS) \
 	   $(BOOST_CXXFLAGS) -I$(includedir)
 
 all: all-recursive
