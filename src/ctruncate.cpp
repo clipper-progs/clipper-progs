@@ -78,6 +78,7 @@ int main(int argc, char **argv)
 	int nprm = 60;
 
   clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
+  clipper::Resolution reso_Twin = clipper::Resolution( 0.1 );
 
   // clipper seems to use its own column labels, then append yours
 
@@ -133,6 +134,8 @@ int main(int argc, char **argv)
       if ( ++arg < args.size() ) ipseq = args[arg];
     } else if ( args[arg] == "-tNCSres" ) {
       if ( ++arg < args.size() ) reso_Patt = clipper::Resolution( clipper::String(args[arg]).f() );
+    } else if ( args[arg] == "-twinres" ) {
+        if ( ++arg < args.size() ) reso_Twin = clipper::Resolution( clipper::String(args[arg]).f() );
     } else if ( args[arg] == "-no-aniso" ) {
       aniso = false;
     } else if ( args[arg] == "-amplitudes" ) {
@@ -465,44 +468,46 @@ int main(int argc, char **argv)
 	  if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
   }
 
-
   // calculate moments of Z using truncate methods
 
 	moments_Z(isig, maxres, nbins);
 
-  prog.summary_beg();
 	
 	HKL_data<data32::I_sigI>& iptr = (aniso) ? ianiso : isig;
 	
   printf("\nTWINNING ANALYSIS:\n\n");
-  bool itwin = false;
+    float hval(0.0), lval(0.0);
+    //reduced resolution range for twinning tests
+    reso_Twin = clipper::Resolution( clipper::Util::max( clipper::ftype(resopt), reso_Twin.limit() ) );
+  HKL_info hklt(spgr, cell1, reso_Twin, true);
+    HKL_data<data32::I_sigI> itwin(hklt);
+    for ( HRI ih = itwin.first() ; !ih.last() ; ih.next() ) {
+        itwin[ih] = iptr[ih.hkl()];
+    }
 
 	{
-		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
-		if (aniso) printf("Anisotropy correction has been applied before calculating H-test\n\n");
-		else printf("Anisotropy correction has not been applied before calculating H-test\n\n");
+		printf("\nData has been truncated at %6.2f A resolution\n",reso_Twin.limit());
+		if (aniso) printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
+		else printf("Anisotropy correction has not been applied before calculating twinning tests\n\n");
 	}
 	
   // H test for twinning
 
   if (twintest != "table") {
-	  itwin = Htest_driver_fp(iptr, prog, debug);
+	  hval = Htest_driver_fp(itwin, debug);
   }
 
   if (twintest != "first_principles") {
-	  itwin = Htest_driver_table(iptr, prog, debug);
+	  hval = Htest_driver_table(itwin, debug);
   }
 
 	 // L test for twinning
-	{
-		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
-		if (aniso) printf("Anisotropy correction has been applied before calculating L-test\n\n");
-		else printf("Anisotropy correction has not been applied before calculating L-test\n\n");
-	}
+	lval = Ltest_driver(iptr, debug);
  
-	itwin = Ltest_driver(iptr, prog, debug);
+    prog.summary_beg();
+    twin_summary(hval,lval);
         prog.summary_end(); 
-
+    printf("\n");
   //printf("Starting parity group analysis:\n");
 
   //Parity group analysis

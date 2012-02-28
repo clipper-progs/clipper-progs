@@ -16,13 +16,13 @@
 
 namespace ctruncate {
 	
-	bool Htest_driver_fp(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug);
-	bool Htest_driver_table(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug);
+    clipper::ftype Htest_driver_fp(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug);
+    clipper::ftype Htest_driver_table(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug);
 	
-	bool Htest( clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Mat33<int>& twinop, int scalefac, 
-			   clipper::String s, CCP4Program& prog, bool debug );
+    clipper::ftype Htest( clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Mat33<int>& twinop, int scalefac, 
+			   clipper::String s, bool debug );
 	
-	bool Ltest_driver(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug);
+    clipper::ftype Ltest_driver(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug);
 	
 }
 

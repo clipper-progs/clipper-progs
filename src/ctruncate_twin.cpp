@@ -16,7 +16,7 @@
 
 namespace ctruncate {
 	
-	bool Ltest_driver(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug)
+    clipper::ftype Ltest_driver(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug)
 	{
 		// L test for twinning
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -68,17 +68,16 @@ namespace ctruncate {
 		double L2av = LT2/NLT;
 		//printf("Lav = %f  Untwinned 0.5 Perfect Twin 0.375\n",Lav);
 		//printf("L2av = %f  Untwinned 0.333 Perfect Twin 0.200\n",L2av);
+        printf("\nApplying the L test for twinning: (Padilla and Yeates Acta Cryst. D59 1124 (2003))\n");
+        printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n", Lav);
+
+        printf("\n");
 		if (Lav < 0.48) {
-			printf("\nApplying the L test for twinning: (Padilla and Yeates Acta Cryst. D59 1124 (2003))\n");
 			printf("L test suggests data is twinned\n");
-			printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n\n", Lav);
 			itwin = true;
 			printf("All data regardless of I/sigma(I) has been included in the L test\n");
 			//printf("Data has been truncated at %6.2f A resolution\n",resopt);
 		}
-		
-		if (!itwin) printf("No twinning detected\n\n");
-		prog.summary_end();
 		
 		printf("$TABLE: L test for twinning:\n");
 		printf("$GRAPHS");
@@ -91,11 +90,11 @@ namespace ctruncate {
 			printf("%f %f %f %f\n", x, double(cdf[i])/NLT, x, 0.5*x*(3.0-x*x)  );
 		}
 		printf("$$\n\n");
-		return itwin;
+		return Lav;
 	}
 		
-	bool Htest( clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Mat33<int>& twinop, int scalefac, 
-			   clipper::String s, CCP4Program& prog, bool debug )
+    clipper::ftype Htest( clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Mat33<int>& twinop, int scalefac, 
+			   clipper::String s, bool debug )
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		bool itwin = false;
@@ -153,7 +152,6 @@ namespace ctruncate {
 			printf("H test suggests data is twinned\n");
 			printf("Twinning fraction = %5.2f\n\n",alpha);
 			itwin = true;
-			prog.summary_end();
 			printf("$TABLE: H test for twinning (operator %s):\n", s.c_str() );
 			printf("$GRAPHS");
 			printf(": cumulative distribution function for |H|:0|1x0|1:1,2,3,4,5,6,7:\n");
@@ -167,7 +165,6 @@ namespace ctruncate {
 			}
 			printf("1.000000 5.0 2.5 1.667 1.25 1.0 1.0\n");
 			printf("$$\n\n");
-			prog.summary_beg();
 		}
 		else {
 			printf("No twinning detected for this twinning operator\n\n");
@@ -182,12 +179,13 @@ namespace ctruncate {
 			}
 			fclose(newfileout);
 		}
-		return itwin;
+		return alpha;
 	}
 	
-	bool Htest_driver_fp(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug)
+    clipper::ftype Htest_driver_fp(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug)
 	{
 		bool itwin = false;
+        double hval = 0.0;
 		
 		clipper::Spacegroup spgr = isig.hkl_info().spacegroup();
 		clipper::Cell      cell = isig.hkl_info().cell();
@@ -261,15 +259,16 @@ namespace ctruncate {
 				 printf("%7.4f %7.4f %7.4f\n",double(twinoper(i,0))/12.0, double(twinoper(i,1))/12.0, double(twinoper(i,2))/12.0 );
 				 }
 				 printf("\n");*/
-				itwin = Htest(isig, twinoper, scalefac, s, prog, debug);
+				hval = Htest(isig, twinoper, scalefac, s, debug);
 			}
 		}
-		return itwin;
+		return hval;
 	}		
 	
-	bool Htest_driver_table(clipper::HKL_data<clipper::data32::I_sigI>& isig, CCP4Program& prog, bool debug)
+    clipper::ftype Htest_driver_table(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug)
 	{
 		bool itwin = false;
+        double hval = 0.0;
 		
 		clipper::Spacegroup spgr = isig.hkl_info().spacegroup();
 		clipper::Cell      cell = isig.hkl_info().cell();
@@ -290,7 +289,7 @@ namespace ctruncate {
 			twinop(0,1) = 1;
 			twinop(1,0) = 1;
 			twinop(2,2) = -1;
-			itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+			hval = Htest ( isig, twinop, scalefac, s, debug );
 		}
 		else if( sg >= 149 && sg <= 154 ) {
 			printf("Twinning operator -h, -k, l\n");
@@ -298,7 +297,7 @@ namespace ctruncate {
 			twinop(0,0) = -1;
 			twinop(1,1) = -1;
 			twinop(2,2) = 1;
-			itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+			hval = Htest ( isig, twinop, scalefac, s, debug );
 		}
 		else if( sg >= 143 && sg <= 145 ) {
 			printf("Twinning operator k, h, -l\n");
@@ -306,13 +305,13 @@ namespace ctruncate {
 			twinop(0,1) = 1;
 			twinop(1,0) = 1;
 			twinop(2,2) = -1;
-			itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+			hval = Htest ( isig, twinop, scalefac, s, debug );
 			
 			printf("Twinning operator -k, -h, -l\n");
 			s = "-k, -h, -l";
 			twinop(0,1) = -1;
 			twinop(1,0) = -1;
-			itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+			hval = Htest ( isig, twinop, scalefac, s, debug );
 			
 			printf("Twinning operator -h, -k, l\n");
 			s = "-h, -k, l";
@@ -321,7 +320,7 @@ namespace ctruncate {
 			twinop(0,0) = -1;
 			twinop(1,1) = -1;
 			twinop(2,2) = 1;
-			itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+			hval = Htest ( isig, twinop, scalefac, s, debug );
 		}
 		else if( !strcmp(pointgroup, "PG222") ) {
 			//printf("PG222\n");
@@ -332,7 +331,7 @@ namespace ctruncate {
 				twinop(0,1) = 1;
 				twinop(1,0) = 1;
 				twinop(2,2) = -1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}
 			if ( fabs( 1.0 - cell.c()/cell.b() ) < 0.02 ) { 
 				printf("Twinning operator -h, l, k\n");
@@ -343,7 +342,7 @@ namespace ctruncate {
 				twinop(0,0) = -1;
 				twinop(1,2) = 1;
 				twinop(2,1) = 1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}
 			if ( fabs( 1.0 - cell.a()/cell.c() ) < 0.02 ) {
 				printf("Twinning operator l, -k, h\n");
@@ -354,7 +353,7 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(0,2) = 1;
 				twinop(2,0) = 1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}
 		}
 		else if( !strcmp(pointgroup, "PG2") ) {
@@ -369,7 +368,7 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(0,2) = 1;
 				twinop(2,0) = 1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}
 			
 			if ( cell.beta() < clipper::Util::d2rad(93.0) ) {
@@ -380,7 +379,7 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(2,0) = 0;
 				twinop(2,2) = 1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}	 
 			
 			if ( fabs( cos(cell.beta()) + 0.5*cell.a()/cell.c() ) < 0.02 ) { 
@@ -391,7 +390,7 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(2,0) = 1;
 				twinop(2,2) = 1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}	  
 			
 			if ( fabs( cos(cell.beta()) + 0.5*cell.c()/cell.a() ) < 0.02 ) { 
@@ -402,7 +401,7 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(2,0) = 0;
 				twinop(2,2) = -1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}	  
 			if ( fabs( cos(cell.beta()) + cell.c()/cell.a() ) < 0.02 ) { 
 				printf("Twinning operator h+2l, -k, -l\n");
@@ -412,11 +411,49 @@ namespace ctruncate {
 				twinop(1,1) = -1;
 				twinop(2,0) = 0;
 				twinop(2,2) = -1;
-				itwin = Htest ( isig, twinop, scalefac, s, prog, debug );
+				hval = Htest ( isig, twinop, scalefac, s, debug );
 			}
 		}
-		return itwin;
+		return hval;
 	}
 	
+    /*! Summary comments using alpha from H-test and L statistic from L-test.
+     \param alpha Alpha from the H-test
+     \param lval L statistic from L-test. */
+    void twin_summary(clipper::ftype alpha, clipper::ftype lval) {
+        printf("TWINNING SUMMARY\n\n");
+        printf("Twinning fraction from H-test: %d\n",alpha);
+        printf("L-statistic from L-Test:       %d\n\n",lval);
+        printf("   Relation between L statistics and twinning fraction:\n");
+        printf("      Twinning fraction = 0.000  L statistics = 0.500:\n");
+        printf("      Twinning fraction = 0.100  L statistics = 0.440:\n");
+        printf("      Twinning fraction = 0.500  L statistics = 0.375:\n");
+          
+        if ( alpha <= 0.0001 ) {
+            if ( 0.440 <= lval <= 0.500 ) {
+                printf("NO Twinning detected\n\n");
+            } else if ( 0.375 <= lval < 0.440 ) {
+                printf("L-test statistics indicate partial twinning\n");
+                printf("   It is quite likely that your data were merged into a HIGHER symmetry space group than the\n   true space group.\n");
+                printf("   Please revise the space group assignment if there are problems with model building or refinement.\n");
+                printf("   (Very week data in higher resolution shell may be a reason of this L-value. Run twinning tests\n  with resolution cut off 3A.)\n\n");
+}
+        } else if ( 0.0001 < alpha <= 0.1 ) {
+            printf("No twinning or very low twinning fraction.\n\n");
+            printf("   Twinning, if any, can be safely be ignored. However, twin refinement may be attempted, but not before the\n model is completely build.\n\n");
+        } else if ( 0.1 < alpha < 0.4 ) {
+            printf("It is highly probable that your crystal is TWINNED.\n\n");
+            printf("   Please use twin refinement after your model is almost completed and R-free is below 40%.\n\n");
+        } else {
+            if ( 0.440 <= lval <= 0.500 ) {
+                printf("Your data might have been scaled in a LOWER symmetry space group than the true space group.\n\n");
+                printf("   Please run pointless, aimless (scala) and ctruncate to revise space group assignment.\n\n");
+            } else if ( 0.375 <= lval < 0.440 ) {
+                printf("It is highly probable that your crystal is TWINNED.\n\n");
+                printf("   Please use twin refinement after your model is almost completed and R-free is below 40%\n\n");
+            }
+        }
+    }
+
 }
 
