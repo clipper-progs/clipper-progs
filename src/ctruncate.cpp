@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.4.0", "$Date: 2011/12/30" );
+  CCP4Program prog( "ctruncate", "1.5.0", "$Date: 2011/12/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -137,15 +137,15 @@ int main(int argc, char **argv)
       aniso = false;
     } else if ( args[arg] == "-amplitudes" ) {
       amplitudes = true;
-    } else if ( args[arg] == "-debug" ) {
+	} else if ( args[arg] == "-debug" ) {
       debug = true;
     } else if ( args[arg] == "-i" ) {
       CCP4::ccp4_prog_info();
       return(0);
-    } else {
-      printf("Unrecognised argument\n");
-      return(0);
-    }
+	} else {
+	  printf("Unrecognised argument\n");
+	  return(0);
+	}
 
   }
   if (anomalous) {
@@ -200,13 +200,15 @@ int main(int argc, char **argv)
   if (freein) mtzfile.import_hkl_data( free, freecol );
 
   prog.summary_beg();
-  printf("\n\nCRYSTAL INFO:\n\n");
+  printf("\nCRYSTAL INFO:\n\n");
   std::cout << "Crystal/dataset names: " << mtzfile.assigned_paths()[0].notail() << "\n"; 
   /*std::cout << mtzfile.assigned_paths()[0].notail().notail().tail() << "\n";  // crystal name
   std::cout << mtzfile.assigned_paths()[0].notail().tail() << "\n";  //dataset name
   String xtlname = mtzfile.assigned_paths()[0].notail().notail().tail();
   String setname = mtzfile.assigned_paths()[0].notail().tail();*/
   prog.summary_end();
+  printf("\n");
+
   // need this mumbo-jumbo in order to write to output file
 
   if ( outcol[0] != '/' ) outcol = mtzfile.assigned_paths()[0].notail()+"/"+outcol;
@@ -353,7 +355,7 @@ int main(int argc, char **argv)
   const double bval = 3.56;
   double pval = (1.0 - std::exp(-std::pow(ratio/(aval*(1.0-ratio)),-bval)) )*100.0;;
   prog.summary_beg();
-  printf("\n\nTRANSLATIONAL NCS:\n\n");
+  printf("\n\nTRANSLATIONAL NCS:\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
 	  printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %f5.2 (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],pval,reso_Patt.limit() );
       printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
@@ -365,9 +367,147 @@ int main(int argc, char **argv)
       if ( dist2 > 0.01 ) printf("Top off origin peak at (%6.3f, %6.3f, %6.3f) with a probability of %5.2f\n",c0[0],c0[1],c0[2],pval); 
   }
   prog.summary_end();
+  printf("\n");
 
   // falloff and completeness for input intensities
-	//if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
+    //if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
+
+    // anisotropy estimation
+    clipper::U_aniso_orth uao;
+	  double Itotal = 0.0;
+    
+	  prog.summary_beg();
+    printf("\nANISOTROPY ESTIMATION (using intensities):\n");
+
+	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  
+	  	  double I = isig[ih].I();
+	      double sigI = isig[ih].sigI();
+	      if ( I > 0.0 ) Itotal += I;
+     	  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+	  }
+    
+    AnisoCorr<Iscale_llaniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+	  
+    uao = llscl.u_aniso_orth(Scaling::I);
+         
+    // Eigenvalue calculation
+    AnisoDirection<float> direction(uao);
+
+    std::vector<float> v = direction.eigenValues();
+    float max = direction.max();
+
+    printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
+    printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
+    if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
+    invopt = maxres*v[0]/v[2];
+    resopt = 1.0/sqrt(invopt);
+    printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
+    if ( v[0]/max < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
+    prog.summary_end();
+    printf("\n");
+ 
+    //std::cout << "estimated Biso: " << clipper::Util::u2b(0.5*uao.u_iso()) << std::endl;
+          
+    //if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog, uao);
+	  
+    printf("\nAnisotropic U (orthogonal coords):\n\n");
+    printf("| %8.4f %8.4f %8.4f |\n", uao(0,0) ,  uao(0,1) ,  uao(0,2)  );
+    printf("| %8.4f %8.4f %8.4f |\n", uao(1,0) ,  uao(1,1) ,  uao(1,2)  );
+    printf("| %8.4f %8.4f %8.4f |\n", uao(2,0) ,  uao(2,1) ,  uao(2,2)  );
+	  
+    clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
+
+    printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
+
+    printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
+    printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
+    printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
+
+    printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
+
+    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
+    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
+    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
+
+    if (aniso)  {
+        double FFtotal = 0.0;
+        printf("\nANISOTROPY CORRECTION (using intensities):\n");
+
+        Iscale_aniso<float> sfscl( 3.0 );
+        sfscl( ianiso, -1.0f, 12 );
+        
+        printf("\nAnisotropic scaling (orthogonal coords):\n\n");
+        
+        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(0,0), sfscl.u_aniso_orth(Scaling::I)(0,1), sfscl.u_aniso_orth(Scaling::I)(0,2) );
+        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(1,0), sfscl.u_aniso_orth(Scaling::I)(1,1), sfscl.u_aniso_orth(Scaling::I)(1,2) );
+        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(2,0), sfscl.u_aniso_orth(Scaling::I)(2,1), sfscl.u_aniso_orth(Scaling::I)(2,2) );
+
+	printf("\n");
+
+        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {    
+		  if ( !isig[ih].missing() ) {
+		      FFtotal += ianiso[ih].I();
+		  }
+	  }                                                         
+	  
+	  double scalefac = Itotal/FFtotal;
+	  if (debug) printf("\nscalefactor = %6.3f %8.3f %8.3f\n\n",scalefac,Itotal,FFtotal);
+	  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+		  if ( !isig[ih].missing() ) {
+		      ianiso[ih].I() *= scalefac;
+		      ianiso[ih].sigI() *=scalefac;
+		  }
+	  }
+  }
+
+  // truncate anisotropically corrected data at resolution limit in weakest direction
+  for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+	  if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
+  }
+
+
+  // calculate moments of Z using truncate methods
+
+	moments_Z(isig, maxres, nbins);
+
+  prog.summary_beg();
+	
+	HKL_data<data32::I_sigI>& iptr = (aniso) ? ianiso : isig;
+	
+  printf("\nTWINNING ANALYSIS:\n\n");
+  bool itwin = false;
+
+	{
+		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
+		if (aniso) printf("Anisotropy correction has been applied before calculating H-test\n\n");
+		else printf("Anisotropy correction has not been applied before calculating H-test\n\n");
+	}
+	
+  // H test for twinning
+
+  if (twintest != "table") {
+	  itwin = Htest_driver_fp(iptr, prog, debug);
+  }
+
+  if (twintest != "first_principles") {
+	  itwin = Htest_driver_table(iptr, prog, debug);
+  }
+
+	 // L test for twinning
+	{
+		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
+		if (aniso) printf("Anisotropy correction has been applied before calculating L-test\n\n");
+		else printf("Anisotropy correction has not been applied before calculating L-test\n\n");
+	}
+ 
+	itwin = Ltest_driver(iptr, prog, debug);
+        prog.summary_end(); 
+
+  //printf("Starting parity group analysis:\n");
+
+  //Parity group analysis
+
+	ctruncate::parity(isig, maxres, nbins);	
 	
 	// Ice rings
 	ctruncate::Rings icerings;
@@ -395,6 +535,29 @@ int main(int argc, char **argv)
 	HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
 	
 	{
+		int nbins = 60;
+		std::vector<float> sumov(nbins,0.0);
+		std::vector<float> summeas(nbins,0.0);
+		std::vector<float> iceov(icerings.Nrings(),0.0);
+		std::vector<float> icemeas(icerings.Nrings(),0.0);
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.hkl().invresolsq(hklinf.cell());
+			int ring=icerings.InRing(reso);
+			if ( ring == -1 ) {
+				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+				if ( bin < nbins && bin >= 0 ) {
+					sumov[bin] += 1.0;
+					if ( !isig[ih].missing() ) summeas[bin] += 1.0;
+				}
+			} else {
+				if ( ring <  icerings.Nrings() && ring >= 0 ) {
+					iceov[ring] += 1.0;
+					if ( !isig[ih].missing() ) icemeas[ring] += 1.0;
+				}
+			}
+		}
+		
 		HKL_data<data32::I_sigI> tr1(hklinf);
 		tr1 = data32::I_sigI(1.0f,1.0f);
 		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( ih.hkl_class().epsilon() ); //tage into account  epsilon
@@ -448,23 +611,25 @@ int main(int argc, char **argv)
 		
 		bool icer = false;
 		for ( int i = 0; i != icerings.Nrings(); ++i) if (icerings.Reject(i) ) icer = true;
-		
+		printf("\n");
 		prog.summary_beg();
 		printf("\nICE RINGS:\n\n");
 		if (icer) printf("Possible Ice Rings\n\n");
 		else printf("No Ice Rings detected\n\n");
 		prog.summary_end();
+                printf("\n"); 
 		
 		if ( icerings.MeanSSqr(0) <= maxres && icerings.MeanSigI(0) > 0.0f ) {
 			printf("Ice Ring Summary:\n");
-			printf(" reso mean_I mean_Sigma Estimated_I Zscore\n");
+			printf(" reso mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n");
 			for ( int i = 0; i != icerings.Nrings(); ++i) {
 				float reso = icerings.MeanSSqr(i);
 				if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
+					int bin = int( double(nbins) * reso / maxres - 0.001);
 					float imean = icerings.MeanI(i);
 					float sigImean = icerings.MeanSigI(i);
 					float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-					printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI,(imean-expectedI)/sigImean);
+					printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI,(imean-expectedI)/sigImean,icemeas[i]/iceov[i],summeas[bin]/sumov[bin]);
 				}
 			}
 		}
@@ -514,149 +679,12 @@ int main(int argc, char **argv)
 	}		
 	// end of Norm calc
 	clipper::String comment("Smooth");
+        printf("\n");
 	prog.summary_beg();
 	wilson.summary();
 	prog.summary_end();
-	wilson.plot(xsig,comment);
- 
-    // anisotropy correction
-    
-    clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0);
-    
-    {
-        double Itotal = 0.0;
-        double FFtotal = 0.0;
-        prog.summary_beg();
-        printf("\n\nANISOTROPY CORRECTION (using intensities):\n");
-        
-        
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  
-            double I = isig[ih].I();
-            double sigI = isig[ih].sigI();
-            if ( I > 0.0 ) Itotal += I;
-            ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-        }
-        
-        /*
-         clipper::Iscale_aniso<float> sfscl( 3.0 );
-         sfscl( ianiso );
-         */
-        
-        clipper::SFscale_aniso<float> sfscl( 3.0 );
-        sfscl( ianiso, -1.0f, 12 );
-        
-        
-        float beta = 2.0*wilson.B();
-        clipper::U_aniso_orth ua0 = sfscl.u_aniso_orth(clipper::SFscale_aniso<float>::I);
-        clipper::U_aniso_orth ua1(clipper::Util::b2u(beta),clipper::Util::b2u(beta),clipper::Util::b2u(beta),0.0,0.0,0.0);
-        uao = ua1+(-ua0);
-        //uao=-ua0;
-
-        
-        printf("\nAnisotropic scaling (orthogonal coords):\n\n");
-        
-        printf("|%8.4f %8.4f %8.4f |\n", uao(0,0), uao(0,1), uao(0,2) );
-        printf("|%8.4f %8.4f %8.4f |\n", uao(1,0), uao(1,1), uao(1,2) );
-        printf("|%8.4f %8.4f %8.4f |\n", uao(2,0), uao(2,1), uao(2,2) );
-
-        clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
-        
-        printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
-        
-        printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
-        printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
-        printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
-        
-        printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
-        
-        printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
-        printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
-        printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
-        
-        // Eigenvalue calculation
-        Matrix<> mat( 3, 3, 0.0 );
-        for (int i=0; i!=3; ++i) {
-            for (int j=0; j!=3; ++j) {
-                mat(i,j) = uao(i,j);
-            }
-        }
-         // should use eigenvalue differences rather then ratios
-         std::vector<ftype> v = mat.eigen( true );
-         printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
-         printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/v[2], v[1]/v[2], v[2]/v[2]); 
-         if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
-         invopt = maxres*v[0]/v[2];
-         resopt = 1.0/sqrt(invopt);
-         printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
-         if ( v[0]/v[2] < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
-        
-        prog.summary_end();
         printf("\n");
-        
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {    
-            if ( !isig[ih].missing() ) {
-                FFtotal += ianiso[ih].I();
-            }
-        }                                                         
-        
-        double scalefac = Itotal/FFtotal;
-        if (debug) printf("\nscalefactor = %6.3f %8.3f %8.3f\n\n",scalefac,Itotal,FFtotal);
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            if ( !isig[ih].missing() ) {
-                ianiso[ih].I() *= scalefac;
-                ianiso[ih].sigI() *=scalefac;
-            }
-        }
-    }
-    
-    // truncate anisotropically corrected data at resolution limit in weakest direction
-    for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
-        if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
-    }
-    
-    
-    // calculate moments of Z using truncate methods
-    
-	moments_Z(isig, maxres, nbins);
-    
-    prog.summary_beg();
-	
-	HKL_data<data32::I_sigI>& iptr = (aniso) ? ianiso : isig;
-	
-    printf("\n\nTWINNING ANALYSIS:\n\n");
-    bool itwin = false;
-    
-	{
-		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
-		if (aniso) printf("Anisotropy correction has been applied before calculating H-test\n\n");
-		else printf("Anisotropy correction has not been applied before calculating H-test\n\n");
-	}
-	
-    // H test for twinning
-    if (twintest == "table") {
-        itwin = Htest_driver_table(iptr, prog, debug);
-    }
-    
-    if (twintest == "first_principles") {
-        itwin = Htest_driver_fp(iptr, prog, debug);
-    }
-    
-    // L test for twinning
-	{
-		//printf("\nData has been truncated at %6.2f A resolution\n",resopt);
-		if (aniso) printf("Anisotropy correction has been applied before calculating L-test\n\n");
-		else printf("Anisotropy correction has not been applied before calculating L-test\n\n");
-	}
-    
-	itwin = Ltest_driver(iptr, prog, debug);
-    
-    
-    //printf("Starting parity group analysis:\n");
-    
-    //Parity group analysis
-    
-	ctruncate::parity(isig, maxres, nbins);	
-    
+	wilson.plot(xsig,comment);
     
   // apply the Truncate procedure, unless amplitudes have been input
 
@@ -705,10 +733,12 @@ int main(int argc, char **argv)
           truncate( isig, jsig, fsig, xsig, scalef, spg1, nrej, debug );
       }
   }
+  printf("\n");
   prog.summary_beg();
   printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
   printf("%d intensities have been rejected as unphysical\n", nrej);
   prog.summary_end();
+  printf("\n");
 
 
   
@@ -751,7 +781,7 @@ int main(int argc, char **argv)
 
   // falloff calculation (Yorgo Modis)
 	yorgo_modis_plot(fsig,maxres,60,prog,uao);
-    
+	
     // anomalous signal
     if (anomalous ) {
         if (amplitudes) AnomStats<float> anomstats(fsig_ano);
@@ -766,7 +796,7 @@ int main(int argc, char **argv)
 		
 		float width_patt = 2.0f*patt_peak.sigma();
 		
-		float b_patt = 2.0f*clipper::Util::twopi()*clipper::Util::twopi()*std::pow(width_patt/2.0f,2.0f);
+		float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
 		
 		prog.summary_beg();
 		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;

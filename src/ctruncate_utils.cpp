@@ -41,11 +41,11 @@ int bisect(double (*f)(double), double x1, double x2, double &xmid)
 
 
 
-void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector<float>& w, int n, float &a, float &b, float &siga, float &sigb)
+void straight_line_fit(std::vector<clipper::ftype>& x, std::vector<clipper::ftype>& y, std::vector<clipper::ftype>& w, int n, clipper::ftype &a, clipper::ftype &b, clipper::ftype &siga, clipper::ftype &sigb)
 {
   // fits a straight line through a set of points (yi,xi) using least squares
-	float d;
-	float sx,sy,sxx,sxy,sw;
+    clipper::ftype d;
+    clipper::ftype sx,sy,sxx,sxy,sw;
 	int i;
 	sx = 0;
 	sy = 0;
@@ -72,7 +72,7 @@ void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector
 	return;
 }
 
-void tricart(clipper::Cell& cell, clipper::Mat33<float>& transf)
+void tricart(clipper::Cell& cell, clipper::Mat33<clipper::ftype>& transf)
 {
 	/* Calculates the matrix that transforms coordinates relative to the
 	 triclinic axes a1, a2 and a3 to a Cartesian set of axes. a2(cart)

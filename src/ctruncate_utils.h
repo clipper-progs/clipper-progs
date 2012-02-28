@@ -9,9 +9,9 @@
 #include <vector>
 #include <cmath>
 
-void tricart(clipper::Cell& cell, clipper::Mat33<float>& transf);
+void tricart(clipper::Cell& cell, clipper::Mat33<clipper::ftype>& transf);
 void MatrixToString( clipper::Mat33<int>& twinoper, clipper::String &s );
-void straight_line_fit(std::vector<float>& x, std::vector<float>& y, std::vector<float>& w, int n, float &a, float &b, float &siga, float &sigb);
+void straight_line_fit(std::vector<clipper::ftype>& x, std::vector<clipper::ftype>& y, std::vector<clipper::ftype>& w, int n, clipper::ftype &a, clipper::ftype &b, clipper::ftype &siga, clipper::ftype &sigb);
 
 
 namespace ctruncate {

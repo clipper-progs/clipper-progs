@@ -27,6 +27,36 @@ namespace ctruncate {
 	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, 
 								   float maxres, int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
 	
+	class Scattering {
+	public:
+		float proteinScat(const int nres);
+		float nucleicScat(const int nres);
+		float proteinScat(const clipper::MPolymerSequence& poly);
+		float nucleicScat(const clipper::MPolymerSequence& poly);
+		float proteinScat(const clipper::Cell& cell, const clipper::Spacegroup& spg, float solvent=0.5);
+		
+		static const float C, O, N, H, S, P;
+		
+	private:
+		static const std::string ProteinAtomNames[5];  //atom names
+		static const char ProteinResidueNames[20];  //residue names
+		static const int ProteinCatoms[20];         // number of C per residue
+		static const int ProteinHatoms[20];         // number of H per residue
+		static const int ProteinNatoms[20];         // number of N per residue
+		static const int ProteinOatoms[20];         // number of O per residue
+		static const int ProteinSatoms[20];         // number of S per residue
+		static const float ProteinComp[5];          // average composition
+		
+		static const std::string NucleicAtomNames[5];
+		static const char NucleicResidueNames[5];
+		static const int NucleicCatoms[5];
+		static const int NucleicHatoms[5];
+		static const int NucleicNatoms[5];
+		static const int NucleicOatoms[5];
+		static const int NucleicPatoms[5];
+		static const float NucleicComp[5]; 
+		
+	};
 	
 	class WilsonB {
 	public:
@@ -53,19 +83,20 @@ namespace ctruncate {
 		void plot ();
 		void plot(clipper::HKL_data<clipper::data32::I_sigI>& ref, clipper::String& name);
 		
-	private:
+	private:			
 		MODE mode;
-		float _a;  // slope
-		float _b;  // intercept
-		float _siga; // uncertainty in intercept
-		float _sigb; //uncertainty in b-value
-		float _bscale; // scale best to scattering
-		float _boff; //offset on best to scattering
+        clipper::ftype _a;  // slope
+        clipper::ftype _b;  // intercept
+        clipper::ftype _siga; // uncertainty in intercept
+        clipper::ftype _sigb; //uncertainty in b-value
+        clipper::ftype _bscale; // scale best to scattering
+        clipper::ftype _boff; //offset on best to scattering
 		clipper::HKL_data<clipper::data32::I_sigI>* intensity;
 		
 		bool nresidue_supplied, sequence_supplied; //book keeping
 		int nresidues; // number of residues
 		std::vector<int> numatoms;  // number of atoms
+		int _totalscat;  //number of scattering electrons in cell (scale for BEST)
 		float maxres;
 		
 		static const std::string AtomNames[5];  //atom names

@@ -238,7 +238,10 @@ namespace ctruncate {
 		
 		//printf("nc = %d  ierr = %d\n",nc,ierr);
 		printf("First principles calculation of potential twinning operators using code by Andrey Lebedev:\n");
-		printf("First principles calculation has found %d potential twinning operators\n\n", nc-1);
+        if (!nc) 
+            printf("First principles calculation has found no potential twinning operators\n\n");
+        else
+            printf("First principles calculation has found %d potential twinning operators\n\n", nc-1);
 		
 		
 		if (nc > 1) {
@@ -277,7 +280,7 @@ namespace ctruncate {
 		char pointgroup[20];
 		strcpy(pointgroup,spg1->point_group);
 		
-		printf("\n   Potential twinning operators will be found from tables:\n\n");
+		printf("\n   Potential twinning operators found from tables:\n\n");
 		clipper::Mat33<int> twinop(0,0,0,0,0,0,0,0,0);
 		int scalefac = 1;
 		clipper::String s;

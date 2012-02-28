@@ -1,4 +1,6 @@
-/* sfscale.cpp: structure factor anisotropic scaling implementation */
+/*!  \file sfscale.h
+  Header file for structure factor anisotropic scaling object
+*/
 //C Copyright (C) 2000-2006 Kevin Cowtan and University of York
 //L
 //L  This library is free software and is distributed under the terms
@@ -39,105 +41,271 @@
 //L  Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 //L  MA 02111-1307 USA
 
-#ifndef CLIPPER_ISCALE
-#define CLIPPER_ISCALE
+
+#ifndef CTRUNCATE_ISCALE
+#define CTRUNCATE_ISCALE
 
 
-/*#include "../core/hkl_datatypes.h"
-#include "../core/xmap.h"
-#include "../core/nxmap_operator.h"
-#include "clipper/contrib/sfscale.h"
-#include "../core/resol_targetfn.h"*/
-
-#include "clipper/core/hkl_datatypes.h"
-#include "clipper/core/xmap.h"
-#include "clipper/core/nxmap_operator.h"
-#include "clipper/contrib/sfscale.h"
+#include "clipper/contrib/function_object_bases.h"
 #include "clipper/core/resol_targetfn.h"
 
-#include "intensity_target.h"
 
+namespace ctruncate {
 
-namespace clipper {
+    class Scaling {
+    public:
+        enum TYPE { F, I };
+        enum MODE { NORMAL, SHARPEN, UNSHARPEN };
+    };
+    
+	template<class T> class Iscale_aniso_base : public clipper::SFscale_base<T> {
+	public:
+		//enum TYPE { F, I };  //!< type for returning U_aniso_orth
+		//enum MODE { NORMAL, SHARPEN, UNSHARPEN };  //!< mode for scaling
+        virtual bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& ) = 0;
+        virtual bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& ) = 0;
+        virtual bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >&, const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& ) = 0;
+        virtual bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >&, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& ) = 0;
+		const clipper::U_aniso_orth& u_aniso_orth( Scaling::TYPE t ) const;
+		const clipper::U_aniso_orth& u_aniso_orth() const { return u_i; }  //!< \deprecated
+		const clipper::ftype kscale() const { return bscale_; }
+	//protected:
+		const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
+		const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
+		const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
+		clipper::U_aniso_orth u_i, u_f;
+		clipper::ftype bscale_;
+		clipper::ftype nsig_;
+        Scaling::MODE mode_;
+	};
 
-  // Base class for intensity scaling methods (NDS)
-  template<class T> class Iscale_base {
-  public:
-    virtual bool operator() ( HKL_data<datatypes::I_sigI<T> >& io ) = 0;
-    virtual ~Iscale_base() {}  //!< destructor
-  };
+    //! abstract base class for restraints in fit based on global parameters
+    /*! return addition to gradients and hessian based on restraints wrt parameters
+    */
+    
+    class RestraintFn_base
+    {
+    public:
+        class Aderiv
+        {
+        public:
+            clipper::ftype f;
+            std::vector<clipper::ftype> df;
+            clipper::Matrix<> df2;
+            Aderiv() {}
+            Aderiv(const int& np) : df(np,0.0), df2(np,np,0.0) {}
+        };
+        //! null constructo
+        RestraintFn_base() {}
+        //! constructor with number of parameters
+        RestraintFn_base( const int np) : np_(np), aderiv_(np) {}
+        //! the value of the global restraint function
+        virtual clipper::ftype f( const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const { return aderiv( cell, params ).f; }
+        //! compute the adustment due to the restraint
+        virtual const Aderiv& aderiv(const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const = 0;
+        //! provide result for derived classes
+        Aderiv& result() const { return aderiv_; }
+        //! return number of parameters
+        const int& num_params() const { return np_; }
+        //! destructor
+        virtual ~RestraintFn_base() {}
+        
+    private:
+        int np_;  //!< number of parameters
+        mutable Aderiv aderiv_; //<!store state
+    };
+    
+    //! spherical restraint on atomic displacement parameter
+    /*! This restrains the the parameter to be spherical
+     
+     Murshudov et al. Acta D55 (1999) 247
+     
+         d^2 = sum(uii-Uiso)^2 + sum(uij^2)
+     
+     used in exponental form of PDF
+     */
+    class RestraintFn_sphericalU : public RestraintFn_base
+    {
+    public:
+        //! constructor taking weight for restraint
+        RestraintFn_sphericalU(clipper::ftype f=10.0, clipper::ftype n=1.0) : sigma_(f), nobs_(n), RestraintFn_base(7) { }
+        //! the value of the global restraint function
+        clipper::ftype f( const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const { return f_s(params); }
+        //! compute value of restaint without doing full aderiv
+        clipper::ftype f_s( const std::vector<clipper::ftype>& params ) const;
+        //! return adjustments to derivatives and hessian
+        const Aderiv& aderiv(const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const;
+        
+    private:
+        clipper::ftype sigma_; //!< scale factor for restraint
+        clipper::ftype nobs_;  //!< number of observations to scale sigma
 
-  // Intensity anisotropic scaling (NDS)
+    };
+    
+    //! 2nd order resolution function evaluator
+    /*! This is an automatic evaluator for arbitrary functions of HKL,
+     most commonly used for evaluating a function of resolution (such a
+     mean F^2 or sigmaa), although more general tasks including local
+     scaling of reflections and anisotropic functions can also be
+     handled. This form is for target functions which approach zero
+     quadratically, e.g. least-squares targets.
+     
+     Symmetry is used as an additional constraint.
+     
+     Allow additional restraints function.
+     
+     \note This version implements a minimiser which uses both
+     Newton-Raphson and gradient steps depending on the situation. It
+     can be used for non-quadratic targets or non-linear basis
+     functions.
+     
+     To evaluate a resolution function, this class must be provided
+     with two objects:
+     - The basis function (and gradients), which describes the value
+     of the function for any reflection given a set of paramters.
+     - The target function (and derivatives), which is used to determine
+     the values of the basis function parameters.
+     */
+    class ResolutionFn_nonlinear_rest : public clipper::ResolutionFn
+    {
+    public:
+        //! constructor: need reflections, basis fn, target fn and restraints. No symops.
+        ResolutionFn_nonlinear_rest( const clipper::HKL_info& hkl_info, 
+                                    const clipper::BasisFn_base& basisfn, 
+                                    const clipper::TargetFn_base& targetfn, 
+                                    const std::vector<clipper::ftype>& params, 
+                                    const ctruncate::RestraintFn_base& restraint,
+                                    const clipper::ftype damp = 0.0, 
+                                    const bool debug = false );
+                    
+    protected:
+        const RestraintFn_base* restfn_;   //!< retraints function        
 
-  template<class T> class Iscale_aniso : public Iscale_base<T> {
-  public:
-    // constructor: takes rejection criterion for I/sigI
-    Iscale_aniso( double nsig = 0.0 ) : nsig_(nsig) {}
-    // Scale Io to isotropic (approximate)
-    bool operator() ( HKL_data<datatypes::I_sigI<T> >& io );
-    const U_aniso_orth& u_aniso_orth() const { return u; }
-  private:
-    U_aniso_orth u;
-    double nsig_;
-  };
+    };
+    
 
+	//! Structure factor anisotropic scaling
+	/*! Perform structure factor anisotropic scaling, observed to calculated,
+	 calculated to observed, or observed against itself using log target
+	 \ingroup g_funcobj */
+	template<class T> class Iscale_loganiso : public ctruncate::Iscale_aniso_base<T> {
+	public:
+		Iscale_loganiso( clipper::ftype nsig = 3.0, Scaling::MODE mode = Scaling::NORMAL )
+        { Iscale_aniso_base<T>::nsig_ = nsig; Iscale_aniso_base<T>::mode_ = mode; }
+		//! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc );
+        //! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fc );
+		//! Scale Fc to Fo
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! Scale Io to Ic (psuedo I), or vice versa
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Ic );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::ftype resfilter, const int npar_scl );
+		//! Primitive scaling functions for F and I
+		template<class D, class T1, class T2, class S>
+		bool scale( clipper::HKL_data<D>& fo, const clipper::ftype resfilter, const int npar_scl );
+	};
+	
+    //! Structure factor anisotropic scaling
+	/*! Perform structure factor anisotropic scaling, observed to calculated,
+	 calculated to observed, or observed against itself using standard target
+	 \ingroup g_funcobj */
+	template<class T> class Iscale_aniso : public Iscale_aniso_base<T> {
+	public:
+		Iscale_aniso( clipper::ftype nsig = 3.0, Scaling::MODE mode = Scaling::NORMAL )
+		{ Iscale_aniso_base<T>::nsig_=nsig; Iscale_aniso_base<T>::mode_=mode; }
+		//! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc );
+        //! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fc );
+		//! Scale Fc to Fo
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! Scale Io to Ic (psuedo I), or vice versa
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Ic );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::ftype resfilter, const int npar_scl );
+		//! Primitive scaling functions for F and I
+		template<class D, class T1, class T2, class S>
+		bool scale( clipper::HKL_data<D>& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! return aniso correction on F or I
+	};
 
-template<class T> bool Iscale_aniso<T>::operator() ( HKL_data<datatypes::I_sigI<T> >& io )  //(NDS)
-{
-  typedef HKL_info::HKL_reference_index HRI;
-  // expand to P1 in order to preserve symmetry
-  const HKL_info& hkls = io.hkl_info();
-  Spacegroup spgrp1( Spacegroup::P1 );
-  HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
-  HKL_data<datatypes::I_sigI<T> > io1( hkl1 ), is1( hkl1 ), ic1( hkl1 );
-  for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
-    datatypes::I_sigI<T> i = io[ih.hkl()];
-    if ( i.I() >= nsig_ * i.sigI() ) is1[ih] = io1[ih] = i;
-  }
+    //! Structure factor anisotropic scaling
+	/*! Perform structure factor anisotropic scaling, observed to calculated,
+	 calculated to observed, or observed against itself using loglikelihood target
+	 \ingroup g_funcobj */
+	template<class T> class Iscale_llaniso : public ctruncate::Iscale_aniso_base<T> {
+	public:
+		Iscale_llaniso( clipper::ftype nsig = 0.0, Scaling::MODE mode = Scaling::NORMAL )
+        { Iscale_aniso_base<T>::nsig_ = nsig; Iscale_aniso_base<T>::mode_ = mode; }
+		//! Scale Fc to Fo
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_phi<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fc );
+        //! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc );
+		//! Scale Fo to Fo
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fc, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! Scale Io to Ic (psuedo I), or vice versa
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Ic );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::ftype resfilter, const int npar_scl );
+		//! Primitive scaling functions for F and I
+		template<class D, class T1, class T2, class R2, class S>
+		bool scale( clipper::HKL_data<D>& fo, const clipper::ftype resfilter, const int npar_scl );
+        template<class D, class S>
+        bool prescale( const clipper::HKL_data<D>& fo, const clipper::HKL_data<D>& fc, clipper::ftype& A, clipper::ftype& B, const clipper::ftype resfilter, const int npar_scl=60 );
+	};
+    
+    //! Structure factor anisotropic scaling
+	/*! Perform structure factor anisotropic scaling, observed to calculated,
+	 calculated to observed, or observed against itself using standard target.
+     Use Iscale_aniso plus wilson scaling to get approximation to anisotropic scaling.
+	 \ingroup g_funcobj */
+	template<class T> class Iscale_wilson_aniso : public Iscale_aniso_base<T> {
+	public:
+		Iscale_wilson_aniso( clipper::ftype nsig = 0.0, Scaling::MODE mode = Scaling::NORMAL )
+		{ Iscale_aniso_base<T>::nsig_=nsig; Iscale_aniso_base<T>::mode_=mode; }
+		//! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc );
+		//! Scale Fc to Fo
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_phi<T> >& fc, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+        //! Scale Fo to Fc
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fc );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo );
+		//! Scale Fo to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::F_sigF<T> >& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! Scale Io to Ic (psuedo I), or vice versa
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Ic );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io );
+		//! Scale Io to isotropic (approximate)
+		bool operator() ( clipper::HKL_data<clipper::datatypes::I_sigI<T> >& Io, const clipper::ftype resfilter, const int npar_scl );
+		//! Primitive scaling functions for F and I
+		template<class D, class T1, class T2, class S>
+		bool scale( clipper::HKL_data<D>& fo, const clipper::ftype resfilter, const int npar_scl );
+		//! return aniso correction on F or I
+	};
 
-  // perform aniso scaling 3 times to allow aniso scale from previous
-  // cycle to correct for missing data on the next cycle:
-  // start with unscaled data and iterate
-  BasisFn_log_aniso_gaussian bfn;
-  std::vector<ftype> param( 7, 0.0 ), params( 12, 1.0 );
-  for ( int c = 0; c < 3; c++ ) {
-    // create artificial I's from mean I with resolution
-    TargetFn_meanInth<datatypes::I_sigI<T> > tfns( is1, 1.0 );  //check powers (NDS)  was 2.0
-    BasisFn_spline bfns( is1, 12 );
-    ResolutionFn rfns( hkl1, bfns, tfns, params );
-    for ( HRI ih = hkl1.first(); !ih.last(); ih.next() )
-      //ic1[ih] = datatypes::I_sigI<T>( sqrt(rfns.f(ih)), 1.0 );  
-	  ic1[ih] = datatypes::I_sigI<T>( rfns.f(ih), 1.0 );  
-
-
-    // do the aniso scaling
-    TargetFn_scaleLogI1I2<datatypes::I_sigI<T>,datatypes::I_sigI<T> >
-      tfn( io1, ic1 );     // check this exists (NDS)
-    ResolutionFn rfn( hkl1, bfn, tfn, param );
-    param = rfn.params();
-
-    // set trace to zero (i.e. no isotropic correction)
-    ftype dp = (param[1]+param[2]+param[3])/3.0;
-    param[1] -= dp;
-    param[2] -= dp;
-    param[3] -= dp;
-    // create new scaled list correct with current estimate
-    is1 = io1;
-    for ( HRI ih = hkl1.first(); !ih.last(); ih.next() )
-      if ( !is1[ih].missing() )
-	is1[ih].scale( exp( 0.5*bfn.f(ih.hkl(),hkl1.cell(),param) ) );  //was 0.5 NDS
-    u = bfn.u_aniso_orth( param );
-    //std::cout << c << " | " << param[1] << " " << param[2] << " " << param[3] << " " << param[4] << " " << param[5] << " " << param[6] << "\n";
-  }
-
-  // store the results
-  for ( HRI ih = hkls.first(); !ih.last(); ih.next() )
-    if ( !io[ih].missing() )
-      io[ih].scale( exp( 0.5*bfn.f(ih.hkl(),hkls.cell(),param) ) ); //was 0.5 NDS
-  return true;
-}
-
-
-} // namespace clipper
+} // namespace ctruncate
 
 #endif

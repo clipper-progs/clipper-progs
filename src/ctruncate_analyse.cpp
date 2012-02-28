@@ -11,6 +11,12 @@
 #include "ctruncate_analyse.h"
 #include "ctruncate_utils.h"
 #include "intensity_target.h"
+#include "ctruncate_wilson.h"
+#include "best.h"
+#include <cmath>
+
+#define ASSERT assert
+#include <assert.h>
 
 namespace ctruncate {
 	
@@ -178,7 +184,312 @@ namespace ctruncate {
 		return ntw;
 	}
 	
-    void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth& uao )
+	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao )
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		// get eigenvectors of aniso_U
+		clipper::Mat33<float> e123;
+		{
+			clipper::Matrix<float> m(3,3);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					m(i,j) = uao(i,j);
+			m.eigen();
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					e123(i,j) = m(i,j);
+		}
+		
+		
+		clipper::Cell cell = fsig.hkl_info().cell();
+		clipper::Spacegroup spg = fsig.hkl_info().spacegroup();
+		
+		
+		std::vector<float> somov(nbins,0.0);
+		std::vector<float> somsdov(nbins,0.0);
+		std::vector<int> numov(nbins,0);
+		std::vector<float> enumov(nbins,0.0);
+		
+		float somdir[3][nbins];
+		float somsddir[3][nbins];
+		int numdir[3][nbins];
+		float enumdir[3][nbins];
+		
+		for (int i=0;i<3;i++){
+			for (int j=0;j<nbins;j++){
+				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
+				numdir[i][j] = 0;
+			}
+		}
+		
+		int nzerosigma = 0;
+		float cone = 30.0; //hardwired for now
+		float ang;
+		float cosang;
+		
+		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+			if ( !fsig[ih].missing() ) {
+				// bin number different in C because arrays start at zero
+				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
+				float epsiln = 1.0f/ih.hkl_class().epsilonc();
+				
+				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
+					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
+						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
+						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
+						
+						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
+						
+						for (int j=0;j!=3;++j) {
+							cosang = fabs(hc[j])/sqrt(ih.invresolsq());
+							// cosang can stray just past 1.0
+							cosang = std::min(cosang, 1.0f);
+							ang = acos(cosang);
+							if ( ang < clipper::Util::d2rad(cone) ) {
+								somdir[j][bin] += fsig[ih].f()*epsiln;
+								if ( fsig[ih].sigf() > 0.0f ) somsddir[j][bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
+								enumdir[j][bin] += epsiln;
+								numdir[j][bin]++;
+							}
+						}
+						somov[bin] += fsig[ih].f()*epsiln;
+						if ( fsig[ih].sigf() > 0.0f ) somsdov[bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
+						else nzerosigma++;
+						enumov[bin] += epsiln;
+						numov[bin]++;
+					}
+				}
+			}
+		}
+		
+		for (int i=0;i != nbins; ++i) {
+			for (int j=0;j!=3;++j) {
+				if (numdir[j][i] == 0) {
+					somdir[j][i] = 0;
+					somsddir[j][i] = 0;
+				}
+				else {
+					somdir[j][i] /= enumdir[j][i];
+					somsddir[j][i] /= enumdir[j][i];
+				}
+			}
+			if (numov[i] == 0) {
+				somov[i] = 0.0;
+				somsdov[i] = 0.0;
+			}
+			else {
+				somov[i] /= enumov[i];
+				somsdov[i] /= enumov[i];
+			}
+		}
+		
+		if (nzerosigma > 0) {
+			prog.summary_beg();
+			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
+			prog.summary_end();
+		}
+		
+		// calculate completeness
+		std::vector<float> sumov(nbins,0.0);
+		std::vector<float> summeas(nbins,0.0);
+		std::vector<float> summeas1(nbins,0.0);
+		std::vector<float> summeas2(nbins,0.0);
+		std::vector<float> summeas3(nbins,0.0);
+		std::vector<float> completeness(nbins,0.0);
+		std::vector<float> completeness1(nbins,0.0);
+		std::vector<float> completeness2(nbins,0.0);
+		std::vector<float> completeness3(nbins,0.0);
+		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+			// bin number different in C because arrays start at zero
+			float mult = ih.hkl_class().epsilonc();
+			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
+			if ( !fsig[ih].missing() && bin < nbins && bin >= 0) {
+				summeas[bin] += mult;
+				float isigi = fsig[ih].f()/fsig[ih].sigf();
+				if (isigi >= 1.0f ) summeas1[bin] += mult;
+				if (isigi >= 2.0f ) summeas2[bin] += mult;
+				if (isigi >= 3.0f ) summeas3[bin] += mult;
+		}
+		}
+		for (int i=1; i!=nbins; ++i) {
+			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
+		}
+		
+		
+		printf("\n$TABLE: Structure amplitude statistics:\n");
+		printf("$GRAPHS");
+		printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
+		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
+		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
+		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
+		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
+		
+		
+		for(int i=0;i<nbins;i++){
+			double res = maxres*(double(i)+0.5)/double(nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
+			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
+			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
+		}
+		printf("$$\n\n");
+	}
+	
+	/* use more general case
+	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog)
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		clipper::Cell cell = isig.hkl_info().cell();
+		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
+		
+		std::vector<float> somov(nbins,0.0);
+		std::vector<float> somsdov(nbins,0.0);
+		std::vector<int> numov(nbins,0);
+		std::vector<float> enumov(nbins,0.0);
+		
+		float somdir[3][nbins];
+		float somsddir[3][nbins];
+		int numdir[3][nbins];
+		float enumdir[3][nbins];
+		
+		for (int i=0;i<3;i++){
+			for (int j=0;j<nbins;j++){
+				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
+				numdir[i][j] = 0;
+			}
+		}
+		
+		int nzerosigma = 0;
+		float cone = 30.0; //hardwired for now
+		float ang;
+		float cosang;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ) {
+				// bin number different in C because arrays start at zero
+				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
+				float epsiln = 1.0f/ih.hkl_class().epsilonc();
+				
+				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
+					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
+						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
+						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
+						
+						clipper::Coord_reci_orth hc(rj.coord_reci_orth(cell) );
+						
+						for (int j=0;j!=3;++j) {
+							cosang = fabs(hc[j])/sqrt(ih.invresolsq());
+							// cosang can stray just past 1.0
+							cosang = std::min(cosang, 1.0f);
+							ang = acos(cosang);
+							if ( ang < clipper::Util::d2rad(cone) ) {
+								somdir[j][bin] += isig[ih].I()*epsiln;
+								if ( isig[ih].sigI() > 0.0f ) somsddir[j][bin] += epsiln*isig[ih].I()/isig[ih].sigI();
+								enumdir[j][bin] += epsiln;
+								numdir[j][bin]++;
+							}
+						}
+						somov[bin] += isig[ih].I()*epsiln;
+						if ( isig[ih].sigI() > 0.0f ) somsdov[bin] += epsiln*isig[ih].I()/isig[ih].sigI();
+						else nzerosigma++;
+						enumov[bin] += epsiln;
+						numov[bin]++;
+					}
+				}
+			}
+		}
+		
+		for (int i=0;i != nbins; ++i) {
+			for (int j=0;j!=3;++j) {
+				if (numdir[j][i] == 0) {
+					somdir[j][i] = 0;
+					somsddir[j][i] = 0;
+				}
+				else {
+					somdir[j][i] /= enumdir[j][i];
+					somsddir[j][i] /= enumdir[j][i];
+				}
+			}
+			if (numov[i] == 0) {
+				somov[i] = 0.0;
+				somsdov[i] = 0.0;
+			}
+			else {
+				somov[i] /= enumov[i];
+				somsdov[i] /= enumov[i];
+			}
+		}
+		
+		if (nzerosigma > 0) {
+			prog.summary_beg();
+			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
+			prog.summary_end();
+		}
+		
+		// calculate completeness
+		std::vector<float> sumov(nbins,0.0);
+		std::vector<float> summeas(nbins,0.0);
+		std::vector<float> summeas1(nbins,0.0);
+		std::vector<float> summeas2(nbins,0.0);
+		std::vector<float> summeas3(nbins,0.0);
+		std::vector<float> completeness(nbins,0.0);
+		std::vector<float> completeness1(nbins,0.0);
+		std::vector<float> completeness2(nbins,0.0);
+		std::vector<float> completeness3(nbins,0.0);
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			// bin number different in C because arrays start at zero
+			float mult = ih.hkl_class().epsilonc();
+			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
+			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
+			if ( !isig[ih].missing() && bin < nbins && bin >= 0) {
+				summeas[bin] += mult;
+				float isigi = isig[ih].I()/isig[ih].sigI();
+				if (isigi >= 1.0f ) summeas1[bin] += mult;
+				if (isigi >= 2.0f ) summeas2[bin] += mult;
+				if (isigi >= 3.0f ) summeas3[bin] += mult;
+			}
+		}
+		for (int i=1; i!=nbins; ++i) {
+			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
+			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
+		}
+		
+		
+		printf("\n$TABLE: Intensity statistics:\n");
+		printf("$GRAPHS");
+		printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
+		printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
+		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
+		printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
+		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
+		
+		
+		for(int i=0;i<nbins;i++){
+			double res = maxres*(double(i)+0.5)/double(nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
+			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
+			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
+			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
+		}
+		printf("$$\n\n");
+	}
+	*/
+	
+	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao )
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		
@@ -336,169 +647,6 @@ namespace ctruncate {
 		}
 		printf("$$\n\n");
 	}
-
-    
-	
-    void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth& uao )
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		
-		// get eigenvectors of aniso_U
-		clipper::Mat33<float> e123;
-		{
-			clipper::Matrix<float> m(3,3);
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-					m(i,j) = uao(i,j);
-			m.eigen();
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-					e123(i,j) = m(i,j);
-		}
-		
-		
-		clipper::Cell cell = isig.hkl_info().cell();
-		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
-		
-		
-		std::vector<float> somov(nbins,0.0);
-		std::vector<float> somsdov(nbins,0.0);
-		std::vector<int> numov(nbins,0);
-		std::vector<float> enumov(nbins,0.0);
-		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
-		}
-		
-		int nzerosigma = 0;
-		float cone = 30.0; //hardwired for now
-		float ang;
-		float cosang;
-		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ) {
-				// bin number different in C because arrays start at zero
-				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
-				float epsiln = 1.0f/ih.hkl_class().epsilonc();
-				
-				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
-					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
-						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
-						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
-						
-						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
-						
-						for (int j=0;j!=3;++j) {
-							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
-							// cosang can stray just past 1.0
-							cosang = std::min(cosang, 1.0f);
-							ang = acos(cosang);
-							if ( ang < clipper::Util::d2rad(cone) ) {
-								somdir[j][bin] += isig[ih].f()*epsiln;
-								if ( isig[ih].sigf() > 0.0f ) somsddir[j][bin] += epsiln*isig[ih].f()/isig[ih].sigf();
-								enumdir[j][bin] += epsiln;
-								numdir[j][bin]++;
-							}
-						}
-						somov[bin] += isig[ih].f()*epsiln;
-						if ( isig[ih].sigf() > 0.0f ) somsdov[bin] += epsiln*isig[ih].f()/isig[ih].sigf();
-						else nzerosigma++;
-						enumov[bin] += epsiln;
-						numov[bin]++;
-					}
-				}
-			}
-		}
-		
-		for (int i=0;i != nbins; ++i) {
-			for (int j=0;j!=3;++j) {
-				if (numdir[j][i] == 0) {
-					somdir[j][i] = 0;
-					somsddir[j][i] = 0;
-				}
-				else {
-					somdir[j][i] /= enumdir[j][i];
-					somsddir[j][i] /= enumdir[j][i];
-				}
-			}
-			if (numov[i] == 0) {
-				somov[i] = 0.0;
-				somsdov[i] = 0.0;
-			}
-			else {
-				somov[i] /= enumov[i];
-				somsdov[i] /= enumov[i];
-			}
-		}
-		
-		if (nzerosigma > 0) {
-			prog.summary_beg();
-			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
-			prog.summary_end();
-		}
-		
-		// calculate completeness
-		std::vector<float> sumov(nbins,0.0);
-		std::vector<float> summeas(nbins,0.0);
-		std::vector<float> summeas1(nbins,0.0);
-		std::vector<float> summeas2(nbins,0.0);
-		std::vector<float> summeas3(nbins,0.0);
-		std::vector<float> completeness(nbins,0.0);
-		std::vector<float> completeness1(nbins,0.0);
-		std::vector<float> completeness2(nbins,0.0);
-		std::vector<float> completeness3(nbins,0.0);
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			// bin number different in C because arrays start at zero
-			float mult = ih.hkl_class().epsilonc();
-			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
-			if ( !isig[ih].missing() && bin < nbins && bin >= 0) {
-				summeas[bin] += mult;
-				float isigi = isig[ih].f()/isig[ih].sigf();
-				if (isigi >= 1.0f ) summeas1[bin] += mult;
-				if (isigi >= 2.0f ) summeas2[bin] += mult;
-				if (isigi >= 3.0f ) summeas3[bin] += mult;
-			}
-		}
-		for (int i=1; i!=nbins; ++i) {
-			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
-		}
-		
-		
-		printf("\n$TABLE: Structure amplitude statistics:\n");
-		printf("$GRAPHS");
-		printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
-		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
-		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
-		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
-		
-		
-		for(int i=0;i<nbins;i++){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
-			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
-			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
-		}
-		printf("$$\n\n");
-	}
-
-    
 	
 	//--------------------------------------------------------------
 	
@@ -574,9 +722,9 @@ namespace ctruncate {
 	/* fit gaussain to OriginPeak
 	 */
 	{
-		std::vector<float> weights(_nbins,1.0f);
-		std::vector<float> x(_nbins);
-		std::vector<float> y(_nbins);
+		std::vector<clipper::ftype> weights(_nbins,1.0f);
+		std::vector<clipper::ftype> x(_nbins);
+		std::vector<clipper::ftype> y(_nbins);
 		
 		for( int i = 0 ; i != _nbins ; ++i) {
 			float dist = (float(i)+0.5f)*_width/float(_nbins);
@@ -584,7 +732,7 @@ namespace ctruncate {
 			y[i] = std::log(1.0f/_patterson[i]);
 		}
 		
-		float a, b, siga, sigb;
+        clipper::ftype a, b, siga, sigb;
 		
 		straight_line_fit(x,y,weights,_nbins,a,b,siga,sigb);
 		
@@ -597,6 +745,430 @@ namespace ctruncate {
 		return;	
 	}
 	
+	template<class T> template <class D> void YorgoModis<T>::operator() (clipper::HKL_data<D>& isig )
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		_t = type(isig[isig.first()]); //set our type
+		
+		// get eigenvectors of aniso_U
+		{
+			clipper::Matrix<T> m(3,3);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					m(i,j) = _uao(i,j);
+			m.eigen();
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					_e123(i,j) = m(i,j);
+		}
+		
+		
+		clipper::Cell cell = isig.hkl_info().cell();
+		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
+		
+		int _nzerosigma = 0;
+		float cone = 30.0; //hardwired for now
+		float ang;
+		float cosang;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ) {
+				// bin number different in C because arrays start at zero
+				int bin = int( double(_nbins) * ih.invresolsq() / _maxres - 0.001);
+				if (bin >= _nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
+				float epsiln = 1.0f/ih.hkl_class().epsilonc();
+				T Ival=obs(isig);
+				T Isig=sigobs(isig);
+				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
+					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
+						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
+						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
+						
+						clipper::Vec3<float> hc = _e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
+
+						
+						for (int j=0;j!=3;++j) {
+							int jn = j*_nbins+bin;
+							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
+							// cosang can stray just past 1.0
+							cosang = std::min(cosang, 1.0f);
+							ang = acos(cosang);
+							if ( ang < clipper::Util::d2rad(cone) ) {
+								_somdir[jn] += Isig*epsiln;
+								if ( Isig > 0.0f ) _somsddir[jn] += epsiln*Ival/Isig;
+								_enumdir[jn] += epsiln;
+								++_numdir[jn];
+							}
+						}
+						_somov[bin] += Ival*epsiln;
+						if ( Isig > 0.0f ) _somsdov[bin] += epsiln*Ival/Isig;
+						else _nzerosigma++;
+						_enumov[bin] += epsiln;
+						_numov[bin]++;
+					}
+				}
+			}
+		}
+		
+		for (int i=0;i != _nbins; ++i) {
+			for (int j=0;j!=3;++j) {
+				int jn = j*_nbins+i;
+				if (_numdir[jn] == 0) {
+					_somdir[jn] = 0.0;
+					_somsddir[jn] = 0.0;
+				}
+				else {
+					_somdir[jn] /= _enumdir[jn];
+					_somsddir[jn] /= _enumdir[jn];
+				}
+			}
+			if (_numov[i] == 0) {
+				_somov[i] = 0.0;
+				_somsdov[i] = 0.0;
+			}
+			else {
+				_somov[i] /= _enumov[i];
+				_somsdov[i] /= _enumov[i];
+			}
+		}
+		return;
+	}
+	
+	template<class T> void YorgoModis<T>::plot() 
+	{
+		if (_t == I ) {
+			printf("\n$TABLE: Intensity statistics:\n");
+			printf("$GRAPHS");
+			printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
+			printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
+			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+			printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
+			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
+		} else {
+			printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
+			printf("$GRAPHS");
+			printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
+			printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
+			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
+			printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
+			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
+		}
+		
+		for(int i=0;i!=_nbins;++i){
+			double res = _maxres*(double(i)+0.5)/double(_nbins);
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,_somdir[i],_somdir[_nbins+i],_somdir[2*_nbins+i],_somov[i]);
+			printf("%12.4e %12.4e %12.4e %12.4e ",_somsddir[i],_somsddir[_nbins+i],_somsddir[2*_nbins+i],_somsdov[i]);
+			printf("%8d %8d %8d %8d",_numdir[i],_numdir[_nbins+i],_numdir[2*_nbins+i],_numov[i]);
+		}
+		printf("$$\n\n");
+	}
+	
+	
+	template<class T> template<class D> void Completeness<T>::operator() (clipper::HKL_data<D>& isig )
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		_t = type(isig[isig.first()]); //set our type
+		
+		// calculate completeness
+		std::vector<T> sumov(_nbins,0.0);
+		std::vector<T> summeas(_nbins,0.0);
+		std::vector<T> summeas1(_nbins,0.0);
+		std::vector<T> summeas2(_nbins,0.0);
+		std::vector<T> summeas3(_nbins,0.0);
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			// bin number different in C because arrays start at zero
+			float mult = ih.hkl_class().epsilonc();
+			int bin = int( double(_nbins) * ih.invresolsq() / _maxres - 0.001);
+			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+			if ( bin < _nbins && bin >= 0 ) sumov[bin] += mult;
+			if ( !isig[ih].missing() && bin < _nbins && bin >= 0) {
+				_completeness[bin] += mult;
+				T Ival=obs(isig);
+				T Isig=sigobs(isig);
+				float isigi = Ival/Isig;
+				if (isigi >= 1.0f ) _completeness1[bin] += mult;
+				if (isigi >= 2.0f ) _completeness2[bin] += mult;
+				if (isigi >= 3.0f ) _completeness3[bin] += mult;
+			}
+		}
+		for (int i=1; i!=_nbins; ++i) {
+			if (sumov[i] > 0.0) {
+				_completeness[i] /= sumov[i];
+				_completeness1[i] /= sumov[i];
+				_completeness2[i] /= sumov[i];
+				_completeness3[i] /= sumov[i];
+			}
+		}
+	}
+		
+	template<class T> void Completeness<T>::plot() 
+	{
+		if (_t == I ) {
+			printf("\n$TABLE: Intensity Completeness:\n");
+			printf("$GRAPHS");
+			printf(": Completeness v resolution:N:1,2,3,4,5:\n");
+			printf("$$ 1/resol^2 completeness sig1 sig2 sig3$$\n$$\n");
+		} else {
+			printf("\n$TABLE: Structure factor completeness:\n");
+			printf("$GRAPHS");
+			printf(": Completeness v resolution:N:1,2,3,4,5:\n");
+			printf("$$ 1/resol^2 completeness sig1 sig2 sig3$$\n$$\n");
+		}
+		
+		for(int i=0;i!=_nbins;++i){
+			double res = _maxres*(double(i)+0.5)/double(_nbins);
+			printf("%10.6f %8.4f %8.4f %8.4f %8.4f\n",res, _completeness[i],_completeness1[i],_completeness2[i],_completeness3[i]);
+		}
+		printf("$$\n\n");
+	}
+	
+	template <class T> AnisoPlot<T>::AnisoPlot(clipper::U_aniso_orth& uao)
+	{
+		int steps = 60;
+		clipper::ftype lev[] = { 0.5, 0.25, 0.125};
+		std::vector<clipper::ftype> levels(lev,lev+sizeof(lev)/sizeof(clipper::ftype));
+		// get eigenvalues of aniso_U
+			{
+				clipper::Matrix<T> m(3,3);
+				for (int i = 0 ; i !=3 ; ++i)
+					for (int j = 0 ; j != 3 ; ++j)
+						m(i,j) = uao(i,j);
+				_eigen = m.eigen();
+				for (int i = 0 ; i !=3 ; ++i)
+					_eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
+				for (int i = 0 ; i !=3 ; ++i)
+					for (int j = 0 ; j != 3 ; ++j)
+						_e123(i,j) = m(i,j);
+			}
+			clipper::ftype angle, sigmau, sigmav;
+			ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
+			for (int l=0 ; l != levels.size() ; ++l ) 
+				_isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+			ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
+			for (int l=0 ; l != levels.size() ; ++l ) 
+				_isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+			ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
+			for (int l=0 ; l != levels.size() ; ++l ) 
+				_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+		}
+	
+	template <class T> AnisoPlot<T>::AnisoPlot(clipper::ftype scale, clipper::U_aniso_orth& uao)
+	{
+		int steps = 60;
+		clipper::ftype lev[] = { 3, 2, 1};
+		std::vector<clipper::ftype> levels(lev,lev+sizeof(lev)/sizeof(clipper::ftype));
+		for (int i = 0; i != levels.size() ; ++i ) levels[i] /= scale;
+		// get eigenvalues of aniso_U
+		{
+			clipper::Matrix<T> m(3,3);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					m(i,j) = uao(i,j);
+			_eigen = m.eigen();
+			for (int i = 0 ; i !=3 ; ++i)
+				_eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
+			for (int i = 0 ; i !=3 ; ++i)
+				for (int j = 0 ; j != 3 ; ++j)
+					_e123(i,j) = m(i,j);
+		}
+		clipper::ftype angle, sigmau, sigmav;
+		ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
+		for (int l=0 ; l != levels.size() ; ++l ) 
+			_isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+		ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
+		for (int l=0 ; l != levels.size() ; ++l ) 
+			_isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+		ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
+		for (int l=0 ; l != levels.size() ; ++l ) 
+			_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+	}
+	
+		/* ellipse */
+		template <class T> void AnisoPlot<T>::loggraph() {
+			std::stringstream x1,x2,x3;
+			x1 << "("  << _e123(0,0) << "h," << _e123(1,0) << "k," << _e123(2,0) << "l)";
+			x2 << "("  << _e123(0,1) << "h," << _e123(1,1) << "k," << _e123(2,1) << "l)";
+			x3 << "("  << _e123(0,2) << "h," << _e123(1,2) << "k," << _e123(2,2) << "l)";
+			
+			clipper::ftype maxv(-99.0), minv(99);
+			// get plot extremes
+			{
+			int l = _isoline1.size()-1;
+			for(int i=0;i!=_isoline1[l].size();++i) {
+				maxv = std::max(maxv,std::max(_isoline1[l][i][0],_isoline1[l][i][1]) );
+				minv = std::min(minv,std::min(_isoline1[l][i][0],_isoline1[l][i][1]) );
+			}
+			l = _isoline2.size()-1;
+			for(int i=0;i!=_isoline2[l].size();++i) {
+				maxv = std::max(maxv,std::max(_isoline2[l][i][0],_isoline2[l][i][1]) );
+				minv = std::min(minv,std::min(_isoline2[l][i][0],_isoline2[l][i][1]) );
+			}
+			l = _isoline3.size()-1;
+			for(int i=0;i!=_isoline1[l].size();++i) {
+				maxv = std::max(maxv,std::max(_isoline3[l][i][0],_isoline3[l][i][1]) );
+				minv = std::min(minv,std::min(_isoline3[l][i][0],_isoline3[l][i][1]) );
+			}
+			}
+			printf("\n$TABLE: Anisotropy:\n");
+			printf("$SCATTER");
+			printf(": Falloff plane 1:%f|%fx%f|%f:1,2:\n",minv,maxv,minv,maxv);
+			printf(": Falloff plane 2:%f|%fx%f|%f:3,4:\n",minv,maxv,minv,maxv);
+			printf(": Falloff plane 3:%f|%fx%f|%f:5,6:\n",minv,maxv,minv,maxv);
+			printf("$$ %s %s %s %s %s %s$$\n$$\n",x1.str().c_str(),x2.str().c_str(),x1.str().c_str(),
+				   x3.str().c_str(),x2.str().c_str(),x3.str().c_str());	
+			
+			// ellipse level and step
+			for(int l=0;l!=_isoline1.size(); ++l)
+				for(int i=0;i!=_isoline1[l].size();++i)
+					printf("%8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n", 
+						   _isoline1[l][i][0],_isoline1[l][i][1],
+						   _isoline2[l][i][0],_isoline2[l][i][1],
+						   _isoline3[l][i][0],_isoline3[l][i][1]);
+			
+			printf("$$\n\n");
+		}
+		
+		
+		//want a point, but use Coord_orth for now
+		template <class T> clipper::Coord_orth AnisoPlot<T>::point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
+																clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741)
+		{
+			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
+			clipper::ftype sinuv = std::sin(angleuv);
+			clipper::ftype cosuv = std::cos(angleuv);
+
+			clipper::ftype s = std::sin(theta);
+			clipper::ftype c = std::cos(theta);		 
+			// theta equations
+			clipper::ftype x = offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv);
+			clipper::ftype y= offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv);
+			return clipper::Coord_orth(x,y,0.0);
+		}
+		
+		// plot at frac of height
+	template <class T> std::vector<clipper::Coord_orth> AnisoPlot<T>::isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
+													  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60) 
+		{
+			std::vector<clipper::Coord_orth> points(steps);
+			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
+			clipper::ftype sinuv = std::sin(angleuv);
+			clipper::ftype cosuv = std::cos(angleuv);
+			
+			for (int i = 0; i != steps ;++i) {
+				clipper::ftype angle = 2.0*clipper::Util::pi()*clipper::ftype(i)/clipper::ftype(steps) ;
+				clipper::ftype s = std::sin(angle);
+				clipper::ftype c = std::cos(angle);		
+				// theta equations
+				points[i] = clipper::Coord_orth(offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv),
+												offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv),
+												0.0);
+			}
+			
+			return points;
+		}
+		
+		// calculate the ellipse parameters
+		template <class T> void AnisoPlot<T>::ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
+													  clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav)		 
+		{
+			angle = ( std::abs(sig1 - sig2 ) < 1.0e-5) ? 0.0 : std::atan(2.0*cov*sig1*sig2/(sig1*sig1-sig2*sig2));
+			//tan(2alpha) = 2*cov(x,y)*sig(x)*sig(y)/(sig(x)**2-sig(y)**2)
+			
+			clipper::ftype t1 = sig1*sig1*sig2*sig2*(1.0-cov*cov);
+			clipper::ftype s = std::sin(angle);
+			clipper::ftype c = std::cos(angle);
+			clipper::ftype t2 = 2*cov*sig1*sig2*s*c;
+			
+			sigmav = std::sqrt(t1/(sig2*sig2*c*c-t2+sig1*sig1*s*s));
+			sigmau = std::sqrt(t1/(sig2*sig2*s*s+t2+sig1*sig1*c*c));
+			return;
+		}
+
+    //---------Calculate anisotropy-------------------------------------
+
+
+    template <class SCALER, class DATA, class T> void AnisoCorr<SCALER,DATA,T>::calc(clipper::HKL_data<DATA>& isig, bool protein, bool rna)
+    {
+        const clipper::HKL_info& hklinf = isig.hkl_info();
+        clipper::Cell cell(hklinf.cell());
+        clipper::Spacegroup spgr(hklinf.spacegroup());
+        
+        //generate reference scattering curve (initially protein only)
+        Scattering scat;
+        clipper::ftype totalscatter = spgr.num_symops()*scat.proteinScat(cell, spgr);
+        
+        clipper::HKL_data<DATA> Ibest(hklinf);
+		for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
+            T reso = ih.invresolsq();
+            Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
+		} // scale against BEST
+        
+        _iscale( Ibest, isig );
+
+        return ;
+    }
+    
+    //! calculate anisotropy correction
+    template <class SCALER, class DATA, class T> 
+    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::operator()(clipper::HKL_data<DATA>& observed, bool protein, bool rna )
+    {
+        calc(observed,protein,rna);
+        return _iscale.u_aniso_orth(Scaling::F);
+    }
+    
+    template <class SCALER, class DATA, class T> 
+    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::u_aniso_orth( Scaling::TYPE t ) const
+    {
+        if ( t == Scaling::I ) return _iscale.u_aniso_orth(Scaling::I);
+        else return _iscale.u_aniso_orth(Scaling::F);
+    }
+    
+    //---------Calculate anisotropy eigenvalues------------------------
+
+    //! Calculate eigenvalues
+    
+    template <class T> AnisoDirection<T>::AnisoDirection(clipper::U_aniso_orth& uao)
+    {
+        // Eigenvalue calculation
+        _uao = &uao;
+        clipper::Matrix<T> mat( 3, 3, 0.0 );
+        for (int i=0; i !=3; ++i) {
+            for (int j=0; j !=3 ; ++j) {
+                mat(i,j) = uao(i,j);
+            }
+        }
+        std::vector<T> v = mat.eigen( true );
+        
+        _max = 0.0;
+        for (int i=0 ; i!=3 ; ++i) 
+            if ( v[i] > _max ) _max = v[i];
+        
+        std::vector<int> close(3,-1);
+        
+        for (int i=0 ; i!=3 ; ++i) { // loop a*, b*, c*
+            clipper::ftype max = 0.0;
+            int jj = -1;
+            for (int j=0; j!=3; ++j) { // loop vectors
+                if (close[0] == j || close[1] == j ) continue;
+                if (std::fabs(mat(j,i) > max) ) {
+                    max = std::fabs(mat(j,i));
+                    jj = j;
+                }
+            }
+            close[i] = jj;
+        }
+        // close[i] for i -> a*, b*, c* is closest vector
+        for (int i=0; i!=3 ;++i) { // loop a*, b*, c*
+            _eigenvalues.push_back(v[close[i]]);
+            _eigenvectors.push_back(clipper::Vec3<T>(mat(0,close[i]),mat(1,close[i]),mat(2,close[i])) );
+        }
+        ASSERT( _eigenvalues.size() == 3 );
+        return ;
+    }
+    
     // run on scaled on merged data, however the best stats will be from the unmerged set.
     // get from aimless
     template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::J_sigJ_ano<T> >& isig_ano, int nbins)
@@ -697,11 +1269,11 @@ namespace ctruncate {
         }
         
         std::cout << "Estimated limits of anomalous signal" << std::endl;
- 
+        
         std::cout << "      Wang limit (deltaI/I) > 0.6% : " << 1.0/std::sqrt(wang_limit) << " A " << std::endl;
         std::cout << "      anomalous limit (deltaI/sig) > 1.3 : " << 1.0/std::sqrt(anom_limit) << " A " << std::endl;
         std::cout << "      measurability limit (Nanon/Nov) > 5% : " << 1.0/std::sqrt(meas_limit) << " A " << std::endl;
-         std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
+        std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
         
         printf("\n$TABLE: Intensity anomalous analysis:\n");
 		printf("$GRAPHS");
@@ -715,7 +1287,7 @@ namespace ctruncate {
 			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i1])/float(sumov[i1]));
 		}
 		printf("$$\n\n");
-
+        
     }
     
     template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::G_sigG_ano<T> >& isig_ano, int nbins)
@@ -836,7 +1408,22 @@ namespace ctruncate {
 		printf("$$\n\n");
     }
 
+    //---------Instantiate templates------------------------------------
+	template class AnisoPlot<clipper::ftype32>;
+	template class AnisoPlot<clipper::ftype64>;
     
-            template class AnomStats<clipper::ftype32>;
-            template class AnomStats<clipper::ftype64>;
-}
+    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype32>, clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
+    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
+    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype32>,clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
+    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
+
+    template class AnisoDirection<clipper::ftype32>;
+    template class AnisoDirection<clipper::ftype64>;
+    
+    template class AnomStats<clipper::ftype32>;
+    template class AnomStats<clipper::ftype64>;
+	}
