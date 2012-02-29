@@ -422,8 +422,8 @@ namespace ctruncate {
      \param lval L statistic from L-test. */
     void twin_summary(clipper::ftype alpha, clipper::ftype lval) {
         printf("TWINNING SUMMARY\n\n");
-        printf("Twinning fraction from H-test: %d\n",alpha);
-        printf("L-statistic from L-Test:       %d\n\n",lval);
+        printf("Twinning fraction from H-test: %f\n",alpha);
+        printf("L-statistic from L-Test:       %f\n\n",lval);
         printf("   Relation between L statistics and twinning fraction:\n");
         printf("      Twinning fraction = 0.000  L statistics = 0.500:\n");
         printf("      Twinning fraction = 0.100  L statistics = 0.440:\n");
@@ -443,14 +443,14 @@ namespace ctruncate {
             printf("   Twinning, if any, can be safely be ignored. However, twin refinement may be attempted, but not before the\n model is completely build.\n\n");
         } else if ( 0.1 < alpha < 0.4 ) {
             printf("It is highly probable that your crystal is TWINNED.\n\n");
-            printf("   Please use twin refinement after your model is almost completed and R-free is below 40%.\n\n");
+            printf("   Please use twin refinement after your model is almost completed and R-free is below 40%%.\n\n");
         } else {
             if ( 0.440 <= lval <= 0.500 ) {
                 printf("Your data might have been scaled in a LOWER symmetry space group than the true space group.\n\n");
                 printf("   Please run pointless, aimless (scala) and ctruncate to revise space group assignment.\n\n");
             } else if ( 0.375 <= lval < 0.440 ) {
                 printf("It is highly probable that your crystal is TWINNED.\n\n");
-                printf("   Please use twin refinement after your model is almost completed and R-free is below 40%\n\n");
+                printf("   Please use twin refinement after your model is almost completed and R-free is below 40%%\n\n");
             }
         }
     }
