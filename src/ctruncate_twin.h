@@ -23,6 +23,8 @@ namespace ctruncate {
 			   clipper::String s, bool debug );
 	
     clipper::ftype Ltest_driver(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug);
+    
+    void twin_summary(clipper::ftype, clipper::ftype);
 	
 }
 
