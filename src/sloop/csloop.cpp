@@ -7,9 +7,8 @@
 
 #include <algorithm>
 
-#include "protein_db.cpp"
-#include "protein_db_utils.cpp"
-
+#include "protein_db.h"
+#include "protein_db_utils.h"
 
 int main( int argc, char** argv )
 {
