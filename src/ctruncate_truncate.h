@@ -15,7 +15,7 @@
 #include "alt_hkl_datatypes.h"
 #include "clipper/clipper.h"
 #include "clipper/clipper-ccp4.h"
-#include "csymlib.h"
+#include "ccp4/csymlib.h"
 
 namespace ctruncate {
 	

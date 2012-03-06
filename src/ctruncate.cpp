@@ -15,14 +15,14 @@
 #include "clipper/core/clipper_util.h"
 #include "clipper/core/atomsf.h"
 #include "clipper/core/coords.h"
-#include "ccp4_general.h"
-#include "ccp4_program.h"
+#include "ccp4/ccp4_general.h"
+#include "ccp4/ccp4_program.h"
 #include "clipper/ccp4/ccp4_mtz_io.h"
-#include "cmtzlib.h"
-#include "csymlib.h"
+#include "ccp4/cmtzlib.h"
+#include "ccp4/csymlib.h"
 #include <iostream>
 #include <math.h>
-#include "ccp4_fortran.h"
+#include "ccp4/ccp4_fortran.h"
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
 #include "intensity_scale.h"   // contains additions to sfscale.cpp, sfscale.h, function_object_bases.h
 #include "alt_hkl_datatypes.h"

@@ -10,8 +10,8 @@
  
 #include "ctruncate_twin.h"
 #include "ctruncate_utils.h"
-#include "ccp4_fortran.h"
-#include "csymlib.h"
+#include "ccp4/ccp4_fortran.h"
+#include "ccp4/csymlib.h"
 #include "twinlaws.h"
 
 namespace ctruncate {
