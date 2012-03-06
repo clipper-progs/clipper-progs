@@ -14,6 +14,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -33,37 +35,297 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
+	src/csfcalc$(EXEEXT) src/cfft$(EXEEXT) src/cinvfft$(EXEEXT) \
+	src/csigmaa$(EXEEXT) src/cecalc$(EXEEXT) \
+	src/cphasecombine$(EXEEXT) src/cpatterson$(EXEEXT) \
+	src/caniso$(EXEEXT) src/convert2mtz$(EXEEXT) \
+	src/ctruncate$(EXEEXT) src/csymmatch$(EXEEXT) \
+	src/cmaplocal$(EXEEXT) src/cncsfrommodel$(EXEEXT) \
+	src/cmodeltoseq$(EXEEXT) src/cmapcut$(EXEEXT) \
+	src/comit$(EXEEXT) src/pirate/cpirate$(EXEEXT) \
+	src/pirate/cmakereference$(EXEEXT) \
+	src/buccaneer/cbuccaneer$(EXEEXT) \
+	src/buccaneer/csequins$(EXEEXT) src/parrot/cparrot$(EXEEXT) \
+	src/sloop/csloop$(EXEEXT) src/nautilus/cnautilus$(EXEEXT)
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS config.guess config.sub depcomp \
-	install-sh missing mkinstalldirs
+DIST_COMMON = $(am__configure_deps) $(dist_html_DATA) \
+	$(dist_sloopdata_DATA) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(top_srcdir)/configure COPYING INSTALL build-aux/compile \
+	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
+	build-aux/install-sh build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/macros/ax_pthread.m4 \
-	$(top_srcdir)/macros/ccp4.m4 $(top_srcdir)/macros/clipper.m4 \
-	$(top_srcdir)/macros/fftw.m4 $(top_srcdir)/macros/mmdb.m4 \
-	$(top_srcdir)/macros/progs.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
+	$(top_srcdir)/m4/fftw.m4 $(top_srcdir)/m4/progs.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
-mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+mkinstalldirs = $(install_sh) -d
+CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-SOURCES =
-DIST_SOURCES =
-RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
-	html-recursive info-recursive install-data-recursive \
-	install-dvi-recursive install-exec-recursive \
-	install-html-recursive install-info-recursive \
-	install-pdf-recursive install-ps-recursive install-recursive \
-	installcheck-recursive installdirs-recursive pdf-recursive \
-	ps-recursive uninstall-recursive
-RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
-  distclean-recursive maintainer-clean-recursive
-AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
-	$(RECURSIVE_CLEAN_TARGETS:-recursive=) tags TAGS ctags CTAGS \
-	distdir dist dist-all distcheck
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(htmldir)" \
+	"$(DESTDIR)$(sloopdatadir)"
+PROGRAMS = $(bin_PROGRAMS)
+am__dirstamp = $(am__leading_dot)dirstamp
+am_src_buccaneer_cbuccaneer_OBJECTS =  \
+	src/buccaneer/buccaneer-build.$(OBJEXT) \
+	src/buccaneer/buccaneer-prune.$(OBJEXT) \
+	src/buccaneer/buccaneer-lib.$(OBJEXT) \
+	src/buccaneer/buccaneer-correct.$(OBJEXT) \
+	src/buccaneer/buccaneer-sequence.$(OBJEXT) \
+	src/buccaneer/buccaneer-link.$(OBJEXT) \
+	src/buccaneer/buccaneer-filter.$(OBJEXT) \
+	src/buccaneer/buccaneer-util.$(OBJEXT) \
+	src/buccaneer/buccaneer-ncsbuild.$(OBJEXT) \
+	src/buccaneer/buccaneer-find.$(OBJEXT) \
+	src/buccaneer/cbuccaneer.$(OBJEXT) \
+	src/buccaneer/buccaneer-prep.$(OBJEXT) \
+	src/buccaneer/simplex-lib.$(OBJEXT) \
+	src/buccaneer/buccaneer-grow.$(OBJEXT) \
+	src/buccaneer/buccaneer-prot.$(OBJEXT) \
+	src/buccaneer/simulate-lib.$(OBJEXT) \
+	src/buccaneer/buccaneer-join.$(OBJEXT) \
+	src/buccaneer/buccaneer-known.$(OBJEXT) \
+	src/buccaneer/buccaneer-merge.$(OBJEXT) \
+	src/buccaneer/buccaneer-tidy.$(OBJEXT)
+src_buccaneer_cbuccaneer_OBJECTS =  \
+	$(am_src_buccaneer_cbuccaneer_OBJECTS)
+src_buccaneer_cbuccaneer_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+src_buccaneer_cbuccaneer_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_buccaneer_csequins_OBJECTS = src/buccaneer/csequins.$(OBJEXT) \
+	src/buccaneer/buccaneer-sequence.$(OBJEXT) \
+	src/buccaneer/simulate-lib.$(OBJEXT) \
+	src/buccaneer/buccaneer-prot.$(OBJEXT) \
+	src/buccaneer/buccaneer-lib.$(OBJEXT)
+src_buccaneer_csequins_OBJECTS = $(am_src_buccaneer_csequins_OBJECTS)
+src_buccaneer_csequins_LDADD = $(LDADD)
+src_buccaneer_csequins_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_caniso_OBJECTS = src/caniso.$(OBJEXT)
+src_caniso_OBJECTS = $(am_src_caniso_OBJECTS)
+src_caniso_LDADD = $(LDADD)
+src_caniso_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cecalc_OBJECTS = src/cecalc.$(OBJEXT)
+src_cecalc_OBJECTS = $(am_src_cecalc_OBJECTS)
+src_cecalc_LDADD = $(LDADD)
+src_cecalc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cfft_OBJECTS = src/cfft.$(OBJEXT)
+src_cfft_OBJECTS = $(am_src_cfft_OBJECTS)
+src_cfft_LDADD = $(LDADD)
+src_cfft_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_chltofom_OBJECTS = src/chltofom.$(OBJEXT)
+src_chltofom_OBJECTS = $(am_src_chltofom_OBJECTS)
+src_chltofom_LDADD = $(LDADD)
+src_chltofom_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cinvfft_OBJECTS = src/cinvfft.$(OBJEXT)
+src_cinvfft_OBJECTS = $(am_src_cinvfft_OBJECTS)
+src_cinvfft_LDADD = $(LDADD)
+src_cinvfft_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cmapcut_OBJECTS = src/cmapcut.$(OBJEXT)
+src_cmapcut_OBJECTS = $(am_src_cmapcut_OBJECTS)
+src_cmapcut_LDADD = $(LDADD)
+src_cmapcut_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cmaplocal_OBJECTS = src/cmaplocal.$(OBJEXT)
+src_cmaplocal_OBJECTS = $(am_src_cmaplocal_OBJECTS)
+src_cmaplocal_LDADD = $(LDADD)
+src_cmaplocal_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cmodeltoseq_OBJECTS = src/cmodeltoseq.$(OBJEXT)
+src_cmodeltoseq_OBJECTS = $(am_src_cmodeltoseq_OBJECTS)
+src_cmodeltoseq_LDADD = $(LDADD)
+src_cmodeltoseq_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cncsfrommodel_OBJECTS = src/cncsfrommodel.$(OBJEXT)
+src_cncsfrommodel_OBJECTS = $(am_src_cncsfrommodel_OBJECTS)
+src_cncsfrommodel_LDADD = $(LDADD)
+src_cncsfrommodel_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_comit_OBJECTS = src/comit.$(OBJEXT)
+src_comit_OBJECTS = $(am_src_comit_OBJECTS)
+src_comit_LDADD = $(LDADD)
+src_comit_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_convert2mtz_OBJECTS = src/convert2mtz.$(OBJEXT)
+src_convert2mtz_OBJECTS = $(am_src_convert2mtz_OBJECTS)
+src_convert2mtz_LDADD = $(LDADD)
+src_convert2mtz_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cpatterson_OBJECTS = src/cpatterson.$(OBJEXT)
+src_cpatterson_OBJECTS = $(am_src_cpatterson_OBJECTS)
+src_cpatterson_LDADD = $(LDADD)
+src_cpatterson_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cphasecombine_OBJECTS = src/cphasecombine.$(OBJEXT)
+src_cphasecombine_OBJECTS = $(am_src_cphasecombine_OBJECTS)
+src_cphasecombine_LDADD = $(LDADD)
+src_cphasecombine_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_cphasematch_OBJECTS = src/cphasematch.$(OBJEXT)
+src_cphasematch_OBJECTS = $(am_src_cphasematch_OBJECTS)
+src_cphasematch_LDADD = $(LDADD)
+src_cphasematch_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_csfcalc_OBJECTS = src/csfcalc.$(OBJEXT)
+src_csfcalc_OBJECTS = $(am_src_csfcalc_OBJECTS)
+src_csfcalc_LDADD = $(LDADD)
+src_csfcalc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_csigmaa_OBJECTS = src/csigmaa.$(OBJEXT)
+src_csigmaa_OBJECTS = $(am_src_csigmaa_OBJECTS)
+src_csigmaa_LDADD = $(LDADD)
+src_csigmaa_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_csymmatch_OBJECTS = src/csymmatch.$(OBJEXT)
+src_csymmatch_OBJECTS = $(am_src_csymmatch_OBJECTS)
+src_csymmatch_LDADD = $(LDADD)
+src_csymmatch_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_ctruncate_OBJECTS = src/ctruncate.$(OBJEXT) \
+	src/ctruncate_utils.$(OBJEXT) src/cpsf_utils.$(OBJEXT) \
+	src/twinlaws.$(OBJEXT) src/ctruncate_truncate.$(OBJEXT) \
+	src/ctruncate_twin.$(OBJEXT) src/ctruncate_parity.$(OBJEXT) \
+	src/ctruncate_moments.$(OBJEXT) \
+	src/ctruncate_analyse.$(OBJEXT) \
+	src/ctruncate_matthews.$(OBJEXT) \
+	src/ctruncate_wilson.$(OBJEXT) src/intensity_scale.$(OBJEXT) \
+	src/best.$(OBJEXT)
+src_ctruncate_OBJECTS = $(am_src_ctruncate_OBJECTS)
+src_ctruncate_LDADD = $(LDADD)
+src_ctruncate_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_nautilus_cnautilus_OBJECTS = src/nautilus/cnautilus.$(OBJEXT) \
+	src/nautilus/nautilus-sequence.$(OBJEXT) \
+	src/nautilus/nautilus-tools.$(OBJEXT) \
+	src/nautilus/nautilus-join.$(OBJEXT) \
+	src/nautilus/nautilus-ss-find.$(OBJEXT) \
+	src/nautilus/nautilus-util.$(OBJEXT) \
+	src/nautilus/nautilus-rebuild-bases.$(OBJEXT) \
+	src/nautilus/nautilus-target.$(OBJEXT) \
+	src/nautilus/nucleicacid_db.$(OBJEXT)
+src_nautilus_cnautilus_OBJECTS = $(am_src_nautilus_cnautilus_OBJECTS)
+src_nautilus_cnautilus_LDADD = $(LDADD)
+src_nautilus_cnautilus_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_parrot_cparrot_OBJECTS = src/parrot/cparrot.$(OBJEXT) \
+	src/parrot/parrot-lib.$(OBJEXT) \
+	src/parrot/parrot-ncs.$(OBJEXT) \
+	src/parrot/simplex-lib.$(OBJEXT) \
+	src/parrot/parrot-ncsfind.$(OBJEXT) \
+	src/parrot/parrot-ncsaver.$(OBJEXT) \
+	src/parrot/simulate-lib.$(OBJEXT)
+src_parrot_cparrot_OBJECTS = $(am_src_parrot_cparrot_OBJECTS)
+src_parrot_cparrot_LDADD = $(LDADD)
+src_parrot_cparrot_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_pirate_cmakereference_OBJECTS =  \
+	src/pirate/cmakereference.$(OBJEXT) \
+	src/pirate/ftplib.$(OBJEXT) src/pirate/compress42.$(OBJEXT)
+src_pirate_cmakereference_OBJECTS =  \
+	$(am_src_pirate_cmakereference_OBJECTS)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+src_pirate_cmakereference_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am_src_pirate_cpirate_OBJECTS = src/pirate/cpirate.$(OBJEXT) \
+	src/pirate/simulate-lib.$(OBJEXT) \
+	src/pirate/pirate-lib.$(OBJEXT) \
+	src/pirate/pirate-ncsaver.$(OBJEXT) \
+	src/pirate/pirate-ncsfind.$(OBJEXT) \
+	src/pirate/simplex-lib.$(OBJEXT)
+src_pirate_cpirate_OBJECTS = $(am_src_pirate_cpirate_OBJECTS)
+src_pirate_cpirate_LDADD = $(LDADD)
+src_pirate_cpirate_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_src_sloop_csloop_OBJECTS = src/sloop/csloop.$(OBJEXT) \
+	src/sloop/protein_db.$(OBJEXT) \
+	src/sloop/protein_db_utils.$(OBJEXT)
+src_sloop_csloop_OBJECTS = $(am_src_sloop_csloop_OBJECTS)
+src_sloop_csloop_LDADD = $(LDADD)
+src_sloop_csloop_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+DEFAULT_INCLUDES = -I.@am__isrc@
+depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
+am__depfiles_maybe = depfiles
+am__mv = mv -f
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_$(V))
+am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0 = @echo "  CC    " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_$(V))
+am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
+am__v_CCLD_0 = @echo "  CCLD  " $@;
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_$(V))
+am__v_CXX_ = $(am__v_CXX_$(AM_DEFAULT_VERBOSITY))
+am__v_CXX_0 = @echo "  CXX   " $@;
+CXXLD = $(CXX)
+CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
+AM_V_CXXLD = $(am__v_CXXLD_$(V))
+am__v_CXXLD_ = $(am__v_CXXLD_$(AM_DEFAULT_VERBOSITY))
+am__v_CXXLD_0 = @echo "  CXXLD " $@;
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
+SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
+	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
+	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
+	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
+	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
+	$(src_cmodeltoseq_SOURCES) $(src_cncsfrommodel_SOURCES) \
+	$(src_comit_SOURCES) $(src_convert2mtz_SOURCES) \
+	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
+	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
+	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
+	$(src_ctruncate_SOURCES) $(src_nautilus_cnautilus_SOURCES) \
+	$(src_parrot_cparrot_SOURCES) \
+	$(src_pirate_cmakereference_SOURCES) \
+	$(src_pirate_cpirate_SOURCES) $(src_sloop_csloop_SOURCES)
+DIST_SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
+	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
+	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
+	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
+	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
+	$(src_cmodeltoseq_SOURCES) $(src_cncsfrommodel_SOURCES) \
+	$(src_comit_SOURCES) $(src_convert2mtz_SOURCES) \
+	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
+	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
+	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
+	$(src_ctruncate_SOURCES) $(src_nautilus_cnautilus_SOURCES) \
+	$(src_parrot_cparrot_SOURCES) \
+	$(src_pirate_cmakereference_SOURCES) \
+	$(src_pirate_cpirate_SOURCES) $(src_sloop_csloop_SOURCES)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+DATA = $(dist_html_DATA) $(dist_sloopdata_DATA)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -73,49 +335,21 @@ am__remove_distdir = \
   { test ! -d "$(distdir)" \
     || { find "$(distdir)" -type d ! -perm -200 -exec chmod u+w {} ';' \
          && rm -fr "$(distdir)"; }; }
-am__relativize = \
-  dir0=`pwd`; \
-  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
-  sed_rest='s,^[^/]*/*,,'; \
-  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
-  sed_butlast='s,/*[^/]*$$,,'; \
-  while test -n "$$dir1"; do \
-    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
-    if test "$$first" != "."; then \
-      if test "$$first" = ".."; then \
-        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
-        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
-      else \
-        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
-        if test "$$first2" = "$$first"; then \
-          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
-        else \
-          dir2="../$$dir2"; \
-        fi; \
-        dir0="$$dir0"/"$$first"; \
-      fi; \
-    fi; \
-    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
-  done; \
-  reldir="$$dir2"
 DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
-AR_FLAGS = @AR_FLAGS@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CCP4_CXXFLAGS = @CCP4_CXXFLAGS@
-CCP4_LIBS = @CCP4_LIBS@
 CFLAGS = @CFLAGS@
-CLIPPER_CXXFLAGS = @CLIPPER_CXXFLAGS@
-CLIPPER_LIBS = @CLIPPER_LIBS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -129,8 +363,6 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-F77 = @F77@
-FFLAGS = @FFLAGS@
 FFTW_CXXFLAGS = @FFTW_CXXFLAGS@
 FFTW_LIBS = @FFTW_LIBS@
 GREP = @GREP@
@@ -146,8 +378,6 @@ LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
-MMDB_CXXFLAGS = @MMDB_CXXFLAGS@
-MMDB_LIBS = @MMDB_LIBS@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
@@ -170,7 +400,6 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
-ac_ct_F77 = @ac_ct_F77@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -184,28 +413,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-caniso_LDFLAGS = @caniso_LDFLAGS@
-cbuccaneer_LDFLAGS = @cbuccaneer_LDFLAGS@
-cecalc_LDFLAGS = @cecalc_LDFLAGS@
-cfft_LDFLAGS = @cfft_LDFLAGS@
-chltofom_LDFLAGS = @chltofom_LDFLAGS@
-cinvfft_LDFLAGS = @cinvfft_LDFLAGS@
-cmakereference_LDFLAGS = @cmakereference_LDFLAGS@
-cmaplocal_LDFLAGS = @cmaplocal_LDFLAGS@
-cmodeltoseq_LDFLAGS = @cmodeltoseq_LDFLAGS@
-cncsfrommodel_LDFLAGS = @cncsfrommodel_LDFLAGS@
-convert2mtz_LDFLAGS = @convert2mtz_LDFLAGS@
-cparrot_LDFLAGS = @cparrot_LDFLAGS@
-cpatterson_LDFLAGS = @cpatterson_LDFLAGS@
-cphasecombine_LDFLAGS = @cphasecombine_LDFLAGS@
-cphasematch_LDFLAGS = @cphasematch_LDFLAGS@
-cpirate_LDFLAGS = @cpirate_LDFLAGS@
-csequins_LDFLAGS = @csequins_LDFLAGS@
-csfcalc_LDFLAGS = @csfcalc_LDFLAGS@
-csigmaa_LDFLAGS = @csigmaa_LDFLAGS@
-csloop_LDFLAGS = @csloop_LDFLAGS@
-csymmatch_LDFLAGS = @csymmatch_LDFLAGS@
-ctruncate_LDFLAGS = @ctruncate_LDFLAGS@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -239,13 +446,170 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-DIST_SUBDIRS = src html
-SUBDIRS = src
-ACLOCAL_AMFLAGS = -I macros --install
-EXTRA_DIST = macros/ccp4.m4 macros/clipper.m4 macros/fftw.m4 macros/mmdb.m4
-all: all-recursive
+ACLOCAL_AMFLAGS = -I m4
+dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
+		 html/csequins.html html/parrot.html html/cmapcut.html \
+		 html/ctruncate.html html/comit.html
+
+AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
+LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \
+	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb $(FFTW_LIBS)
+
+src_pirate_cmakereference_LDADD = -lclipper-cif $(LDADD)
+src_chltofom_SOURCES = src/chltofom.cpp
+src_cphasematch_SOURCES = src/cphasematch.cpp
+src_csfcalc_SOURCES = src/csfcalc.cpp
+src_cfft_SOURCES = src/cfft.cpp
+src_cinvfft_SOURCES = src/cinvfft.cpp
+src_csigmaa_SOURCES = src/csigmaa.cpp
+src_cecalc_SOURCES = src/cecalc.cpp
+src_cphasecombine_SOURCES = src/cphasecombine.cpp
+src_cpatterson_SOURCES = src/cpatterson.cpp
+src_caniso_SOURCES = src/caniso.cpp
+src_convert2mtz_SOURCES = src/convert2mtz.cpp src/convert2mtz.h
+src_ctruncate_SOURCES = src/ctruncate.cpp \
+			src/ctruncate_utils.cpp \
+			src/cpsf_utils.cpp \
+			src/twinlaws.cpp \
+			src/ctruncate_truncate.cpp \
+			src/ctruncate_twin.cpp \
+			src/ctruncate_parity.cpp \
+			src/ctruncate_moments.cpp \
+			src/ctruncate_analyse.cpp \
+			src/ctruncate_matthews.cpp \
+			src/ctruncate_wilson.cpp \
+			src/intensity_scale.cpp \
+			src/best.cpp \
+			src/ctruncate_utils.h \
+			src/cpsf_utils.h \
+			src/twinlaws.h \
+			src/ctruncate_truncate.h \
+			src/ctruncate_twin.h \
+			src/ctruncate_parity.h \
+			src/ctruncate_moments.h \
+			src/ctruncate_analyse.h \
+			src/ctruncate_matthews.h \
+			src/ctruncate_wilson.h \
+			src/intensity_scale.h \
+			src/best.h \
+			src/intensity_target.h \
+			src/alt_hkl_datatypes.h
+
+src_csymmatch_SOURCES = src/csymmatch.cpp
+src_cmaplocal_SOURCES = src/cmaplocal.cpp
+src_cncsfrommodel_SOURCES = src/cncsfrommodel.cpp
+src_cmodeltoseq_SOURCES = src/cmodeltoseq.cpp
+src_cmapcut_SOURCES = src/cmapcut.cpp
+src_comit_SOURCES = src/comit.cpp
+src_pirate_cpirate_SOURCES = src/pirate/cpirate.cpp \
+			     src/pirate/simulate-lib.cpp \
+			     src/pirate/pirate-lib.cpp \
+			     src/pirate/pirate-ncsaver.cpp \
+			     src/pirate/pirate-ncsfind.cpp \
+			     src/pirate/simplex-lib.cpp \
+			     src/pirate/simulate-lib.h \
+			     src/pirate/pirate-lib.h \
+			     src/pirate/pirate-ncsaver.h \
+			     src/pirate/pirate-ncsfind.h \
+			     src/pirate/simplex-lib.h
+
+src_pirate_cmakereference_SOURCES = src/pirate/cmakereference.cpp \
+				    src/pirate/ftplib.h \
+				    src/pirate/ftplib.c \
+				    src/pirate/compress42.c
+
+EXTRA_DIST = src/pirate/makereference.csh
+src_buccaneer_cbuccaneer_SOURCES = src/buccaneer/buccaneer-build.cpp \
+				   src/buccaneer/buccaneer-join.h \
+				   src/buccaneer/buccaneer-prune.cpp \
+				   src/buccaneer/buccaneer-build.h \
+				   src/buccaneer/buccaneer-lib.cpp \
+				   src/buccaneer/buccaneer-prune.h \
+				   src/buccaneer/buccaneer-correct.cpp \
+				   src/buccaneer/buccaneer-lib.h \
+				   src/buccaneer/buccaneer-sequence.cpp \
+				   src/buccaneer/buccaneer-correct.h \
+				   src/buccaneer/buccaneer-link.cpp \
+				   src/buccaneer/buccaneer-sequence.h \
+				   src/buccaneer/buccaneer-filter.cpp \
+				   src/buccaneer/buccaneer-link.h \
+				   src/buccaneer/buccaneer-util.cpp \
+				   src/buccaneer/buccaneer-filter.h \
+				   src/buccaneer/buccaneer-ncsbuild.cpp \
+				   src/buccaneer/buccaneer-util.h \
+				   src/buccaneer/buccaneer-find.cpp \
+				   src/buccaneer/buccaneer-ncsbuild.h \
+				   src/buccaneer/cbuccaneer.cpp \
+				   src/buccaneer/buccaneer-find.h \
+				   src/buccaneer/buccaneer-prep.cpp \
+				   src/buccaneer/simplex-lib.cpp \
+				   src/buccaneer/buccaneer-grow.cpp \
+				   src/buccaneer/buccaneer-prep.h \
+				   src/buccaneer/simplex-lib.h \
+				   src/buccaneer/buccaneer-grow.h \
+				   src/buccaneer/buccaneer-prot.cpp \
+				   src/buccaneer/simulate-lib.cpp \
+				   src/buccaneer/buccaneer-join.cpp \
+				   src/buccaneer/buccaneer-prot.h \
+				   src/buccaneer/simulate-lib.h \
+				   src/buccaneer/buccaneer-known.cpp \
+				   src/buccaneer/buccaneer-known.h \
+				   src/buccaneer/buccaneer-merge.cpp \
+				   src/buccaneer/buccaneer-merge.h \
+				   src/buccaneer/buccaneer-tidy.cpp \
+				   src/buccaneer/buccaneer-tidy.h
+
+src_buccaneer_csequins_SOURCES = src/buccaneer/csequins.cpp \
+				 src/buccaneer/buccaneer-sequence.cpp \
+				 src/buccaneer/simulate-lib.cpp \
+				 src/buccaneer/buccaneer-prot.cpp \
+				 src/buccaneer/buccaneer-lib.cpp
+
+src_parrot_cparrot_SOURCES = src/parrot/cparrot.cpp \
+			     src/parrot/parrot-ncsaver.h \
+			     src/parrot/parrot-ncs.h \
+			     src/parrot/simulate-lib.h \
+			     src/parrot/parrot-lib.cpp \
+			     src/parrot/parrot-ncs.cpp \
+			     src/parrot/simplex-lib.cpp \
+			     src/parrot/parrot-lib.h \
+			     src/parrot/parrot-ncsfind.cpp \
+			     src/parrot/simplex-lib.h \
+			     src/parrot/parrot-ncsaver.cpp \
+			     src/parrot/parrot-ncsfind.h \
+			     src/parrot/simulate-lib.cpp
+
+src_sloop_csloop_SOURCES = src/sloop/csloop.cpp \
+			   src/sloop/protein_db.cpp \
+			   src/sloop/protein_db_utils.cpp \
+			   src/sloop/protein_db.h \
+			   src/sloop/protein_db_utils.h
+
+sloopdatadir = $(datadir)/sloop
+dist_sloopdata_DATA = src/sloop/prot500.db
+src_nautilus_cnautilus_SOURCES = src/nautilus/cnautilus.cpp \
+				 src/nautilus/nautilus-sequence.cpp \
+				 src/nautilus/nautilus-tools.cpp \
+				 src/nautilus/nautilus-join.cpp \
+				 src/nautilus/nautilus-ss-find.cpp \
+				 src/nautilus/nautilus-util.cpp \
+				 src/nautilus/nautilus-rebuild-bases.cpp \
+				 src/nautilus/nautilus-target.cpp \
+				 src/nautilus/nucleicacid_db.cpp \
+				 src/nautilus/nautilus-join.h \
+				 src/nautilus/nautilus-ss-find.h \
+				 src/nautilus/nautilus-util.h \
+				 src/nautilus/nautilus-rebuild-bases.h \
+				 src/nautilus/nautilus-target.h \
+				 src/nautilus/nucleicacid_db.h \
+				 src/nautilus/nautilus-sequence.h \
+				 src/nautilus/nautilus-tools.h
+
+all: config.h
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
+.SUFFIXES: .c .cpp .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -281,75 +645,576 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
-# This directory's subdirectories are mostly independent; you can cd
-# into them and run `make' without going through this Makefile.
-# To change the values of `make' variables: instead of editing Makefiles,
-# (1) if the variable is set in `config.status', edit `config.status'
-#     (which will cause the Makefiles to be regenerated when you run `make');
-# (2) otherwise, pass the desired values on the `make' command line.
-$(RECURSIVE_TARGETS):
-	@fail= failcom='exit 1'; \
-	for f in x $$MAKEFLAGS; do \
-	  case $$f in \
-	    *=* | --[!k]*);; \
-	    *k*) failcom='fail=yes';; \
-	  esac; \
-	done; \
-	dot_seen=no; \
-	target=`echo $@ | sed s/-recursive//`; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  echo "Making $$target in $$subdir"; \
-	  if test "$$subdir" = "."; then \
-	    dot_seen=yes; \
-	    local_target="$$target-am"; \
-	  else \
-	    local_target="$$target"; \
-	  fi; \
-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
-	  || eval $$failcom; \
-	done; \
-	if test "$$dot_seen" = "no"; then \
-	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
-	fi; test -z "$$fail"
+config.h: stamp-h1
+	@if test ! -f $@; then \
+	  rm -f stamp-h1; \
+	  $(MAKE) $(AM_MAKEFLAGS) stamp-h1; \
+	else :; fi
 
-$(RECURSIVE_CLEAN_TARGETS):
-	@fail= failcom='exit 1'; \
-	for f in x $$MAKEFLAGS; do \
-	  case $$f in \
-	    *=* | --[!k]*);; \
-	    *k*) failcom='fail=yes';; \
-	  esac; \
-	done; \
-	dot_seen=no; \
-	case "$@" in \
-	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
-	  *) list='$(SUBDIRS)' ;; \
-	esac; \
-	rev=''; for subdir in $$list; do \
-	  if test "$$subdir" = "."; then :; else \
-	    rev="$$subdir $$rev"; \
-	  fi; \
-	done; \
-	rev="$$rev ."; \
-	target=`echo $@ | sed s/-recursive//`; \
-	for subdir in $$rev; do \
-	  echo "Making $$target in $$subdir"; \
-	  if test "$$subdir" = "."; then \
-	    local_target="$$target-am"; \
-	  else \
-	    local_target="$$target"; \
-	  fi; \
-	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
-	  || eval $$failcom; \
-	done && test -z "$$fail"
-tags-recursive:
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) tags); \
+stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
+	@rm -f stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status config.h
+$(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
+	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
+	rm -f stamp-h1
+	touch $@
+
+distclean-hdr:
+	-rm -f config.h stamp-h1
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	for p in $$list; do echo "$$p $$p"; done | \
+	sed 's/$(EXEEXT)$$//' | \
+	while read p p1; do if test -f $$p; \
+	  then echo "$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
+	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+	sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
+	    else { print "f", $$3 "/" $$4, $$1; } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	    test -z "$$files" || { \
+	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    } \
+	; done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+	      -e 's/$$/$(EXEEXT)/' `; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+src/buccaneer/$(am__dirstamp):
+	@$(MKDIR_P) src/buccaneer
+	@: > src/buccaneer/$(am__dirstamp)
+src/buccaneer/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/buccaneer/$(DEPDIR)
+	@: > src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-build.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-prune.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-lib.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-correct.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-sequence.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-link.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-filter.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-util.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-ncsbuild.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-find.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/cbuccaneer.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-prep.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/simplex-lib.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-grow.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-prot.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/simulate-lib.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-join.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-known.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-merge.$(OBJEXT):  \
+	src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/buccaneer-tidy.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/cbuccaneer$(EXEEXT): $(src_buccaneer_cbuccaneer_OBJECTS) $(src_buccaneer_cbuccaneer_DEPENDENCIES) src/buccaneer/$(am__dirstamp)
+	@rm -f src/buccaneer/cbuccaneer$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_buccaneer_cbuccaneer_OBJECTS) $(src_buccaneer_cbuccaneer_LDADD) $(LIBS)
+src/buccaneer/csequins.$(OBJEXT): src/buccaneer/$(am__dirstamp) \
+	src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+src/buccaneer/csequins$(EXEEXT): $(src_buccaneer_csequins_OBJECTS) $(src_buccaneer_csequins_DEPENDENCIES) src/buccaneer/$(am__dirstamp)
+	@rm -f src/buccaneer/csequins$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_buccaneer_csequins_OBJECTS) $(src_buccaneer_csequins_LDADD) $(LIBS)
+src/$(am__dirstamp):
+	@$(MKDIR_P) src
+	@: > src/$(am__dirstamp)
+src/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/$(DEPDIR)
+	@: > src/$(DEPDIR)/$(am__dirstamp)
+src/caniso.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/caniso$(EXEEXT): $(src_caniso_OBJECTS) $(src_caniso_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/caniso$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_caniso_OBJECTS) $(src_caniso_LDADD) $(LIBS)
+src/cecalc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cecalc$(EXEEXT): $(src_cecalc_OBJECTS) $(src_cecalc_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cecalc$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cecalc_OBJECTS) $(src_cecalc_LDADD) $(LIBS)
+src/cfft.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/cfft$(EXEEXT): $(src_cfft_OBJECTS) $(src_cfft_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cfft$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cfft_OBJECTS) $(src_cfft_LDADD) $(LIBS)
+src/chltofom.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/chltofom$(EXEEXT): $(src_chltofom_OBJECTS) $(src_chltofom_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/chltofom$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_chltofom_OBJECTS) $(src_chltofom_LDADD) $(LIBS)
+src/cinvfft.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cinvfft$(EXEEXT): $(src_cinvfft_OBJECTS) $(src_cinvfft_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cinvfft$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cinvfft_OBJECTS) $(src_cinvfft_LDADD) $(LIBS)
+src/cmapcut.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cmapcut$(EXEEXT): $(src_cmapcut_OBJECTS) $(src_cmapcut_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cmapcut$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cmapcut_OBJECTS) $(src_cmapcut_LDADD) $(LIBS)
+src/cmaplocal.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cmaplocal$(EXEEXT): $(src_cmaplocal_OBJECTS) $(src_cmaplocal_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cmaplocal$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cmaplocal_OBJECTS) $(src_cmaplocal_LDADD) $(LIBS)
+src/cmodeltoseq.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cmodeltoseq$(EXEEXT): $(src_cmodeltoseq_OBJECTS) $(src_cmodeltoseq_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cmodeltoseq$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cmodeltoseq_OBJECTS) $(src_cmodeltoseq_LDADD) $(LIBS)
+src/cncsfrommodel.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cncsfrommodel$(EXEEXT): $(src_cncsfrommodel_OBJECTS) $(src_cncsfrommodel_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cncsfrommodel$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cncsfrommodel_OBJECTS) $(src_cncsfrommodel_LDADD) $(LIBS)
+src/comit.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/comit$(EXEEXT): $(src_comit_OBJECTS) $(src_comit_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/comit$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_comit_OBJECTS) $(src_comit_LDADD) $(LIBS)
+src/convert2mtz.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/convert2mtz$(EXEEXT): $(src_convert2mtz_OBJECTS) $(src_convert2mtz_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/convert2mtz$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_convert2mtz_OBJECTS) $(src_convert2mtz_LDADD) $(LIBS)
+src/cpatterson.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cpatterson$(EXEEXT): $(src_cpatterson_OBJECTS) $(src_cpatterson_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cpatterson$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cpatterson_OBJECTS) $(src_cpatterson_LDADD) $(LIBS)
+src/cphasecombine.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cphasecombine$(EXEEXT): $(src_cphasecombine_OBJECTS) $(src_cphasecombine_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cphasecombine$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cphasecombine_OBJECTS) $(src_cphasecombine_LDADD) $(LIBS)
+src/cphasematch.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cphasematch$(EXEEXT): $(src_cphasematch_OBJECTS) $(src_cphasematch_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cphasematch$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cphasematch_OBJECTS) $(src_cphasematch_LDADD) $(LIBS)
+src/csfcalc.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/csfcalc$(EXEEXT): $(src_csfcalc_OBJECTS) $(src_csfcalc_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/csfcalc$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_csfcalc_OBJECTS) $(src_csfcalc_LDADD) $(LIBS)
+src/csigmaa.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/csigmaa$(EXEEXT): $(src_csigmaa_OBJECTS) $(src_csigmaa_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/csigmaa$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_csigmaa_OBJECTS) $(src_csigmaa_LDADD) $(LIBS)
+src/csymmatch.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/csymmatch$(EXEEXT): $(src_csymmatch_OBJECTS) $(src_csymmatch_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/csymmatch$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_csymmatch_OBJECTS) $(src_csymmatch_LDADD) $(LIBS)
+src/ctruncate.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_utils.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cpsf_utils.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/twinlaws.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_truncate.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_twin.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_parity.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_moments.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_analyse.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_matthews.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate_wilson.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/intensity_scale.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/best.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate$(EXEEXT): $(src_ctruncate_OBJECTS) $(src_ctruncate_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/ctruncate$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_ctruncate_OBJECTS) $(src_ctruncate_LDADD) $(LIBS)
+src/nautilus/$(am__dirstamp):
+	@$(MKDIR_P) src/nautilus
+	@: > src/nautilus/$(am__dirstamp)
+src/nautilus/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/nautilus/$(DEPDIR)
+	@: > src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/cnautilus.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-sequence.$(OBJEXT):  \
+	src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-tools.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-join.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-ss-find.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-util.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-rebuild-bases.$(OBJEXT):  \
+	src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-target.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nucleicacid_db.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/cnautilus$(EXEEXT): $(src_nautilus_cnautilus_OBJECTS) $(src_nautilus_cnautilus_DEPENDENCIES) src/nautilus/$(am__dirstamp)
+	@rm -f src/nautilus/cnautilus$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_nautilus_cnautilus_OBJECTS) $(src_nautilus_cnautilus_LDADD) $(LIBS)
+src/parrot/$(am__dirstamp):
+	@$(MKDIR_P) src/parrot
+	@: > src/parrot/$(am__dirstamp)
+src/parrot/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/parrot/$(DEPDIR)
+	@: > src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/cparrot.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/parrot-lib.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/parrot-ncs.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/simplex-lib.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/parrot-ncsfind.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/parrot-ncsaver.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/simulate-lib.$(OBJEXT): src/parrot/$(am__dirstamp) \
+	src/parrot/$(DEPDIR)/$(am__dirstamp)
+src/parrot/cparrot$(EXEEXT): $(src_parrot_cparrot_OBJECTS) $(src_parrot_cparrot_DEPENDENCIES) src/parrot/$(am__dirstamp)
+	@rm -f src/parrot/cparrot$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_parrot_cparrot_OBJECTS) $(src_parrot_cparrot_LDADD) $(LIBS)
+src/pirate/$(am__dirstamp):
+	@$(MKDIR_P) src/pirate
+	@: > src/pirate/$(am__dirstamp)
+src/pirate/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/pirate/$(DEPDIR)
+	@: > src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/cmakereference.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/ftplib.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/compress42.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/cmakereference$(EXEEXT): $(src_pirate_cmakereference_OBJECTS) $(src_pirate_cmakereference_DEPENDENCIES) src/pirate/$(am__dirstamp)
+	@rm -f src/pirate/cmakereference$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_pirate_cmakereference_OBJECTS) $(src_pirate_cmakereference_LDADD) $(LIBS)
+src/pirate/cpirate.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/simulate-lib.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/pirate-lib.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/pirate-ncsaver.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/pirate-ncsfind.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/simplex-lib.$(OBJEXT): src/pirate/$(am__dirstamp) \
+	src/pirate/$(DEPDIR)/$(am__dirstamp)
+src/pirate/cpirate$(EXEEXT): $(src_pirate_cpirate_OBJECTS) $(src_pirate_cpirate_DEPENDENCIES) src/pirate/$(am__dirstamp)
+	@rm -f src/pirate/cpirate$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_pirate_cpirate_OBJECTS) $(src_pirate_cpirate_LDADD) $(LIBS)
+src/sloop/$(am__dirstamp):
+	@$(MKDIR_P) src/sloop
+	@: > src/sloop/$(am__dirstamp)
+src/sloop/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/sloop/$(DEPDIR)
+	@: > src/sloop/$(DEPDIR)/$(am__dirstamp)
+src/sloop/csloop.$(OBJEXT): src/sloop/$(am__dirstamp) \
+	src/sloop/$(DEPDIR)/$(am__dirstamp)
+src/sloop/protein_db.$(OBJEXT): src/sloop/$(am__dirstamp) \
+	src/sloop/$(DEPDIR)/$(am__dirstamp)
+src/sloop/protein_db_utils.$(OBJEXT): src/sloop/$(am__dirstamp) \
+	src/sloop/$(DEPDIR)/$(am__dirstamp)
+src/sloop/csloop$(EXEEXT): $(src_sloop_csloop_OBJECTS) $(src_sloop_csloop_DEPENDENCIES) src/sloop/$(am__dirstamp)
+	@rm -f src/sloop/csloop$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_sloop_csloop_OBJECTS) $(src_sloop_csloop_LDADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+	-rm -f src/best.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-build.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-correct.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-filter.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-find.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-grow.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-join.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-known.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-lib.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-link.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-merge.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-ncsbuild.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-prep.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-prot.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-prune.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-sequence.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-tidy.$(OBJEXT)
+	-rm -f src/buccaneer/buccaneer-util.$(OBJEXT)
+	-rm -f src/buccaneer/cbuccaneer.$(OBJEXT)
+	-rm -f src/buccaneer/csequins.$(OBJEXT)
+	-rm -f src/buccaneer/simplex-lib.$(OBJEXT)
+	-rm -f src/buccaneer/simulate-lib.$(OBJEXT)
+	-rm -f src/caniso.$(OBJEXT)
+	-rm -f src/cecalc.$(OBJEXT)
+	-rm -f src/cfft.$(OBJEXT)
+	-rm -f src/chltofom.$(OBJEXT)
+	-rm -f src/cinvfft.$(OBJEXT)
+	-rm -f src/cmapcut.$(OBJEXT)
+	-rm -f src/cmaplocal.$(OBJEXT)
+	-rm -f src/cmodeltoseq.$(OBJEXT)
+	-rm -f src/cncsfrommodel.$(OBJEXT)
+	-rm -f src/comit.$(OBJEXT)
+	-rm -f src/convert2mtz.$(OBJEXT)
+	-rm -f src/cpatterson.$(OBJEXT)
+	-rm -f src/cphasecombine.$(OBJEXT)
+	-rm -f src/cphasematch.$(OBJEXT)
+	-rm -f src/cpsf_utils.$(OBJEXT)
+	-rm -f src/csfcalc.$(OBJEXT)
+	-rm -f src/csigmaa.$(OBJEXT)
+	-rm -f src/csymmatch.$(OBJEXT)
+	-rm -f src/ctruncate.$(OBJEXT)
+	-rm -f src/ctruncate_analyse.$(OBJEXT)
+	-rm -f src/ctruncate_matthews.$(OBJEXT)
+	-rm -f src/ctruncate_moments.$(OBJEXT)
+	-rm -f src/ctruncate_parity.$(OBJEXT)
+	-rm -f src/ctruncate_truncate.$(OBJEXT)
+	-rm -f src/ctruncate_twin.$(OBJEXT)
+	-rm -f src/ctruncate_utils.$(OBJEXT)
+	-rm -f src/ctruncate_wilson.$(OBJEXT)
+	-rm -f src/intensity_scale.$(OBJEXT)
+	-rm -f src/nautilus/cnautilus.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-join.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-rebuild-bases.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-sequence.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-ss-find.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-target.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-tools.$(OBJEXT)
+	-rm -f src/nautilus/nautilus-util.$(OBJEXT)
+	-rm -f src/nautilus/nucleicacid_db.$(OBJEXT)
+	-rm -f src/parrot/cparrot.$(OBJEXT)
+	-rm -f src/parrot/parrot-lib.$(OBJEXT)
+	-rm -f src/parrot/parrot-ncs.$(OBJEXT)
+	-rm -f src/parrot/parrot-ncsaver.$(OBJEXT)
+	-rm -f src/parrot/parrot-ncsfind.$(OBJEXT)
+	-rm -f src/parrot/simplex-lib.$(OBJEXT)
+	-rm -f src/parrot/simulate-lib.$(OBJEXT)
+	-rm -f src/pirate/cmakereference.$(OBJEXT)
+	-rm -f src/pirate/compress42.$(OBJEXT)
+	-rm -f src/pirate/cpirate.$(OBJEXT)
+	-rm -f src/pirate/ftplib.$(OBJEXT)
+	-rm -f src/pirate/pirate-lib.$(OBJEXT)
+	-rm -f src/pirate/pirate-ncsaver.$(OBJEXT)
+	-rm -f src/pirate/pirate-ncsfind.$(OBJEXT)
+	-rm -f src/pirate/simplex-lib.$(OBJEXT)
+	-rm -f src/pirate/simulate-lib.$(OBJEXT)
+	-rm -f src/sloop/csloop.$(OBJEXT)
+	-rm -f src/sloop/protein_db.$(OBJEXT)
+	-rm -f src/sloop/protein_db_utils.$(OBJEXT)
+	-rm -f src/twinlaws.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
+
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/best.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/caniso.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cecalc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/chltofom.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cinvfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcut.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmaplocal.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmodeltoseq.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cncsfrommodel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/comit.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/convert2mtz.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpatterson.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasecombine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasematch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpsf_utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csfcalc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csigmaa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csymmatch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_analyse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_matthews.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_moments.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_parity.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_truncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_twin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_wilson.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/intensity_scale.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/twinlaws.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-build.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-correct.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-filter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-find.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-grow.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-join.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-known.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-link.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-merge.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-ncsbuild.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-prep.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-prot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-prune.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-sequence.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-tidy.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/cbuccaneer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/csequins.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simplex-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simulate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/cnautilus.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-join.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-rebuild-bases.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-sequence.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-ss-find.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-target.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tools.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nucleicacid_db.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/cparrot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-ncs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-ncsaver.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-ncsfind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/simplex-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/simulate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/cmakereference.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/compress42.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/cpirate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/ftplib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/pirate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/pirate-ncsaver.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/pirate-ncsfind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/simplex-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/pirate/$(DEPDIR)/simulate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/sloop/$(DEPDIR)/csloop.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/sloop/$(DEPDIR)/protein_db.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/sloop/$(DEPDIR)/protein_db_utils.Po@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+install-dist_htmlDATA: $(dist_html_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(htmldir)" || $(MKDIR_P) "$(DESTDIR)$(htmldir)"
+	@list='$(dist_html_DATA)'; test -n "$(htmldir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(htmldir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(htmldir)" || exit $$?; \
 	done
-ctags-recursive:
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) ctags); \
+
+uninstall-dist_htmlDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_html_DATA)'; test -n "$(htmldir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(htmldir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(htmldir)" && rm -f $$files
+install-dist_sloopdataDATA: $(dist_sloopdata_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(sloopdatadir)" || $(MKDIR_P) "$(DESTDIR)$(sloopdatadir)"
+	@list='$(dist_sloopdata_DATA)'; test -n "$(sloopdatadir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(sloopdatadir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(sloopdatadir)" || exit $$?; \
 	done
+
+uninstall-dist_sloopdataDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_sloopdata_DATA)'; test -n "$(sloopdatadir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(sloopdatadir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(sloopdatadir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -361,24 +1226,11 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS:  $(HEADERS) $(SOURCES) config.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	set x; \
 	here=`pwd`; \
-	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
-	  include_option=--etags-include; \
-	  empty_fix=.; \
-	else \
-	  include_option=--include; \
-	  empty_fix=; \
-	fi; \
-	list='$(SUBDIRS)'; for subdir in $$list; do \
-	  if test "$$subdir" = .; then :; else \
-	    test ! -f $$subdir/TAGS || \
-	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
-	  fi; \
-	done; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -396,9 +1248,9 @@ TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	  fi; \
 	fi
 ctags: CTAGS
-CTAGS: ctags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS:  $(HEADERS) $(SOURCES) config.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -446,34 +1298,6 @@ distdir: $(DISTFILES)
 	    test -f "$(distdir)/$$file" \
 	    || cp -p $$d/$$file "$(distdir)/$$file" \
 	    || exit 1; \
-	  fi; \
-	done
-	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
-	  if test "$$subdir" = .; then :; else \
-	    test -d "$(distdir)/$$subdir" \
-	    || $(MKDIR_P) "$(distdir)/$$subdir" \
-	    || exit 1; \
-	  fi; \
-	done
-	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
-	  if test "$$subdir" = .; then :; else \
-	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
-	    $(am__relativize); \
-	    new_distdir=$$reldir; \
-	    dir1=$$subdir; dir2="$(top_distdir)"; \
-	    $(am__relativize); \
-	    new_top_distdir=$$reldir; \
-	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
-	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
-	    ($(am__cd) $$subdir && \
-	      $(MAKE) $(AM_MAKEFLAGS) \
-	        top_distdir="$$new_top_distdir" \
-	        distdir="$$new_distdir" \
-		am__remove_distdir=: \
-		am__skip_length_check=: \
-		am__skip_mode_fix=: \
-	        distdir) \
-	      || exit 1; \
 	  fi; \
 	done
 	-test -n "$(am__skip_mode_fix)" \
@@ -592,19 +1416,21 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
-check: check-recursive
-all-am: Makefile
-installdirs: installdirs-recursive
-installdirs-am:
-install: install-recursive
-install-exec: install-exec-recursive
-install-data: install-data-recursive
-uninstall: uninstall-recursive
+check: check-am
+all-am: Makefile $(PROGRAMS) $(DATA) config.h
+installdirs:
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(htmldir)" "$(DESTDIR)$(sloopdatadir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
+install: install-am
+install-exec: install-exec-am
+install-data: install-data-am
+uninstall: uninstall-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-recursive
+installcheck: installcheck-am
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
 	  install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
@@ -617,96 +1443,114 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f src/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/$(am__dirstamp)
+	-rm -f src/buccaneer/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/buccaneer/$(am__dirstamp)
+	-rm -f src/nautilus/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/nautilus/$(am__dirstamp)
+	-rm -f src/parrot/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/parrot/$(am__dirstamp)
+	-rm -f src/pirate/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/pirate/$(am__dirstamp)
+	-rm -f src/sloop/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/sloop/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-recursive
+clean: clean-am
 
-clean-am: clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
-distclean: distclean-recursive
+distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-tags
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-hdr distclean-tags
 
-dvi: dvi-recursive
+dvi: dvi-am
 
 dvi-am:
 
-html: html-recursive
+html: html-am
 
 html-am:
 
-info: info-recursive
+info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-dist_htmlDATA install-dist_sloopdataDATA
 
-install-dvi: install-dvi-recursive
+install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am:
+install-exec-am: install-binPROGRAMS
 
-install-html: install-html-recursive
+install-html: install-html-am
 
 install-html-am:
 
-install-info: install-info-recursive
+install-info: install-info-am
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-recursive
+install-pdf: install-pdf-am
 
 install-pdf-am:
 
-install-ps: install-ps-recursive
+install-ps: install-ps-am
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-recursive
+maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
+	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-recursive
+mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic
+mostlyclean-am: mostlyclean-compile mostlyclean-generic
 
-pdf: pdf-recursive
+pdf: pdf-am
 
 pdf-am:
 
-ps: ps-recursive
+ps: ps-am
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_htmlDATA \
+	uninstall-dist_sloopdataDATA
 
-.MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
-	install-am install-strip tags-recursive
+.MAKE: all install-am install-strip
 
-.PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
-	all all-am am--refresh check check-am clean clean-generic \
-	ctags ctags-recursive dist dist-all dist-bzip2 dist-gzip \
-	dist-lzma dist-shar dist-tarZ dist-xz dist-zip distcheck \
-	distclean distclean-generic distclean-tags distcleancheck \
-	distdir distuninstallcheck dvi dvi-am html html-am info \
-	info-am install install-am install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags tags-recursive uninstall uninstall-am
+.PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
+	clean-binPROGRAMS clean-generic ctags dist dist-all dist-bzip2 \
+	dist-gzip dist-lzma dist-shar dist-tarZ dist-xz dist-zip \
+	distcheck distclean distclean-compile distclean-generic \
+	distclean-hdr distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-binPROGRAMS install-data \
+	install-data-am install-dist_htmlDATA \
+	install-dist_sloopdataDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binPROGRAMS uninstall-dist_htmlDATA \
+	uninstall-dist_sloopdataDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

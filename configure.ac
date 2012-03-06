@@ -1,170 +1,55 @@
 
-# Process this file with autoconf to produce a configure script.
+AC_INIT(clipper-progs, 0.1.0)
 
-dnl package-name version-number bugs-to:
-AC_INIT(clipper_progs, 0.1.0, ccb@dl.ac.uk) 
+AC_CONFIG_AUX_DIR(build-aux)
+AC_CONFIG_MACRO_DIR(m4)
+AC_CONFIG_SRCDIR(src/buccaneer/buccaneer-build.cpp)
+AC_CONFIG_HEADERS(config.h)
+AM_INIT_AUTOMAKE([1.11 foreign subdir-objects silent-rules -Wall])
 
-AM_INIT_AUTOMAKE([-Wall foreign])
+AM_MAINTAINER_MODE dnl this disables (by default) maintainer mode
 
-AC_CONFIG_SRCDIR([src/buccaneer])
-
-AM_MAINTAINER_MODE
-
-AC_LANG(C++)
-
-# Checks for programs.
-AC_PROG_CXX(xlc++ CC cxx c++ icc g++)
-AC_PROG_CC(xlc cc icc gcc)
-AC_PROG_F77
-AC_HEADER_STDC
+AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
-#AC_PROG_RANLIB
-
-AX_PTHREAD(,
-    [ AC_MSG_ERROR([Failed to find threading library])
-    ] )
-
-AC_ARG_ENABLE(debug,
-  AC_HELP_STRING( [--enable-debug], [ enable debugging options ] ),
-  [ac_cv_enable_debug=yes ],
-  [ac_cv_enable_debug=no ] )
+AM_PROG_CC_C_O
 
 AC_PROGS_OPTIONS
+
+AX_PTHREAD([], [AC_MSG_ERROR([Failed to find threading library])])
+
+AC_SEARCH_LIBS(cos, m, , AC_MSG_ERROR([need math library]))
 
 dnl Check for FFTW.
 AM_PATH_FFTW(, AC_MSG_ERROR([locating necessary fftw]) )
 
-dnl Optional: Check for MMDB.
-AM_PATH_MMDB(,
-  [ if test "x$mmdb_prefix" != x ; then
-      if test "x$ac_MMDB_CXXFLAGS" != x ; then
-        case "$ac_MMDB_CXXFLAGS" in
-        *src/mmdb )
-        ac_MMDB_LDOPTS=`echo "$ac_MMDB_CXXFLAGS" | sed s#src/mmdb#src#g`
-        ;;
-        *include/mmdb )
-        ac_MMDB_LDOPTS=`echo "$ac_MMDB_CXXFLAGS" | sed s#include/mmdb#lib#g`
-        ;;
-        *)
-        esac
-        MMDB_CXXFLAGS="$ac_MMDB_CXXFLAGS"
-        MMDB_LIBS=`echo "$ac_MMDB_LDOPTS -lmmdb" | sed s#-I#-L#`
-        AC_MSG_WARN([assuming library $MMDB_LIBS headers $MMDB_CXXFLAGS])
-        have_mmdb=yes
-      else
-        MMDB_CXXFLAGS="-I$mmdb_prefix/src -I$mmdb_prefix/include"
-        MMDB_LIBS="-L$mmdb_prefix/src -L$mmdb_prefix/lib -lmmdb"
-        AC_MSG_WARN([assuming library $MMDB_LIBS headers $MMDB_CXXFLAGS])
-        have_mmdb=yes
-      fi
-    else
-      AC_MSG_ERROR([Failed to find mmdb])
-    fi
-  ]
-)
+AC_CHECK_LIB(ccp4c, ccp4_banner, :,
+             AC_MSG_WARN([ccp4c library not found.]))
+AC_CHECK_HEADER(ccp4/ccp4_general.h, :,
+                AC_MSG_ERROR([libccp4 headers not found.]))
 
-AM_PATH_CCP4(,
-  [ if test "x$ccp4_prefix" != x ; then
-     if test "x$ac_CCP4_CXXFLAGS" != x ; then 
-       case "$ac_CCP4_CXXFLAGS" in
-        *include/ccp4 )
-        ac_CCP4_LDOPTS=`echo "$ac_CCP4_CXXFLAGS" | sed s#include/ccp4#lib#g`
-        ;;
-        *)
-        ac_CCP4_LDOPTS="$ac_CCP4_CXXFLAGS"
-        esac
-        ac_CCP4_LDOPTS=`echo "$ac_CCP4_LDOPTS" | sed s#-I#-L#`
-        CCP4_CXXFLAGS="$ac_CCP4_CXXFLAGS" 
-        CCP4_LIBS="$ac_CCP4_LDOPTS -lccp4c"
-        AC_MSG_WARN([assuming library $CCP4_LIBS headers $CCP4_CXXFLAGS])
-        have_ccp4=yes
-      else
-        CCP4_CXXFLAGS="-I$ccp4_prefix/lib/src -I$ccp4_prefix/include/ccp4"
-        CCP4_LIBS="-L$ccp4_prefix/lib/src -L$ccp4_prefix/lib -lccp4c"
-        AC_MSG_WARN([assuming library $CCP4_LIBS headers $CCP4_CXXFLAGS])
-        have_ccp4=yes
-      fi
-    else
-      AC_MSG_ERROR([Failed to find ccp4 libs])
-    fi
-  ]
-)
+AC_LANG_PUSH([C++])
+AC_CHECK_LIB(mmdb, MMDB_CCIF_Init, :,
+             AC_MSG_WARN([mmdb library not found.]))
+AC_CHECK_HEADER(mmdb/mmdb_manager.h, :,
+                AC_MSG_ERROR([mmdb headers not found.]))
 
-AM_PATH_CLIPPER(,
-     [ if test "x$clipper_prefix" != x ; then
-     if test "x$ac_CLIPPER_CXXFLAGS" != x ; then
-       case "$ac_CLIPPER_CXXFLAGS" in
-        *include/clipper )
-        ac_CLIPPER_LDOPTS=`echo "$ac_CLIPPER_CXXFLAGS" | sed s#include/clipper#lib#g`
-        ;;
-        *)
-        ac_CLIPPER_LDOPTS="$ac_CLIPPER_CXXFLAGS"
-        esac
-        ac_CLIPPER_LDOPTS=`echo "$ac_CLIPPER_LDOPTS" | sed s#-I#-L#`
-        CLIPPER_CXXFLAGS="$ac_CLIPPER_CXXFLAGS"
-        CLIPPER_LIBS="$ac_CLIPPER_LDOPTS -lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
-        AC_MSG_WARN([assuming library $CLIPPER_LIBS headers $CLIPPER_CXXFLAGS])
-        have_clipper=yes
-      else
-        CLIPPER_CXXFLAGS="-I$clipper_prefix/lib/src"
-        CLIPPER_LIBS="-L$clipper_prefix/lib/src -L$clipper_prefix/lib -lclipper-cif -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb -lclipper-core"
-        AC_MSG_WARN([assuming library $CLIPPER_LIBS headers $CLIPPER_CXXFLAGS])
-        have_clipper=yes
-      fi
-    else
-     AC_MSG_ERROR([Failed to find clipper ])
-    fi
-   ]    
-) 
+AC_CHECK_HEADERS([clipper/clipper.h \
+                  clipper/clipper-mmdb.h \
+                  clipper/clipper-minimol.h \
+                  clipper/clipper-contrib.h \
+                  clipper/clipper-ccp4.h \
+                  clipper/clipper-cif.h], :,
+                AC_MSG_ERROR([clipper headers not found.]))
+saved_LIBS="$LIBS"
+AC_MSG_CHECKING(for class clipper::String in -lclipper-core)
+LIBS="-lclipper-core $LIBS"
+AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <clipper/clipper.h>],
+                                [clipper::String foo])],
+               AC_MSG_RESULT(yes),
+               [AC_MSG_RESULT(no)
+                AC_MSG_WARN([clipper library not found.])])
+LIBS="$saved_LIBS"
+AC_LANG_POP([C++])
 
-# Checks for typedefs, structures, and compiler characteristics.
-#
-# Does clipper use these?  I'm guessing not, commented.
-# AC_C_CONST
-# AC_C_INLINE
-# AC_TYPE_SIZE_T
-
-# Checks for library functions.
-AC_CHECK_FUNCS([floor pow rint sqrt])
-
-# test for function in m
-AC_CHECK_LIB([m], [sqrt]) 
-
-AC_SUBST(AR_FLAGS)
-AM_CONDITIONAL(DEBUG, test "$ac_cv_enable_debug" = yes)
-AM_CONDITIONAL(AMDEP, test "x$enable_dependency_tracking" != xno)
-
-AC_SUBST(chltofom_LDFLAGS)
-AC_SUBST(cphasematch_LDFLAGS)
-AC_SUBST(csfcalc_LDFLAGS)
-AC_SUBST(cfft_LDFLAGS)
-AC_SUBST(cinvfft_LDFLAGS)
-AC_SUBST(csigmaa_LDFLAGS)
-AC_SUBST(cecalc_LDFLAGS)
-AC_SUBST(cphasecombine_LDFLAGS)
-AC_SUBST(cpatterson_LDFLAGS)
-AC_SUBST(caniso_LDFLAGS)
-AC_SUBST(convert2mtz_LDFLAGS)
-AC_SUBST(ctruncate_LDFLAGS)
-AC_SUBST(csymmatch_LDFLAGS)
-AC_SUBST(cpirate_LDFLAGS)
-AC_SUBST(cparrot_LDFLAGS)
-AC_SUBST(cbuccaneer_LDFLAGS)
-AC_SUBST(csequins_LDFLAGS)
-AC_SUBST(cmaplocal_LDFLAGS)
-AC_SUBST(cmakereference_LDFLAGS)
-AC_SUBST(cmodeltoseq_LDFLAGS)
-AC_SUBST(cncsfrommodel_LDFLAGS)
-AC_SUBST(csloop_LDFLAGS)
-
-AC_CONFIG_FILES([Makefile
-                 src/Makefile
-                 src/pirate/Makefile
-                 src/parrot/Makefile
-                 src/buccaneer/Makefile
-                 src/sloop/Makefile
-                 src/nautilus/Makefile
-                 html/Makefile
-                 ])
-
-AC_OUTPUT
+AC_OUTPUT(Makefile)
