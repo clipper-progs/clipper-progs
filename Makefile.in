@@ -449,7 +449,7 @@ top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 		 html/csequins.html html/parrot.html html/cmapcut.html \
-		 html/ctruncate.html html/comit.html
+		 html/ctruncate.html html/comit.html html/cnautilus.html
 
 AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
 LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \

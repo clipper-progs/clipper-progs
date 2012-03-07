@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 		 html/csequins.html html/parrot.html html/cmapcut.html \
-		 html/ctruncate.html html/comit.html
+		 html/ctruncate.html html/comit.html html/cnautilus.html
 
 bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 	       src/cinvfft src/csigmaa src/cecalc src/cphasecombine \
