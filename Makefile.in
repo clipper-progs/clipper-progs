@@ -40,10 +40,10 @@ bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
 	src/csigmaa$(EXEEXT) src/cecalc$(EXEEXT) \
 	src/cphasecombine$(EXEEXT) src/cpatterson$(EXEEXT) \
 	src/caniso$(EXEEXT) src/convert2mtz$(EXEEXT) \
-	src/ctruncate$(EXEEXT) src/csymmatch$(EXEEXT) \
-	src/cmaplocal$(EXEEXT) src/cncsfrommodel$(EXEEXT) \
-	src/cmodeltoseq$(EXEEXT) src/cmapcut$(EXEEXT) \
-	src/comit$(EXEEXT) src/pirate/cpirate$(EXEEXT) \
+	src/csymmatch$(EXEEXT) src/cmaplocal$(EXEEXT) \
+	src/cncsfrommodel$(EXEEXT) src/cmodeltoseq$(EXEEXT) \
+	src/cmapcut$(EXEEXT) src/comit$(EXEEXT) \
+	src/ctruncate/ctruncate$(EXEEXT) src/pirate/cpirate$(EXEEXT) \
 	src/pirate/cmakereference$(EXEEXT) \
 	src/buccaneer/cbuccaneer$(EXEEXT) \
 	src/buccaneer/csequins$(EXEEXT) src/parrot/cparrot$(EXEEXT) \
@@ -184,18 +184,24 @@ src_csymmatch_OBJECTS = $(am_src_csymmatch_OBJECTS)
 src_csymmatch_LDADD = $(LDADD)
 src_csymmatch_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_src_ctruncate_OBJECTS = src/ctruncate.$(OBJEXT) \
-	src/ctruncate_utils.$(OBJEXT) src/cpsf_utils.$(OBJEXT) \
-	src/twinlaws.$(OBJEXT) src/ctruncate_truncate.$(OBJEXT) \
-	src/ctruncate_twin.$(OBJEXT) src/ctruncate_parity.$(OBJEXT) \
-	src/ctruncate_moments.$(OBJEXT) \
-	src/ctruncate_analyse.$(OBJEXT) \
-	src/ctruncate_matthews.$(OBJEXT) \
-	src/ctruncate_wilson.$(OBJEXT) src/intensity_scale.$(OBJEXT) \
-	src/best.$(OBJEXT)
-src_ctruncate_OBJECTS = $(am_src_ctruncate_OBJECTS)
-src_ctruncate_LDADD = $(LDADD)
-src_ctruncate_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+am_src_ctruncate_ctruncate_OBJECTS =  \
+	src/ctruncate/ctruncate.$(OBJEXT) \
+	src/ctruncate/ctruncate_utils.$(OBJEXT) \
+	src/ctruncate/cpsf_utils.$(OBJEXT) \
+	src/ctruncate/twinlaws.$(OBJEXT) \
+	src/ctruncate/ctruncate_truncate.$(OBJEXT) \
+	src/ctruncate/ctruncate_twin.$(OBJEXT) \
+	src/ctruncate/ctruncate_parity.$(OBJEXT) \
+	src/ctruncate/ctruncate_moments.$(OBJEXT) \
+	src/ctruncate/ctruncate_analyse.$(OBJEXT) \
+	src/ctruncate/ctruncate_matthews.$(OBJEXT) \
+	src/ctruncate/ctruncate_wilson.$(OBJEXT) \
+	src/ctruncate/intensity_scale.$(OBJEXT) \
+	src/ctruncate/best.$(OBJEXT)
+src_ctruncate_ctruncate_OBJECTS =  \
+	$(am_src_ctruncate_ctruncate_OBJECTS)
+src_ctruncate_ctruncate_LDADD = $(LDADD)
+src_ctruncate_ctruncate_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_src_nautilus_cnautilus_OBJECTS = src/nautilus/cnautilus.$(OBJEXT) \
 	src/nautilus/nautilus-sequence.$(OBJEXT) \
@@ -286,7 +292,8 @@ SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
 	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
 	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
-	$(src_ctruncate_SOURCES) $(src_nautilus_cnautilus_SOURCES) \
+	$(src_ctruncate_ctruncate_SOURCES) \
+	$(src_nautilus_cnautilus_SOURCES) \
 	$(src_parrot_cparrot_SOURCES) \
 	$(src_pirate_cmakereference_SOURCES) \
 	$(src_pirate_cpirate_SOURCES) $(src_sloop_csloop_SOURCES)
@@ -300,7 +307,8 @@ DIST_SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
 	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
 	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
-	$(src_ctruncate_SOURCES) $(src_nautilus_cnautilus_SOURCES) \
+	$(src_ctruncate_ctruncate_SOURCES) \
+	$(src_nautilus_cnautilus_SOURCES) \
 	$(src_parrot_cparrot_SOURCES) \
 	$(src_pirate_cmakereference_SOURCES) \
 	$(src_pirate_cpirate_SOURCES) $(src_sloop_csloop_SOURCES)
@@ -452,6 +460,8 @@ dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 		 html/ctruncate.html html/comit.html html/cnautilus.html
 
 AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
+
+# LDADD is used for programs for which program_LDADD is not set
 LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \
 	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb $(FFTW_LIBS)
 
@@ -467,40 +477,40 @@ src_cphasecombine_SOURCES = src/cphasecombine.cpp
 src_cpatterson_SOURCES = src/cpatterson.cpp
 src_caniso_SOURCES = src/caniso.cpp
 src_convert2mtz_SOURCES = src/convert2mtz.cpp src/convert2mtz.h
-src_ctruncate_SOURCES = src/ctruncate.cpp \
-			src/ctruncate_utils.cpp \
-			src/cpsf_utils.cpp \
-			src/twinlaws.cpp \
-			src/ctruncate_truncate.cpp \
-			src/ctruncate_twin.cpp \
-			src/ctruncate_parity.cpp \
-			src/ctruncate_moments.cpp \
-			src/ctruncate_analyse.cpp \
-			src/ctruncate_matthews.cpp \
-			src/ctruncate_wilson.cpp \
-			src/intensity_scale.cpp \
-			src/best.cpp \
-			src/ctruncate_utils.h \
-			src/cpsf_utils.h \
-			src/twinlaws.h \
-			src/ctruncate_truncate.h \
-			src/ctruncate_twin.h \
-			src/ctruncate_parity.h \
-			src/ctruncate_moments.h \
-			src/ctruncate_analyse.h \
-			src/ctruncate_matthews.h \
-			src/ctruncate_wilson.h \
-			src/intensity_scale.h \
-			src/best.h \
-			src/intensity_target.h \
-			src/alt_hkl_datatypes.h
-
 src_csymmatch_SOURCES = src/csymmatch.cpp
 src_cmaplocal_SOURCES = src/cmaplocal.cpp
 src_cncsfrommodel_SOURCES = src/cncsfrommodel.cpp
 src_cmodeltoseq_SOURCES = src/cmodeltoseq.cpp
 src_cmapcut_SOURCES = src/cmapcut.cpp
 src_comit_SOURCES = src/comit.cpp
+src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
+				  src/ctruncate/ctruncate_utils.cpp \
+				  src/ctruncate/cpsf_utils.cpp \
+				  src/ctruncate/twinlaws.cpp \
+				  src/ctruncate/ctruncate_truncate.cpp \
+				  src/ctruncate/ctruncate_twin.cpp \
+				  src/ctruncate/ctruncate_parity.cpp \
+				  src/ctruncate/ctruncate_moments.cpp \
+				  src/ctruncate/ctruncate_analyse.cpp \
+				  src/ctruncate/ctruncate_matthews.cpp \
+				  src/ctruncate/ctruncate_wilson.cpp \
+				  src/ctruncate/intensity_scale.cpp \
+				  src/ctruncate/best.cpp \
+				  src/ctruncate/ctruncate_utils.h \
+				  src/ctruncate/cpsf_utils.h \
+				  src/ctruncate/twinlaws.h \
+				  src/ctruncate/ctruncate_truncate.h \
+				  src/ctruncate/ctruncate_twin.h \
+				  src/ctruncate/ctruncate_parity.h \
+				  src/ctruncate/ctruncate_moments.h \
+				  src/ctruncate/ctruncate_analyse.h \
+				  src/ctruncate/ctruncate_matthews.h \
+				  src/ctruncate/ctruncate_wilson.h \
+				  src/ctruncate/intensity_scale.h \
+				  src/ctruncate/best.h \
+				  src/ctruncate/intensity_target.h \
+				  src/ctruncate/alt_hkl_datatypes.h
+
 src_pirate_cpirate_SOURCES = src/pirate/cpirate.cpp \
 			     src/pirate/simulate-lib.cpp \
 			     src/pirate/pirate-lib.cpp \
@@ -849,34 +859,49 @@ src/csymmatch.$(OBJEXT): src/$(am__dirstamp) \
 src/csymmatch$(EXEEXT): $(src_csymmatch_OBJECTS) $(src_csymmatch_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/csymmatch$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_csymmatch_OBJECTS) $(src_csymmatch_LDADD) $(LIBS)
-src/ctruncate.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/cpsf_utils.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/twinlaws.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_truncate.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_twin.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_parity.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_moments.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_analyse.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_matthews.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate_wilson.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/intensity_scale.$(OBJEXT): src/$(am__dirstamp) \
-	src/$(DEPDIR)/$(am__dirstamp)
-src/best.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/ctruncate$(EXEEXT): $(src_ctruncate_OBJECTS) $(src_ctruncate_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/ctruncate$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(src_ctruncate_OBJECTS) $(src_ctruncate_LDADD) $(LIBS)
+src/ctruncate/$(am__dirstamp):
+	@$(MKDIR_P) src/ctruncate
+	@: > src/ctruncate/$(am__dirstamp)
+src/ctruncate/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/ctruncate/$(DEPDIR)
+	@: > src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_utils.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/cpsf_utils.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/twinlaws.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_truncate.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_twin.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_parity.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_moments.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_analyse.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_matthews.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_wilson.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/intensity_scale.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/best.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate$(EXEEXT): $(src_ctruncate_ctruncate_OBJECTS) $(src_ctruncate_ctruncate_DEPENDENCIES) src/ctruncate/$(am__dirstamp)
+	@rm -f src/ctruncate/ctruncate$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_ctruncate_ctruncate_OBJECTS) $(src_ctruncate_ctruncate_LDADD) $(LIBS)
 src/nautilus/$(am__dirstamp):
 	@$(MKDIR_P) src/nautilus
 	@: > src/nautilus/$(am__dirstamp)
@@ -977,7 +1002,6 @@ src/sloop/csloop$(EXEEXT): $(src_sloop_csloop_OBJECTS) $(src_sloop_csloop_DEPEND
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f src/best.$(OBJEXT)
 	-rm -f src/buccaneer/buccaneer-build.$(OBJEXT)
 	-rm -f src/buccaneer/buccaneer-correct.$(OBJEXT)
 	-rm -f src/buccaneer/buccaneer-filter.$(OBJEXT)
@@ -1013,20 +1037,22 @@ mostlyclean-compile:
 	-rm -f src/cpatterson.$(OBJEXT)
 	-rm -f src/cphasecombine.$(OBJEXT)
 	-rm -f src/cphasematch.$(OBJEXT)
-	-rm -f src/cpsf_utils.$(OBJEXT)
 	-rm -f src/csfcalc.$(OBJEXT)
 	-rm -f src/csigmaa.$(OBJEXT)
 	-rm -f src/csymmatch.$(OBJEXT)
-	-rm -f src/ctruncate.$(OBJEXT)
-	-rm -f src/ctruncate_analyse.$(OBJEXT)
-	-rm -f src/ctruncate_matthews.$(OBJEXT)
-	-rm -f src/ctruncate_moments.$(OBJEXT)
-	-rm -f src/ctruncate_parity.$(OBJEXT)
-	-rm -f src/ctruncate_truncate.$(OBJEXT)
-	-rm -f src/ctruncate_twin.$(OBJEXT)
-	-rm -f src/ctruncate_utils.$(OBJEXT)
-	-rm -f src/ctruncate_wilson.$(OBJEXT)
-	-rm -f src/intensity_scale.$(OBJEXT)
+	-rm -f src/ctruncate/best.$(OBJEXT)
+	-rm -f src/ctruncate/cpsf_utils.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_analyse.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_matthews.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_moments.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_parity.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_truncate.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_twin.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_utils.$(OBJEXT)
+	-rm -f src/ctruncate/ctruncate_wilson.$(OBJEXT)
+	-rm -f src/ctruncate/intensity_scale.$(OBJEXT)
+	-rm -f src/ctruncate/twinlaws.$(OBJEXT)
 	-rm -f src/nautilus/cnautilus.$(OBJEXT)
 	-rm -f src/nautilus/nautilus-join.$(OBJEXT)
 	-rm -f src/nautilus/nautilus-rebuild-bases.$(OBJEXT)
@@ -1055,12 +1081,10 @@ mostlyclean-compile:
 	-rm -f src/sloop/csloop.$(OBJEXT)
 	-rm -f src/sloop/protein_db.$(OBJEXT)
 	-rm -f src/sloop/protein_db_utils.$(OBJEXT)
-	-rm -f src/twinlaws.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/best.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/caniso.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cecalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cfft.Po@am__quote@
@@ -1075,21 +1099,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasecombine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasematch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpsf_utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csfcalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csigmaa.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/csymmatch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_analyse.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_matthews.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_moments.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_parity.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_truncate.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_twin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_utils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/ctruncate_wilson.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/intensity_scale.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/twinlaws.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-build.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-correct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/buccaneer-filter.Po@am__quote@
@@ -1111,6 +1123,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/csequins.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simplex-lib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simulate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/best.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/cpsf_utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_analyse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_matthews.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_moments.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_parity.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_truncate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_twin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_wilson.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/intensity_scale.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/twinlaws.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/cnautilus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-join.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-rebuild-bases.Po@am__quote@
@@ -1447,6 +1472,8 @@ distclean-generic:
 	-rm -f src/$(am__dirstamp)
 	-rm -f src/buccaneer/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/buccaneer/$(am__dirstamp)
+	-rm -f src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/ctruncate/$(am__dirstamp)
 	-rm -f src/nautilus/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/nautilus/$(am__dirstamp)
 	-rm -f src/parrot/$(DEPDIR)/$(am__dirstamp)
@@ -1465,7 +1492,7 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/ctruncate/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -1513,7 +1540,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
+	-rm -rf src/$(DEPDIR) src/buccaneer/$(DEPDIR) src/ctruncate/$(DEPDIR) src/nautilus/$(DEPDIR) src/parrot/$(DEPDIR) src/pirate/$(DEPDIR) src/sloop/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

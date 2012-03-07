@@ -6,9 +6,10 @@ dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 
 bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 	       src/cinvfft src/csigmaa src/cecalc src/cphasecombine \
-	       src/cpatterson src/caniso src/convert2mtz src/ctruncate \
+	       src/cpatterson src/caniso src/convert2mtz \
 	       src/csymmatch src/cmaplocal src/cncsfrommodel \
 	       src/cmodeltoseq src/cmapcut src/comit \
+	       src/ctruncate/ctruncate \
 	       src/pirate/cpirate src/pirate/cmakereference \
 	       src/buccaneer/cbuccaneer src/buccaneer/csequins \
 	       src/parrot/cparrot \
@@ -17,6 +18,7 @@ bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 
 AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
 
+# LDADD is used for programs for which program_LDADD is not set
 LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \
 	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb $(FFTW_LIBS)
 
@@ -45,34 +47,6 @@ src_caniso_SOURCES = src/caniso.cpp
 
 src_convert2mtz_SOURCES = src/convert2mtz.cpp src/convert2mtz.h
 
-src_ctruncate_SOURCES = src/ctruncate.cpp \
-			src/ctruncate_utils.cpp \
-			src/cpsf_utils.cpp \
-			src/twinlaws.cpp \
-			src/ctruncate_truncate.cpp \
-			src/ctruncate_twin.cpp \
-			src/ctruncate_parity.cpp \
-			src/ctruncate_moments.cpp \
-			src/ctruncate_analyse.cpp \
-			src/ctruncate_matthews.cpp \
-			src/ctruncate_wilson.cpp \
-			src/intensity_scale.cpp \
-			src/best.cpp \
-			src/ctruncate_utils.h \
-			src/cpsf_utils.h \
-			src/twinlaws.h \
-			src/ctruncate_truncate.h \
-			src/ctruncate_twin.h \
-			src/ctruncate_parity.h \
-			src/ctruncate_moments.h \
-			src/ctruncate_analyse.h \
-			src/ctruncate_matthews.h \
-			src/ctruncate_wilson.h \
-			src/intensity_scale.h \
-			src/best.h \
-			src/intensity_target.h \
-			src/alt_hkl_datatypes.h
-
 src_csymmatch_SOURCES = src/csymmatch.cpp
 
 src_cmaplocal_SOURCES = src/cmaplocal.cpp
@@ -85,6 +59,33 @@ src_cmapcut_SOURCES = src/cmapcut.cpp
 
 src_comit_SOURCES = src/comit.cpp
 
+src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
+				  src/ctruncate/ctruncate_utils.cpp \
+				  src/ctruncate/cpsf_utils.cpp \
+				  src/ctruncate/twinlaws.cpp \
+				  src/ctruncate/ctruncate_truncate.cpp \
+				  src/ctruncate/ctruncate_twin.cpp \
+				  src/ctruncate/ctruncate_parity.cpp \
+				  src/ctruncate/ctruncate_moments.cpp \
+				  src/ctruncate/ctruncate_analyse.cpp \
+				  src/ctruncate/ctruncate_matthews.cpp \
+				  src/ctruncate/ctruncate_wilson.cpp \
+				  src/ctruncate/intensity_scale.cpp \
+				  src/ctruncate/best.cpp \
+				  src/ctruncate/ctruncate_utils.h \
+				  src/ctruncate/cpsf_utils.h \
+				  src/ctruncate/twinlaws.h \
+				  src/ctruncate/ctruncate_truncate.h \
+				  src/ctruncate/ctruncate_twin.h \
+				  src/ctruncate/ctruncate_parity.h \
+				  src/ctruncate/ctruncate_moments.h \
+				  src/ctruncate/ctruncate_analyse.h \
+				  src/ctruncate/ctruncate_matthews.h \
+				  src/ctruncate/ctruncate_wilson.h \
+				  src/ctruncate/intensity_scale.h \
+				  src/ctruncate/best.h \
+				  src/ctruncate/intensity_target.h \
+				  src/ctruncate/alt_hkl_datatypes.h
 
 src_pirate_cpirate_SOURCES = src/pirate/cpirate.cpp \
 			     src/pirate/simulate-lib.cpp \
