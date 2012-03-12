@@ -8,6 +8,12 @@
 #include <clipper/clipper-minimol.h>
 
 
+class NautilusUtil {
+ public:
+  static void set_reference( clipper::String& pdb );
+};
+
+
 class NautilusLog {
  public:
   NautilusLog() : currentcpu(0.0) { log(""); }

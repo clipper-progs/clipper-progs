@@ -3,8 +3,34 @@
 
 #include "nautilus-util.h"
 
+#include <fstream>
 extern "C" {
 #include <stdlib.h>
+}
+
+
+void NautilusUtil::set_reference( clipper::String& pdb )
+{
+  const char* clibdptr = getenv( "CLIBD" );
+  if ( clibdptr != NULL ) {
+    clipper::String clibd( clibdptr );
+    clipper::String path;
+    std::ifstream file;
+    if ( pdb == "NONE" ) {
+      path = clibd+"/nautilus_lib.pdb";
+      file.open( path.c_str(), std::ifstream::in ); file.close();
+      if ( !file.fail() ) pdb = path;
+    }
+    if ( pdb == "NONE" ) {
+      path = clibd+"\\nautilus_lib.pdb";
+      file.open( path.c_str(), std::ifstream::in ); file.close();
+      if ( !file.fail() ) pdb = path;
+    }
+    if ( pdb == "NONE" ) 
+      clipper::Message::message( clipper::Message_fatal( "No reference data specified and not in $CLIBD" ) );
+  } else {
+    clipper::Message::message( clipper::Message_fatal( "No reference data specified and $CLIBD not found" ) );
+  }
 }
 
 

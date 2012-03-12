@@ -32,7 +32,7 @@ int main( int argc, char** argv )
   clipper::String ipcol_fr = "NONE";
   clipper::String ipseq = "NONE";
   clipper::String ippdb = "NONE";
-  clipper::String ippdb_ref = "nautilus_lib.pdb";
+  clipper::String ippdb_ref = "NONE";
   clipper::String oppdb = "nautilus.pdb";
   clipper::String opmap = "NONE";
   int ncyc = 3;
@@ -149,6 +149,7 @@ int main( int argc, char** argv )
   for ( HRI ih = hkls.first(); !ih.last(); ih.next() ) if ( flag[ih].flag() == 0 ) wrk_f1[ih] = clipper::data32::F_sigF();  //ugly hack for broken SGI compilers
 
   // Get reference model
+  if ( ippdb_ref == "NONE" ) NautilusUtil::set_reference( ippdb_ref );
   NucleicAcidTargets natools;
   natools.add_pdb( ippdb_ref );
   NucleicAcidTools tools;
