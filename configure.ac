@@ -23,12 +23,12 @@ AC_SEARCH_LIBS(cos, m, , AC_MSG_ERROR([need math library]))
 dnl Check for FFTW.
 AM_PATH_FFTW(, AC_MSG_ERROR([locating necessary fftw]) )
 
+AC_LANG_PUSH([C++])
 AC_CHECK_LIB(ccp4c, ccp4_banner, :,
              AC_MSG_WARN([ccp4c library not found.]))
 AC_CHECK_HEADER(ccp4/ccp4_general.h, :,
                 AC_MSG_ERROR([libccp4 headers not found.]))
 
-AC_LANG_PUSH([C++])
 AC_CHECK_LIB(mmdb, MMDB_CCIF_Init, :,
              AC_MSG_WARN([mmdb library not found.]))
 AC_CHECK_HEADER(mmdb/mmdb_manager.h, :,
