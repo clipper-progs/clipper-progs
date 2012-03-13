@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
+dist_data_DATA = src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
+
 dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 		 html/csequins.html html/parrot.html html/cmapcut.html \
 		 html/ctruncate.html html/comit.html html/cnautilus.html
@@ -177,8 +179,8 @@ src_sloop_csloop_SOURCES = src/sloop/csloop.cpp \
 
 
 
-sloopdatadir = $(datadir)/sloop
-dist_sloopdata_DATA = src/sloop/prot500.db
+#sloopdatadir = $(datadir)/sloop
+#dist_sloopdata_DATA = src/sloop/prot500.db
 
 
 src_nautilus_cnautilus_SOURCES = src/nautilus/cnautilus.cpp \

@@ -49,12 +49,11 @@ bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
 	src/buccaneer/csequins$(EXEEXT) src/parrot/cparrot$(EXEEXT) \
 	src/sloop/csloop$(EXEEXT) src/nautilus/cnautilus$(EXEEXT)
 subdir = .
-DIST_COMMON = $(am__configure_deps) $(dist_html_DATA) \
-	$(dist_sloopdata_DATA) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure COPYING INSTALL build-aux/compile \
-	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
-	build-aux/install-sh build-aux/missing
+DIST_COMMON = $(am__configure_deps) $(dist_data_DATA) \
+	$(dist_html_DATA) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/config.h.in $(top_srcdir)/configure COPYING INSTALL \
+	build-aux/compile build-aux/config.guess build-aux/config.sub \
+	build-aux/depcomp build-aux/install-sh build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
 	$(top_srcdir)/m4/fftw.m4 $(top_srcdir)/m4/progs.m4 \
@@ -67,8 +66,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(htmldir)" \
-	"$(DESTDIR)$(sloopdatadir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(datadir)" \
+	"$(DESTDIR)$(htmldir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_src_buccaneer_cbuccaneer_OBJECTS =  \
@@ -333,7 +332,7 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-DATA = $(dist_html_DATA) $(dist_sloopdata_DATA)
+DATA = $(dist_data_DATA) $(dist_html_DATA)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -357,7 +356,6 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
-CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -455,6 +453,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
+dist_data_DATA = src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
 dist_html_DATA = html/cpirate.html html/chltofom.html html/cbuccaneer.html \
 		 html/csequins.html html/parrot.html html/cmapcut.html \
 		 html/ctruncate.html html/comit.html html/cnautilus.html
@@ -595,8 +594,9 @@ src_sloop_csloop_SOURCES = src/sloop/csloop.cpp \
 			   src/sloop/protein_db.h \
 			   src/sloop/protein_db_utils.h
 
-sloopdatadir = $(datadir)/sloop
-dist_sloopdata_DATA = src/sloop/prot500.db
+
+#sloopdatadir = $(datadir)/sloop
+#dist_sloopdata_DATA = src/sloop/prot500.db
 src_nautilus_cnautilus_SOURCES = src/nautilus/cnautilus.cpp \
 				 src/nautilus/nautilus-sequence.cpp \
 				 src/nautilus/nautilus-tools.cpp \
@@ -1200,6 +1200,26 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+install-dist_dataDATA: $(dist_data_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(datadir)" || $(MKDIR_P) "$(DESTDIR)$(datadir)"
+	@list='$(dist_data_DATA)'; test -n "$(datadir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(datadir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(datadir)" || exit $$?; \
+	done
+
+uninstall-dist_dataDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_data_DATA)'; test -n "$(datadir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(datadir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(datadir)" && rm -f $$files
 install-dist_htmlDATA: $(dist_html_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(htmldir)" || $(MKDIR_P) "$(DESTDIR)$(htmldir)"
@@ -1220,26 +1240,6 @@ uninstall-dist_htmlDATA:
 	test -n "$$files" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(htmldir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(htmldir)" && rm -f $$files
-install-dist_sloopdataDATA: $(dist_sloopdata_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(sloopdatadir)" || $(MKDIR_P) "$(DESTDIR)$(sloopdatadir)"
-	@list='$(dist_sloopdata_DATA)'; test -n "$(sloopdatadir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(sloopdatadir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(sloopdatadir)" || exit $$?; \
-	done
-
-uninstall-dist_sloopdataDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_sloopdata_DATA)'; test -n "$(sloopdatadir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	test -n "$$files" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(sloopdatadir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(sloopdatadir)" && rm -f $$files
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -1444,7 +1444,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(htmldir)" "$(DESTDIR)$(sloopdatadir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(datadir)" "$(DESTDIR)$(htmldir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1509,7 +1509,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_htmlDATA install-dist_sloopdataDATA
+install-data-am: install-dist_dataDATA install-dist_htmlDATA
 
 install-dvi: install-dvi-am
 
@@ -1556,8 +1556,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-dist_htmlDATA \
-	uninstall-dist_sloopdataDATA
+uninstall-am: uninstall-binPROGRAMS uninstall-dist_dataDATA \
+	uninstall-dist_htmlDATA
 
 .MAKE: all install-am install-strip
 
@@ -1568,16 +1568,15 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_htmlDATA \
 	distclean-hdr distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
-	install-data-am install-dist_htmlDATA \
-	install-dist_sloopdataDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-dist_htmlDATA \
-	uninstall-dist_sloopdataDATA
+	install-data-am install-dist_dataDATA install-dist_htmlDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-dist_dataDATA uninstall-dist_htmlDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
