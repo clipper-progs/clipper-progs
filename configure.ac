@@ -20,6 +20,15 @@ AX_PTHREAD([], [AC_MSG_ERROR([Failed to find threading library])])
 
 AC_SEARCH_LIBS(cos, m, , AC_MSG_ERROR([need math library]))
 
+# ftplib (included in src/pirate) uses WinSock 2 on Windows
+SOCKET_LIB=
+AC_SEARCH_LIBS(select, , has_select=yes)
+if test x$has_select != xyes ; then
+    # 'main' must be used, AC_CHECK_LIB doesn't work well with Windows libs
+    AC_CHECK_LIB(ws2_32, main, SOCKET_LIB="-lws2_32",
+                               AC_MSG_ERROR([socked library not found.]))
+fi
+
 dnl Check for FFTW.
 AM_PATH_FFTW(, AC_MSG_ERROR([locating necessary fftw]) )
 
@@ -51,5 +60,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <clipper/clipper.h>],
                 AC_MSG_WARN([clipper library not found.])])
 LIBS="$saved_LIBS"
 AC_LANG_POP([C++])
+
+AC_SUBST(SOCKET_LIB)
 
 AC_OUTPUT(Makefile)

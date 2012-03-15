@@ -232,7 +232,8 @@ am_src_pirate_cmakereference_OBJECTS =  \
 src_pirate_cmakereference_OBJECTS =  \
 	$(am_src_pirate_cmakereference_OBJECTS)
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-src_pirate_cmakereference_DEPENDENCIES = $(am__DEPENDENCIES_2)
+src_pirate_cmakereference_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 am_src_pirate_cpirate_OBJECTS = src/pirate/cpirate.$(OBJEXT) \
 	src/pirate/simulate-lib.$(OBJEXT) \
 	src/pirate/pirate-lib.$(OBJEXT) \
@@ -398,6 +399,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SOCKET_LIB = @SOCKET_LIB@
 STRIP = @STRIP@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
@@ -464,7 +466,7 @@ AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
 LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \
 	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb $(FFTW_LIBS)
 
-src_pirate_cmakereference_LDADD = -lclipper-cif $(LDADD)
+src_pirate_cmakereference_LDADD = -lclipper-cif $(LDADD) $(SOCKET_LIB)
 src_chltofom_SOURCES = src/chltofom.cpp
 src_cphasematch_SOURCES = src/cphasematch.cpp
 src_csfcalc_SOURCES = src/csfcalc.cpp
