@@ -169,7 +169,7 @@ namespace ctruncate {
 		else {
 			printf("No twinning detected for this twinning operator\n\n");
 		}
-		alpha = 0.5*(1.0 - sqrt(3.0*H2av));
+		//alpha = 0.5*(1.0 - sqrt(3.0*H2av));
 		//printf("alpha = %f\n",alpha);
 		if (debug) {
 			FILE *newfileout;
@@ -185,7 +185,7 @@ namespace ctruncate {
     clipper::ftype Htest_driver_fp(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug)
 	{
 		bool itwin = false;
-        double hval = 0.0;
+        double hval(0.0), hval_max(0.0);
 		
 		clipper::Spacegroup spgr = isig.hkl_info().spacegroup();
 		clipper::Cell      cell = isig.hkl_info().cell();
@@ -260,9 +260,10 @@ namespace ctruncate {
 				 }
 				 printf("\n");*/
 				hval = Htest(isig, twinoper, scalefac, s, debug);
+				hval_max = std::max(hval_max,hval);
 			}
 		}
-		return hval;
+		return hval_max;
 	}		
 	
     clipper::ftype Htest_driver_table(clipper::HKL_data<clipper::data32::I_sigI>& isig, bool debug)
@@ -428,7 +429,7 @@ namespace ctruncate {
         printf("      Twinning fraction = 0.000  L statistics = 0.500:\n");
         printf("      Twinning fraction = 0.100  L statistics = 0.440:\n");
         printf("      Twinning fraction = 0.500  L statistics = 0.375:\n");
-          
+		
         if ( alpha <= 0.0001 ) {
             if ( 0.440 <= lval <= 0.500 ) {
                 printf("NO Twinning detected\n\n");
@@ -437,23 +438,23 @@ namespace ctruncate {
                 printf("   It is quite likely that your data were merged into a HIGHER symmetry space group than the\n   true space group.\n");
                 printf("   Please revise the space group assignment if there are problems with model building or refinement.\n");
                 printf("   (Very week data in higher resolution shell may be a reason of this L-value. Run twinning tests\n  with resolution cut off 3A.)\n\n");
-}
-        } else if ( 0.0001 < alpha <= 0.1 ) {
+			}
+        } else if ( 0.0001 < alpha && alpha <= 0.1 ) {
             printf("No twinning or very low twinning fraction.\n\n");
             printf("   Twinning, if any, can be safely be ignored. However, twin refinement may be attempted, but not before the\n model is completely build.\n\n");
-        } else if ( 0.1 < alpha < 0.4 ) {
+        } else if ( 0.1 < alpha && alpha < 0.4 ) {
             printf("It is highly probable that your crystal is TWINNED.\n\n");
             printf("   Please use twin refinement after your model is almost completed and R-free is below 40%%.\n\n");
         } else {
-            if ( 0.440 <= lval <= 0.500 ) {
+            if ( 0.440 <= lval && lval <= 0.500 ) {
                 printf("Your data might have been scaled in a LOWER symmetry space group than the true space group.\n\n");
                 printf("   Please run pointless, aimless (scala) and ctruncate to revise space group assignment.\n\n");
-            } else if ( 0.375 <= lval < 0.440 ) {
+            } else if ( 0.375 <= lval && lval < 0.440 ) {
                 printf("It is highly probable that your crystal is TWINNED.\n\n");
                 printf("   Please use twin refinement after your model is almost completed and R-free is below 40%%\n\n");
             }
         }
     }
-
+	
 }
 
