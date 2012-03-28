@@ -360,7 +360,7 @@ int main(int argc, char **argv)
   prog.summary_beg();
   printf("\n\nTRANSLATIONAL NCS:\n");
   if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
-	  printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %f5.2 (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],pval,reso_Patt.limit() );
+	  printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %5.2f (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],pval,reso_Patt.limit() );
       printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
       printf("Peak Ratio = %f \n",ratio);
       printf("Peak Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
