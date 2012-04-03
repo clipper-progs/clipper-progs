@@ -423,8 +423,8 @@ namespace ctruncate {
      \param lval L statistic from L-test. */
     void twin_summary(clipper::ftype alpha, clipper::ftype lval) {
         printf("TWINNING SUMMARY\n\n");
-        printf("Twinning fraction from H-test: %f\n",alpha);
-        printf("L-statistic from L-Test:       %f\n\n",lval);
+        printf("Twinning fraction from H-test: %6.2f\n",alpha);
+        printf("L-statistic from L-Test:       %6.2f\n\n",lval);
         printf("   Relation between L statistics and twinning fraction:\n");
         printf("      Twinning fraction = 0.000  L statistics = 0.500:\n");
         printf("      Twinning fraction = 0.100  L statistics = 0.440:\n");
