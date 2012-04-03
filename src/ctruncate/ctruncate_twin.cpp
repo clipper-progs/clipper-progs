@@ -431,9 +431,9 @@ namespace ctruncate {
         printf("      Twinning fraction = 0.500  L statistics = 0.375:\n");
 		
         if ( alpha <= 0.0001 ) {
-            if ( 0.440 <= lval <= 0.500 ) {
+            if ( 0.440 <= lval && lval <= 0.500 ) {
                 printf("NO Twinning detected\n\n");
-            } else if ( 0.375 <= lval < 0.440 ) {
+            } else if ( 0.375 <= lval && lval < 0.440 ) {
                 printf("L-test statistics indicate partial twinning\n");
                 printf("   It is quite likely that your data were merged into a HIGHER symmetry space group than the\n   true space group.\n");
                 printf("   Please revise the space group assignment if there are problems with model building or refinement.\n");
