@@ -231,7 +231,7 @@ namespace ctruncate {
 		clipper::HKL_data<D> fo1( hkl1 ), fs1( hkl1 ), fc1( hkl1 );
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 		}
 		
 		// calc target values
@@ -470,7 +470,7 @@ namespace ctruncate {
 		clipper::HKL_data<D> fo1( hkl1 ), fs1( hkl1 ), fc1( hkl1 );
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 		}
 		
 		// calc target values
@@ -985,7 +985,7 @@ namespace ctruncate {
         clipper::ftype n=0.0;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) {
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) {
                 fo1[ih] = f;
                 n += 1.0f;
             }
@@ -1622,7 +1622,7 @@ namespace ctruncate {
 		clipper::HKL_data<D> fo1( hkl1 ), fs1( hkl1 ), fc1( hkl1 );
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 		}
 		
 		// calc target values
