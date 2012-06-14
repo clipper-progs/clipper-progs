@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
 
-  //mtzfile.open_read( argv[1] );
+  //mtzfile.open_read( args[1] );
   mtzfile.open_read( ipfile );
   mtzfile.import_hkl_info( hklinf );  
   // allocate memory to isig by reading in hklinf before declaring isig
@@ -268,7 +268,7 @@ int main(int argc, char **argv)
   CMtz::MTZ *mtz1=NULL;
   int read_refs=1;  // not sure what read_refs actually does - reads reflections presumably
   float minres,maxres;
-  mtz1 = CMtz::MtzGet(argv[mtzinarg], read_refs);
+  mtz1 = CMtz::MtzGet(args[mtzinarg].c_str(), read_refs);
 
   // read title
   char title[72];
@@ -814,7 +814,7 @@ int main(int argc, char **argv)
 
   // output data
   if (!amplitudes) {
-      //mtzout.open_append( argv[mtzinarg], outfile );
+      //mtzout.open_append( args[mtzinarg], outfile );
 	  mtzout.open_write( outfile );
 	  mtzout.export_crystal ( cxtl, outcol );
       mtzout.export_dataset ( cset, outcol );
@@ -875,7 +875,7 @@ int main(int argc, char **argv)
 
 	  CMtz::MTZ *mtz2=NULL;
       read_refs=1;  // need to read in reflections, otherwise they won't be written out
-      mtz2 = CMtz::MtzGet(argv[mtzoutarg], read_refs);
+      mtz2 = CMtz::MtzGet(args[mtzoutarg].c_str(), read_refs);
 	  // write title to output file
 	  strncpy( mtz2->title, title, 71 );
 	  if (spacegroup[0] == 'H') {
