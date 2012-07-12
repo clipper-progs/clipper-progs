@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 
   clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
   clipper::Resolution reso_Twin = clipper::Resolution( 0.1 );
+  clipper::Resolution reso_trunc = clipper::Resolution( 0.1 );
 
   // clipper seems to use its own column labels, then append yours
 
@@ -136,6 +137,8 @@ int main(int argc, char **argv)
       if ( ++arg < args.size() ) reso_Patt = clipper::Resolution( clipper::String(args[arg]).f() );
     } else if ( args[arg] == "-twinres" ) {
         if ( ++arg < args.size() ) reso_Twin = clipper::Resolution( clipper::String(args[arg]).f() );
+    } else if ( args[arg] == "-reso" ) {
+        if ( ++arg < args.size() ) reso_trunc = clipper::Resolution( clipper::String(args[arg]).f() );
     } else if ( args[arg] == "-no-aniso" ) {
       aniso = false;
     } else if ( args[arg] == "-amplitudes" ) {
@@ -222,6 +225,8 @@ int main(int argc, char **argv)
   clipper::Spacegroup spgr = mtzfile.spacegroup();
   clipper::Cell      cell1 = mtzfile.cell();
   clipper::Resolution reso = mtzfile.resolution();
+
+  reso_trunc = clipper::Resolution( clipper::Util::min( reso.limit(), reso_trunc.limit() ) );
 
   // limit resolution of Patterson calculation for tNCS (default 4 A)
   reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_Patt.limit() ) );
@@ -702,7 +707,7 @@ int main(int argc, char **argv)
 
   if (!amplitudes) {
       if (anomalous) {
-	      truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, nrej, debug );
+	      truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
 	      int iwarn = 0;
 	      for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			  freidal_sym[ih].isym() = 0; //mimic old truncate
@@ -735,7 +740,7 @@ int main(int argc, char **argv)
       }
 
       else {
-          truncate( isig, jsig, fsig, xsig, scalef, spg1, nrej, debug );
+          truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
       }
   }
   printf("\n");

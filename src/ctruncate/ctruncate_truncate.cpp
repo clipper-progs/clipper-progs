@@ -210,16 +210,17 @@ namespace ctruncate {
 
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		//FILE *checkfile;
 		//checkfile = fopen("checku.txt", "w");
 		float J, sigJ, F, sigF;
+                float invr2 = reso.invresolsq_limit();
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ) {
+			if ( !isig[ih].missing() || ih.invresolsq >= invr2 ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				float S = Sigma.f(ih);
@@ -253,7 +254,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input. 
 	
@@ -262,6 +263,7 @@ namespace ctruncate {
 		//FILE *checkfile;
 		//checkfile = fopen("checku.txt", "w");
 		float J, sigJ, F, sigF;
+                float invr2 = reso.invresolsq_limit();
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -327,7 +329,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		//FILE *checkfile;
@@ -336,7 +338,7 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ) {
+			if ( !isig[ih].missing() || ih.invresolsq >= invr2 ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				float S = Sigma[ih].I();
@@ -370,7 +372,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, int& nrej, bool debug)
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input. 
 	

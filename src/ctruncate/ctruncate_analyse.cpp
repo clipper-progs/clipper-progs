@@ -986,8 +986,9 @@ namespace ctruncate {
             int jj = -1;
             for (int j=0; j!=3; ++j) { // loop vectors
                 if (close[0] == j || close[1] == j ) continue;
-                if (std::fabs(mat(j,i) > max) ) {
-                    max = std::fabs(mat(j,i));
+                clipper::ftype tmp = std::fabs(mat(j,i));
+                if (tmp > max ) {
+                    max = tmp;
                     jj = j;
                 }
             }
