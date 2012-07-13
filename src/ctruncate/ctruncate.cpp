@@ -226,7 +226,8 @@ int main(int argc, char **argv)
   clipper::Cell      cell1 = mtzfile.cell();
   clipper::Resolution reso = mtzfile.resolution();
 
-  reso_trunc = clipper::Resolution( clipper::Util::min( reso.limit(), reso_trunc.limit() ) );
+	// limit resolution for truncation, and hence output
+  reso_trunc = clipper::Resolution( clipper::Util::max( reso.limit(), reso_trunc.limit() ) );
 
   // limit resolution of Patterson calculation for tNCS (default 4 A)
   reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_Patt.limit() ) );
