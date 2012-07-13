@@ -216,11 +216,10 @@ namespace ctruncate {
 		//FILE *checkfile;
 		//checkfile = fopen("checku.txt", "w");
 		float J, sigJ, F, sigF;
-                float invr2 = reso.invresolsq_limit();
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() || ih.invresolsq >= invr2 ) {
+			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				float S = Sigma.f(ih);
@@ -338,7 +337,7 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() || ih.invresolsq >= invr2 ) {
+			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				float S = Sigma[ih].I();
@@ -384,59 +383,61 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
-				float I = isig[ih].I_pl();
-				float sigma = isig[ih].sigI_pl();
-				float S = Sigma[ih].I();
-				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
-				float sqwt = sqrt(weight);
-				
-				I /= weight;
-				sigma /= weight;
-				
-				// handle acentric and centric reflections separately
-				if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
-				else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
-				//if ( !ih.hkl_class().centric()  && I < 0 ) 
-				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
-				//ih.hkl_class().epsilon());
-				if (iflag) {
-					jsig[ih].I_pl() = J;
-					jsig[ih].sigI_pl() = sigJ;
-					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
-					fsig[ih].f_pl() = F*scalef*sqwt;
-					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
-					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+			if ( ih.invresolsq() <=  reso.invresolsq_limit() ) {
+				if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
+					float I = isig[ih].I_pl();
+					float sigma = isig[ih].sigI_pl();
+					float S = Sigma[ih].I();
+					clipper::HKL hkl = ih.hkl();
+					float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+					if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+					float sqwt = sqrt(weight);
+					
+					I /= weight;
+					sigma /= weight;
+					
+					// handle acentric and centric reflections separately
+					if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+					else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+					//if ( !ih.hkl_class().centric()  && I < 0 ) 
+					//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+					//ih.hkl_class().epsilon());
+					if (iflag) {
+						jsig[ih].I_pl() = J;
+						jsig[ih].sigI_pl() = sigJ;
+						//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+						fsig[ih].f_pl() = F*scalef*sqwt;
+						fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+						//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+					}
 				}
-			}
-			
-			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
-				float I = isig[ih].I_mi();
-				float sigma = isig[ih].sigI_mi();
-				float S = Sigma[ih].I();
-				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
-				float sqwt = sqrt(weight);
 				
-				I /= weight;
-				sigma /= weight;
-				
-				// handle acentric and centric reflections separately
-				if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
-				else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
-				//if ( !ih.hkl_class().centric()  && I < 0 ) 
-				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
-				//ih.hkl_class().epsilon());
-				if (iflag) {
-					jsig[ih].I_mi() = J;
-					jsig[ih].sigI_mi() = sigJ;
-					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
-					fsig[ih].f_mi() = F*scalef*sqwt;
-					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
-					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
+					float I = isig[ih].I_mi();
+					float sigma = isig[ih].sigI_mi();
+					float S = Sigma[ih].I();
+					clipper::HKL hkl = ih.hkl();
+					float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+					if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+					float sqwt = sqrt(weight);
+					
+					I /= weight;
+					sigma /= weight;
+					
+					// handle acentric and centric reflections separately
+					if ( ih.hkl_class().centric() ) iflag = truncate_centric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);
+					else iflag = truncate_acentric(I, sigma, S, J, sigJ, F, sigF, nrej, debug);	
+					//if ( !ih.hkl_class().centric()  && I < 0 ) 
+					//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
+					//ih.hkl_class().epsilon());
+					if (iflag) {
+						jsig[ih].I_mi() = J;
+						jsig[ih].sigI_mi() = sigJ;
+						//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
+						fsig[ih].f_mi() = F*scalef*sqwt;
+						fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+						//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+					}
 				}
 			}
 		}
