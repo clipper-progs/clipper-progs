@@ -568,6 +568,19 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		// smooth the mean values, also means values are over 3 bins so hopefully get fewer empty bins
+		for (int i = 0 ; i != nbins ; ++i ) {
+			if ( i == 0 ) {
+				sumov[i] += sumov[i+1];
+				summeas[i] += summeas[i+1];
+			} else if ( i == (nbins-1) ) {
+				sumov[i] += sumov[i-1];
+				summeas[i] += summeas[i-1];
+			} else {
+				sumov[i] += sumov[i+1] + sumov[i-1];
+				summeas[i] += summeas[i+1] + summeas[i-1];
+			}
+		}
 		
 		HKL_data<data32::I_sigI> tr1(hklinf);
 		tr1 = data32::I_sigI(1.0f,1.0f);
