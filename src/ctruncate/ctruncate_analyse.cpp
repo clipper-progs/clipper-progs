@@ -1022,34 +1022,33 @@ namespace ctruncate {
         for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
             int eps = ih.hkl_class().epsilon();
             int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
+			sumov[bin] += eps;
             if ( ih.hkl_class().centric() ) {
                 //no anomalous information
-                sumov[bin] += eps;
                 if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
                 } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_pl(isig_ano[ih]);
-                } else {
+                } else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_mi(isig_ano[ih]);
                 }
-            } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                clipper::ftype Ip = obs_pl(isig_ano[ih]);
-                clipper::ftype sp = sigobs_pl(isig_ano[ih]);
-                clipper::ftype Im = obs_mi(isig_ano[ih]);
-                clipper::ftype sm = sigobs_mi(isig_ano[ih]);
-                clipper::ftype dI = Ip - Im;
-                clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
-                if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
-                    summeas[bin] += eps;
-                }
-                meandI[bin] += dI;
-                meandIsigdI[bin] += dI/ds;
-                meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-            } else  {
-                sumov[bin] += eps;
-                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+            } else {
+				if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) )  ) {
+					clipper::ftype Ip = obs_pl(isig_ano[ih]);
+					clipper::ftype sp = sigobs_pl(isig_ano[ih]);
+					clipper::ftype Im = obs_mi(isig_ano[ih]);
+					clipper::ftype sm = sigobs_mi(isig_ano[ih]);
+					clipper::ftype dI = std::fabs(Ip - Im);
+					clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
+					if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
+						summeas[bin] += eps;
+					}
+					meandI[bin] += dI;
+					meandIsigdI[bin] += dI/ds;
+					meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+				} else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_pl(isig_ano[ih]);
-                } else {
+				} else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_mi(isig_ano[ih]);
                 }
             }
@@ -1137,43 +1136,42 @@ namespace ctruncate {
         
         
         clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
-        
-        for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
+ 
+		for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
             int eps = ih.hkl_class().epsilon();
             int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
+			sumov[bin] += eps;
             if ( ih.hkl_class().centric() ) {
                 //no anomalous information
-                sumov[bin] += eps;
                 if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
                 } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_pl(isig_ano[ih]);
-                } else {
+                } else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_mi(isig_ano[ih]);
                 }
-            } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                clipper::ftype Ip = obs_pl(isig_ano[ih]);
-                clipper::ftype sp = sigobs_pl(isig_ano[ih]);
-                clipper::ftype Im = obs_mi(isig_ano[ih]);
-                clipper::ftype sm = sigobs_mi(isig_ano[ih]);
-                clipper::ftype dI = Ip - Im;
-                clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
-                if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
-                    summeas[bin] += eps;
-                }
-                meandI[bin] += dI;
-                meandIsigdI[bin] += dI/ds;
-                meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-            } else  {
-                sumov[bin] += eps;
-                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
+            } else {
+				if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) )  ) {
+					clipper::ftype Ip = obs_pl(isig_ano[ih]);
+					clipper::ftype sp = sigobs_pl(isig_ano[ih]);
+					clipper::ftype Im = obs_mi(isig_ano[ih]);
+					clipper::ftype sm = sigobs_mi(isig_ano[ih]);
+					clipper::ftype dI = std::fabs(Ip - Im);
+					clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
+					if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
+						summeas[bin] += eps;
+					}
+					meandI[bin] += dI;
+					meandIsigdI[bin] += dI/ds;
+					meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
+				} else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_pl(isig_ano[ih]);
-                } else {
+				} else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
                     meanI[bin] += obs_mi(isig_ano[ih]);
                 }
             }
         }
-        
+		        
         for (int i= 0; i != nbins ; ++i ) {
             meandI[i] /= (float) sumov[i];
             meandIsigdI[i] /= (float) sumov[i];
