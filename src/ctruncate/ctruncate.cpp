@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.5.1", "$Date: 2011/12/30" );
+  CCP4Program prog( "ctruncate", "1.6.0", "$Date: 2011/12/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -830,6 +830,87 @@ int main(int argc, char **argv)
 		
 	}
 	
+	// I/Sigma and F/sqrt(Sigma) plots
+	  if (!amplitudes) {
+		//could use a clipper::Histogram
+		clipper::Range<double> range(-5.0,10.0);
+		/*for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			float eps = ih.hkl_class().epsilon();
+			if (!isig[ih].missing() ) range.include(isig[ih].I()/(xsig[ih].I()));
+						//if (!fsig[ih].missing() ) range.include(std::sqrt(eps)*fsig[ih].f()/std::sqrt(xsig[ih].I()) );
+		}*/
+		clipper::Histogram Icount(range,200);
+		clipper::Histogram Jcount(range,200);
+		clipper::Histogram Fcount(range,200);
+		clipper::Histogram IScount(range,200);
+		clipper::Histogram JScount(range,200);
+		clipper::Histogram FScount(range,200);
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			float eps = ih.hkl_class().epsilon();
+			if (!isig[ih].missing() ) {
+				Icount.accumulate(isig[ih].I()/xsig[ih].I());
+			}
+		}
+			
+		for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
+			float eps = ih.hkl_class().epsilon();
+			if (!jsig[ih].missing() ) {
+				Jcount.accumulate(jsig[ih].I()/xsig[ih].I());
+			}
+		}	
+		
+		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+			float eps = ih.hkl_class().epsilon();
+			if (!fsig[ih].missing() ) {
+				Fcount.accumulate(fsig[ih].f()/(scalef*std::sqrt(xsig[ih].I()) ) );
+			}
+		}	
+		
+		  
+		  for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			  float eps = ih.hkl_class().epsilon();
+			  if (!isig[ih].missing() ) {
+				  IScount.accumulate(isig[ih].I()/isig[ih].sigI() );
+			  }
+		  }
+		  
+		  for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
+			  float eps = ih.hkl_class().epsilon();
+			  if (!jsig[ih].missing() ) {
+				  JScount.accumulate(jsig[ih].I()/jsig[ih].sigI() );
+			  }
+		  }	
+		  
+		  for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+			  float eps = ih.hkl_class().epsilon();
+			  if (!fsig[ih].missing() ) {
+				  FScount.accumulate(fsig[ih].f()/fsig[ih].sigf() );
+			  }
+		  }	
+		  
+		printf("$TABLE: Phil plot:\n");
+		printf("$GRAPHS");
+		printf(": Phil plot - normalised values:A:1,2,3,4:\n");  
+		printf(": Phil plot - vs sigma:A:1,5,6,7:\n$$");  
+
+		printf(" Value Io/Sigma I/Sigma F/Sigma**0.5 Io/sigIo I/sigI F/sigF$$\n$$\n");
+
+		for ( int i=0; i!=200; ++i ) {
+			float res = range.min()+float(i)*(range.max()-range.min())/200.0; 
+			printf("%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+					res,
+					Icount.y(res),
+				    Jcount.y(res),
+					Fcount.y(res),
+				   IScount.y(res),
+				   JScount.y(res),
+				   FScount.y(res)
+				   );
+		}
+		
+		printf("$$\n\n");
+	}		
 
   // output data
   if (!amplitudes) {
