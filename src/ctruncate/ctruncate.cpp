@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.6.0", "$Date: 2011/12/30" );
+  CCP4Program prog( "ctruncate", "1.6.1", "$Date: 2012/08/01" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
      	  ianiso[ih] = clipper::data32::I_sigI( I, sigI );
 	  }
     
-    AnisoCorr<Iscale_llaniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+    AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
 	  
     uao = llscl.u_aniso_orth(Scaling::I);
          
@@ -443,7 +443,7 @@ int main(int argc, char **argv)
         printf("\nANISOTROPY CORRECTION (using intensities):\n");
 
         Iscale_aniso<float> sfscl( 3.0 );
-        sfscl( ianiso, -1.0f, 12 );
+        sfscl( ianiso);
         
         printf("\nAnisotropic scaling (orthogonal coords):\n\n");
         

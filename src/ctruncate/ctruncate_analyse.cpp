@@ -191,9 +191,9 @@ namespace ctruncate {
         //get uao eigenvectors
 		AnisoDirection<float> direct(uao);
 		clipper::Mat33<float> e123;
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-            e123(i,j) = (direct.eigenVectors())[i][j];
+        for (int i = 0 ; i !=3 ; ++i)
+            for (int j = 0 ; j != 3 ; ++j)
+                e123(i,j) = (direct.eigenVectors())[i][j];
 		
 		clipper::Cell cell = fsig.hkl_info().cell();
 		clipper::Spacegroup spg = fsig.hkl_info().spacegroup();
@@ -306,7 +306,7 @@ namespace ctruncate {
 				if (isigi >= 1.0f ) summeas1[bin] += mult;
 				if (isigi >= 2.0f ) summeas2[bin] += mult;
 				if (isigi >= 3.0f ) summeas3[bin] += mult;
-		}
+            }
 		}
 		for (int i=1; i!=nbins; ++i) {
 			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
@@ -343,8 +343,8 @@ namespace ctruncate {
         //get uao eigenvectors
 		AnisoDirection<float> direct(uao);
 		clipper::Mat33<float> e123;
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
+        for (int i = 0 ; i !=3 ; ++i)
+            for (int j = 0 ; j != 3 ; ++j)
                 e123(i,j) = (direct.eigenVectors())[i][j];
 		
 		clipper::Cell cell = isig.hkl_info().cell();
@@ -593,8 +593,8 @@ namespace ctruncate {
 		
         //get uao eigenvectors
 		AnisoDirection<float> direct(_uao);
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
+        for (int i = 0 ; i !=3 ; ++i)
+            for (int j = 0 ; j != 3 ; ++j)
                 _e123(i,j) = (direct.eigenVectors())[i][j];
 		
 		clipper::Cell cell = isig.hkl_info().cell();
@@ -619,7 +619,7 @@ namespace ctruncate {
 						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
 						
 						clipper::Vec3<float> hc = _e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
-
+                        
 						
 						for (int j=0;j!=3;++j) {
 							int jn = j*_nbins+bin;
@@ -736,7 +736,7 @@ namespace ctruncate {
 			}
 		}
 	}
-		
+    
 	template<class T> void Completeness<T>::plot() 
 	{
 		if (_t == I ) {
@@ -764,29 +764,29 @@ namespace ctruncate {
 		clipper::ftype lev[] = { 0.5, 0.25, 0.125};
 		std::vector<clipper::ftype> levels(lev,lev+sizeof(lev)/sizeof(clipper::ftype));
 		// get eigenvalues of aniso_U
-			{
-				clipper::Matrix<T> m(3,3);
-				for (int i = 0 ; i !=3 ; ++i)
-					for (int j = 0 ; j != 3 ; ++j)
-						m(i,j) = uao(i,j);
-				_eigen = m.eigen();
-				for (int i = 0 ; i !=3 ; ++i)
-					_eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
-				for (int i = 0 ; i !=3 ; ++i)
-					for (int j = 0 ; j != 3 ; ++j)
-						_e123(i,j) = m(i,j);
-			}
-			clipper::ftype angle, sigmau, sigmav;
-			ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-			ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-			ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-		}
+        {
+            clipper::Matrix<T> m(3,3);
+            for (int i = 0 ; i !=3 ; ++i)
+                for (int j = 0 ; j != 3 ; ++j)
+                    m(i,j) = uao(i,j);
+            _eigen = m.eigen();
+            for (int i = 0 ; i !=3 ; ++i)
+                _eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
+            for (int i = 0 ; i !=3 ; ++i)
+                for (int j = 0 ; j != 3 ; ++j)
+                    _e123(i,j) = m(i,j);
+        }
+        clipper::ftype angle, sigmau, sigmav;
+        ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
+        for (int l=0 ; l != levels.size() ; ++l ) 
+            _isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+        ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
+        for (int l=0 ; l != levels.size() ; ++l ) 
+            _isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+        ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
+        for (int l=0 ; l != levels.size() ; ++l ) 
+            _isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
+    }
 	
 	template <class T> AnisoPlot<T>::AnisoPlot(clipper::ftype scale, clipper::U_aniso_orth& uao)
 	{
@@ -819,16 +819,16 @@ namespace ctruncate {
 			_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
 	}
 	
-		/* ellipse */
-		template <class T> void AnisoPlot<T>::loggraph() {
-			std::stringstream x1,x2,x3;
-			x1 << "("  << _e123(0,0) << "h," << _e123(1,0) << "k," << _e123(2,0) << "l)";
-			x2 << "("  << _e123(0,1) << "h," << _e123(1,1) << "k," << _e123(2,1) << "l)";
-			x3 << "("  << _e123(0,2) << "h," << _e123(1,2) << "k," << _e123(2,2) << "l)";
-			
-			clipper::ftype maxv(-99.0), minv(99);
-			// get plot extremes
-			{
+    /* ellipse */
+    template <class T> void AnisoPlot<T>::loggraph() {
+        std::stringstream x1,x2,x3;
+        x1 << "("  << _e123(0,0) << "h," << _e123(1,0) << "k," << _e123(2,0) << "l)";
+        x2 << "("  << _e123(0,1) << "h," << _e123(1,1) << "k," << _e123(2,1) << "l)";
+        x3 << "("  << _e123(0,2) << "h," << _e123(1,2) << "k," << _e123(2,2) << "l)";
+        
+        clipper::ftype maxv(-99.0), minv(99);
+        // get plot extremes
+        {
 			int l = _isoline1.size()-1;
 			for(int i=0;i!=_isoline1[l].size();++i) {
 				maxv = std::max(maxv,std::max(_isoline1[l][i][0],_isoline1[l][i][1]) );
@@ -844,85 +844,85 @@ namespace ctruncate {
 				maxv = std::max(maxv,std::max(_isoline3[l][i][0],_isoline3[l][i][1]) );
 				minv = std::min(minv,std::min(_isoline3[l][i][0],_isoline3[l][i][1]) );
 			}
-			}
-			printf("\n$TABLE: Anisotropy:\n");
-			printf("$SCATTER");
-			printf(": Falloff plane 1:%f|%fx%f|%f:1,2:\n",minv,maxv,minv,maxv);
-			printf(": Falloff plane 2:%f|%fx%f|%f:3,4:\n",minv,maxv,minv,maxv);
-			printf(": Falloff plane 3:%f|%fx%f|%f:5,6:\n",minv,maxv,minv,maxv);
-			printf("$$ %s %s %s %s %s %s$$\n$$\n",x1.str().c_str(),x2.str().c_str(),x1.str().c_str(),
-				   x3.str().c_str(),x2.str().c_str(),x3.str().c_str());	
-			
-			// ellipse level and step
-			for(int l=0;l!=_isoline1.size(); ++l)
-				for(int i=0;i!=_isoline1[l].size();++i)
-					printf("%8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n", 
-						   _isoline1[l][i][0],_isoline1[l][i][1],
-						   _isoline2[l][i][0],_isoline2[l][i][1],
-						   _isoline3[l][i][0],_isoline3[l][i][1]);
-			
-			printf("$$\n\n");
-		}
-		
-		
-		//want a point, but use Coord_orth for now
-		template <class T> clipper::Coord_orth AnisoPlot<T>::point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-																clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741)
-		{
-			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
-			clipper::ftype sinuv = std::sin(angleuv);
-			clipper::ftype cosuv = std::cos(angleuv);
-
-			clipper::ftype s = std::sin(theta);
-			clipper::ftype c = std::cos(theta);		 
-			// theta equations
-			clipper::ftype x = offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv);
-			clipper::ftype y= offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv);
-			return clipper::Coord_orth(x,y,0.0);
-		}
-		
-		// plot at frac of height
+        }
+        printf("\n$TABLE: Anisotropy:\n");
+        printf("$SCATTER");
+        printf(": Falloff plane 1:%f|%fx%f|%f:1,2:\n",minv,maxv,minv,maxv);
+        printf(": Falloff plane 2:%f|%fx%f|%f:3,4:\n",minv,maxv,minv,maxv);
+        printf(": Falloff plane 3:%f|%fx%f|%f:5,6:\n",minv,maxv,minv,maxv);
+        printf("$$ %s %s %s %s %s %s$$\n$$\n",x1.str().c_str(),x2.str().c_str(),x1.str().c_str(),
+               x3.str().c_str(),x2.str().c_str(),x3.str().c_str());	
+        
+        // ellipse level and step
+        for(int l=0;l!=_isoline1.size(); ++l)
+            for(int i=0;i!=_isoline1[l].size();++i)
+                printf("%8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n", 
+                       _isoline1[l][i][0],_isoline1[l][i][1],
+                       _isoline2[l][i][0],_isoline2[l][i][1],
+                       _isoline3[l][i][0],_isoline3[l][i][1]);
+        
+        printf("$$\n\n");
+    }
+    
+    
+    //want a point, but use Coord_orth for now
+    template <class T> clipper::Coord_orth AnisoPlot<T>::point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
+                                                               clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741)
+    {
+        clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
+        clipper::ftype sinuv = std::sin(angleuv);
+        clipper::ftype cosuv = std::cos(angleuv);
+        
+        clipper::ftype s = std::sin(theta);
+        clipper::ftype c = std::cos(theta);		 
+        // theta equations
+        clipper::ftype x = offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv);
+        clipper::ftype y= offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv);
+        return clipper::Coord_orth(x,y,0.0);
+    }
+    
+    // plot at frac of height
 	template <class T> std::vector<clipper::Coord_orth> AnisoPlot<T>::isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-													  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60) 
-		{
-			std::vector<clipper::Coord_orth> points(steps);
-			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
-			clipper::ftype sinuv = std::sin(angleuv);
-			clipper::ftype cosuv = std::cos(angleuv);
-			
-			for (int i = 0; i != steps ;++i) {
-				clipper::ftype angle = 2.0*clipper::Util::pi()*clipper::ftype(i)/clipper::ftype(steps) ;
-				clipper::ftype s = std::sin(angle);
-				clipper::ftype c = std::cos(angle);		
-				// theta equations
-				points[i] = clipper::Coord_orth(offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv),
-												offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv),
-												0.0);
-			}
-			
-			return points;
-		}
-		
-		// calculate the ellipse parameters
-		template <class T> void AnisoPlot<T>::ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
-													  clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav)		 
-		{
-			angle = ( std::abs(sig1 - sig2 ) < 1.0e-5) ? 0.0 : std::atan(2.0*cov*sig1*sig2/(sig1*sig1-sig2*sig2));
-			//tan(2alpha) = 2*cov(x,y)*sig(x)*sig(y)/(sig(x)**2-sig(y)**2)
-			
-			clipper::ftype t1 = sig1*sig1*sig2*sig2*(1.0-cov*cov);
-			clipper::ftype s = std::sin(angle);
-			clipper::ftype c = std::cos(angle);
-			clipper::ftype t2 = 2*cov*sig1*sig2*s*c;
-			
-			sigmav = std::sqrt(t1/(sig2*sig2*c*c-t2+sig1*sig1*s*s));
-			sigmau = std::sqrt(t1/(sig2*sig2*s*s+t2+sig1*sig1*c*c));
-			return;
-		}
-
+                                                                              clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60) 
+    {
+        std::vector<clipper::Coord_orth> points(steps);
+        clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
+        clipper::ftype sinuv = std::sin(angleuv);
+        clipper::ftype cosuv = std::cos(angleuv);
+        
+        for (int i = 0; i != steps ;++i) {
+            clipper::ftype angle = 2.0*clipper::Util::pi()*clipper::ftype(i)/clipper::ftype(steps) ;
+            clipper::ftype s = std::sin(angle);
+            clipper::ftype c = std::cos(angle);		
+            // theta equations
+            points[i] = clipper::Coord_orth(offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv),
+                                            offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv),
+                                            0.0);
+        }
+        
+        return points;
+    }
+    
+    // calculate the ellipse parameters
+    template <class T> void AnisoPlot<T>::ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
+                                                  clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav)		 
+    {
+        angle = ( std::abs(sig1 - sig2 ) < 1.0e-5) ? 0.0 : std::atan(2.0*cov*sig1*sig2/(sig1*sig1-sig2*sig2));
+        //tan(2alpha) = 2*cov(x,y)*sig(x)*sig(y)/(sig(x)**2-sig(y)**2)
+        
+        clipper::ftype t1 = sig1*sig1*sig2*sig2*(1.0-cov*cov);
+        clipper::ftype s = std::sin(angle);
+        clipper::ftype c = std::cos(angle);
+        clipper::ftype t2 = 2*cov*sig1*sig2*s*c;
+        
+        sigmav = std::sqrt(t1/(sig2*sig2*c*c-t2+sig1*sig1*s*s));
+        sigmau = std::sqrt(t1/(sig2*sig2*s*s+t2+sig1*sig1*c*c));
+        return;
+    }
+    
     //---------Calculate anisotropy-------------------------------------
-
-
+    
+    
     template <class SCALER, class DATA, class T> void AnisoCorr<SCALER,DATA,T>::calc(clipper::HKL_data<DATA>& isig, bool protein, bool rna)
     {
         const clipper::HKL_info& hklinf = isig.hkl_info();
@@ -940,7 +940,7 @@ namespace ctruncate {
 		} // scale against BEST
         
         _iscale( Ibest, isig );
-
+        
         return ;
     }
     
@@ -960,7 +960,7 @@ namespace ctruncate {
     }
     
     //---------Calculate anisotropy eigenvalues------------------------
-
+    
     //! Calculate eigenvalues
     
     template <class T> AnisoDirection<T>::AnisoDirection(clipper::U_aniso_orth& uao)
@@ -1136,7 +1136,7 @@ namespace ctruncate {
         
         
         clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
- 
+        
 		for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
             int eps = ih.hkl_class().epsilon();
             int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
@@ -1171,7 +1171,7 @@ namespace ctruncate {
                 }
             }
         }
-		        
+        
         for (int i= 0; i != nbins ; ++i ) {
             meandI[i] /= (float) sumov[i];
             meandIsigdI[i] /= (float) sumov[i];
@@ -1239,23 +1239,19 @@ namespace ctruncate {
 		}
 		printf("$$\n\n");
     }
-
+    
     //---------Instantiate templates------------------------------------
 	template class AnisoPlot<clipper::ftype32>;
 	template class AnisoPlot<clipper::ftype64>;
     
-    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype32>, clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_llaniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype32>,clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_wilson_aniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
-
+    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype32>, clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
+    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
+    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
+    
     template class AnisoDirection<clipper::ftype32>;
     template class AnisoDirection<clipper::ftype64>;
     
     template class AnomStats<clipper::ftype32>;
     template class AnomStats<clipper::ftype64>;
-	}
+}
