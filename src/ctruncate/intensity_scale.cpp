@@ -875,8 +875,7 @@ namespace ctruncate {
         ctruncate::RestraintFn_sphericalU restU(10.0, n );
         ::TargetFn_scaleLogLikeI1I2<clipper::datatypes::I_sigI<T>,clipper::datatypes::I_sigI<T> >
         tfn( Ic1, Io1 );
-		ctruncate::ResolutionFn_nonlinear_rest rfn( hkl1, bfn, tfn, param, mask, restU, 0.0, true  );
-        //clipper::ResolutionFn_nonlinear rfn( hkl1, bfn, tfn, param, 0.0, false  );
+        clipper::ResolutionFn_nonlinear rfn( hkl1, bfn, tfn, param, 0.0, false  );
         
         this->u_i = bfn.u_aniso_orth( rfn.params() );
         this->u_f = 0.5*this->u_i;

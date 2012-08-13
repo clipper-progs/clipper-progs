@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-  CCP4Program prog( "ctruncate", "1.6.1", "$Date: 2012/08/01" );
+  CCP4Program prog( "ctruncate", "1.6.2", "$Date: 2012/07/30" );
   
   // defaults
   clipper::String outfile = "ctruncate_out.mtz";
