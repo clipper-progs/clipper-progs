@@ -1,0 +1,10 @@
+1.7
+- use anisotopy in prior for truncate procedure
+- no-aniso keyword now controls use of anisotropy in prior
+- anisotropy corrected for twinning statistics, now not optional
+
+1.6
+- acentric tabulated data extended to h=10 to reduce discontinuity in plots
+- Phil plot added to monitor output
+
+
