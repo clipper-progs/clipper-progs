@@ -72,7 +72,7 @@ namespace ctruncate {
         printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n", Lav);
 
         printf("\n");
-		if (Lav < 0.48) {
+		if (Lav < 0.44) {
 			printf("L test suggests data is twinned\n");
 			itwin = true;
 			printf("All data regardless of I/sigma(I) has been included in the L test\n");
