@@ -1,4 +1,7 @@
-1.7
+1.7.1
+- make twinning test output more consistent
+
+-1.7
 - use anisotopy in prior for truncate procedure
 - no-aniso keyword now controls use of anisotropy in prior
 - anisotropy corrected for twinning statistics, now not optional
