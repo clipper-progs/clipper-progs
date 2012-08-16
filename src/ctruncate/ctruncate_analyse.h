@@ -28,74 +28,83 @@ namespace ctruncate {
 	
 	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0) );
 	
-	template<class T> class YorgoModis
+	//--------------------------------------------------------------
+	
+	template<class D> class YorgoModis
 	{
 	public:
 		enum TYPE { F, I };
-		YorgoModis( clipper::ftype maxres=3.0, int nbins=60, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0) ) : _maxres(maxres), _nbins(nbins), _uao(uao),
+		YorgoModis( clipper::ftype maxres=3.0, int nbins=60, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0) ) : _nbins(nbins), _uao(uao),
 		_somov(nbins,0.0), _somsdov(nbins,0.0), _numov(nbins,0), _enumov(nbins,0.0),
 		_somdir(3*nbins,0.0), _somsddir(3*nbins,0.0), _numdir(3*nbins,0.0), _enumdir(3*nbins,0.0)
 		{}
-		template<class D> void operator() (clipper::HKL_data<D>& fo);
+		void operator() (clipper::HKL_data<D>& fo, clipper::Resolution reso=clipper::Resolution());
 		void plot();
 		
 	private:
-		const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
-		const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
-		const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
-		const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
-		TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
-		TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
+		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
+		template<class T> const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		template<class T> const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
+		template<class T> const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
+		template<class T> TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
+		template<class T> TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
 		
 		TYPE _t;
-		clipper::ftype _maxres;       //max resolution in calculation
+		clipper::Resolution _reso;       //resolution in calculation
 		int _nbins;                    //number of bins
 		clipper::U_aniso_orth _uao;   //anisotropy matrix for directions
 		
-		clipper::Mat33<T> _e123; //directions
+		clipper::Mat33<clipper::ftype> _e123; //directions
 		
-		std::vector<T> _somov;
-		std::vector<T> _somsdov;
+		std::vector<clipper::ftype> _somov;
+		std::vector<clipper::ftype> _somsdov;
 		std::vector<int> _numov;
-		std::vector<T> _enumov;
-		std::vector<T> _somdir;    
-		std::vector<T> _somsddir;
+		std::vector<clipper::ftype> _enumov;
+		std::vector<clipper::ftype> _somdir;    
+		std::vector<clipper::ftype> _somsddir;
 		std::vector<int>  _numdir;
-		std::vector<T>  _enumdir;
+		std::vector<clipper::ftype>  _enumdir;
 			
 		int _nzerosigma;
 	};
 		
-	template<class T> class Completeness
+	//--------------------------------------------------------------
+	
+	template<class D> class Completeness
 	{
 	public:
 		enum TYPE { F, I };
-		Completeness( clipper::ftype maxres=3.0, int nbins=60 ) : 
-		_maxres(maxres), _nbins(nbins), 
-		_completeness(nbins,0.0), _completeness1(nbins,0.0), _completeness2(nbins,0.0), _completeness3(nbins,0.0)
+		Completeness( int nbins=60 ) : 
+		_nbins(nbins), 
+		_compsig(nbins,0.0), _compsig1(nbins,0.0), _compsig2(nbins,0.0), _compsig3(nbins,0.0), _standard(nbins,0.0)
 		{}
-		template <class D> void operator() (clipper::HKL_data<D>& fo);
-		clipper::ftype completeness(const clipper::ftype reso) { return completeness(int( clipper::ftype(_nbins) * reso / _maxres - 0.001)); }
+		void operator() (clipper::HKL_data<D>& fo, clipper::Resolution reso=clipper::Resolution() );
+		clipper::ftype completeness(const clipper::ftype invresolsq) { return _compsig[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
+		clipper::ftype completeness3(const clipper::ftype invresolsq) { return _compsig3[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
+		clipper::ftype standard(const clipper::ftype invresolsq) { return _standard[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
+		clipper::ftype bin2invresolsq(const int i) { return _reso.invresolsq_limit()*(double(i)+0.5)/double(_nbins);; }
 		void plot();
 		
 	private:
-		const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
-		const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
-		const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
-		const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
-		TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
-		TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
+		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
+		template<class T> const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		template<class T> const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
+		template<class T> const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
+		template<class T> TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
+		template<class T> TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
 		
 		TYPE _t;
-		clipper::ftype _maxres;       //max resolution in calculation
+		clipper::Resolution _reso;       //max resolution in calculation
 		int _nbins;                    //number of bins
 		
-		std::vector<T> _completeness;
-		std::vector<T> _completeness1;
-		std::vector<T> _completeness2;
-		std::vector<T> _completeness3;
-		
+		std::vector<clipper::ftype> _compsig;
+		std::vector<clipper::ftype> _compsig1;
+		std::vector<clipper::ftype> _compsig2;
+		std::vector<clipper::ftype> _compsig3;
+		std::vector<clipper::ftype> _standard;
 	};
+	
+	//--------------------------------------------------------------
 	
 	template<class T> class AnisoPlot
 	{
@@ -122,6 +131,36 @@ namespace ctruncate {
 					 clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav);
 	};
 		
+	//--------------------------------------------------------------
+	//! Check for tNCS using patterson map
+	/*! Use patterson map to check for tNCA
+	 \ingroup g_funcobj */
+	
+	template<class T> class tNCS
+	{
+	public:
+		//! operator
+		const std::vector<clipper::Coord_frac>& operator()(clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution reso=clipper::Resolution(4.0));
+		//! has tNCS test
+		bool hasNCS() { return peaks.size() != 0; }
+		//! number of operators
+		int numOps() { return peaks.size(); } 
+		//! return peak height
+		clipper::ftype height(int i) { return peak_height[i]; }
+		//! return peak prob
+		clipper::ftype prob(int i) { return peak_prob[i]; }
+		//! print out text summary
+		void summary();
+		
+	private:
+		clipper::HKL_data<clipper::datatypes::I_sigI<T> >* intensity; //!< dataset
+		clipper::Resolution reso; //!< resolution limits
+		std::vector<clipper::Coord_frac> peaks; //!< located peaks
+		std::vector<T> peak_height; //!< height of located peaks as fraction of origin
+		std::vector<T> peak_prob; //!< Zwartz estimation of probability
+		
+	};
+	
 	//--------------------------------------------------------------
 	
 	class PattPeak 
@@ -238,5 +277,37 @@ private:
     int _nbins;
 };
 
+	//--------------------------------------------------------------
+	
+	template<class D1, class D2> class ResoCorrel
+	{
+	public:
+		enum TYPE { F, I };
+		ResoCorrel( int nbins=60 ) : 
+		_nbins(nbins), _comp(nbins,0.0)
+		{}
+		void operator() (clipper::HKL_data<D1>& fo, clipper::HKL_data<D2>&fc, clipper::Range<clipper::ftype> reso=clipper::Range<clipper::ftype>() );
+		clipper::ftype CC_r(const clipper::ftype invresolsq) { return _comp[int( clipper::ftype(_nbins) * (invresolsq - _reso.min() ) / _reso.range() - 0.001)]; }
+		clipper::ftype bin2invresolsq(const int i) { return _reso.min()+_reso.range()*(double(i)+0.5)/double(_nbins); }
+		clipper::ftype CC() { return _cc; }
+		int nbins() { return _nbins; }
+		void plot();
+		
+	private:
+		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
+		template<class T> const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		template<class T> const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
+		template<class T> const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
+		template<class T> TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
+		template<class T> TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
+		
+		TYPE _t; //!< type intensity or structure factor
+		clipper::Range<clipper::ftype> _reso;       //!< resolution limits in calculation, inverse resolution squared
+		int _nbins;                    //!<number of bins
+		
+		std::vector<clipper::ftype> _comp; //!< correlation coeff array
+		clipper::ftype _cc; //!< average CC
+	};
+	
 }
 #endif

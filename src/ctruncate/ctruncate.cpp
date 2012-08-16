@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.7.1", "$Date: 2012/08/13" );
+    CCP4Program prog( "ctruncate", "1.8.0", "$Date: 2012/08/14" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -78,8 +78,10 @@ int main(int argc, char **argv)
     int nprm = 60;
     
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
-    clipper::Resolution reso_Twin = clipper::Resolution( 0.1 );
-    clipper::Resolution reso_trunc = clipper::Resolution( 0.1 );
+    clipper::Resolution reso_Twin;
+    clipper::Resolution reso_trunc;
+    
+    clipper::Resolution reso_u1, reso_u2, reso_u3;
     
     // clipper seems to use its own column labels, then append yours
     
@@ -134,11 +136,11 @@ int main(int argc, char **argv)
         } else if ( args[arg] == "-seqin" ) {
             if ( ++arg < args.size() ) ipseq = args[arg];
         } else if ( args[arg] == "-tNCSres" ) {
-            if ( ++arg < args.size() ) reso_Patt = clipper::Resolution( clipper::String(args[arg]).f() );
+            if ( ++arg < args.size() ) reso_u1 = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-twinres" ) {
-            if ( ++arg < args.size() ) reso_Twin = clipper::Resolution( clipper::String(args[arg]).f() );
+            if ( ++arg < args.size() ) reso_u2 = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-reso" ) {
-            if ( ++arg < args.size() ) reso_trunc = clipper::Resolution( clipper::String(args[arg]).f() );
+            if ( ++arg < args.size() ) reso_u3 = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-no-aniso" ) {
             aniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
@@ -227,10 +229,7 @@ int main(int argc, char **argv)
     clipper::Resolution reso = mtzfile.resolution();
     
     // limit resolution for truncation, and hence output
-    reso_trunc = clipper::Resolution( clipper::Util::max( reso.limit(), reso_trunc.limit() ) );
-    
-    // limit resolution of Patterson calculation for tNCS (default 4 A)
-    reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_Patt.limit() ) );
+    reso_trunc = clipper::Resolution(  reso.limit()  );
     
     HKL_info hkl_list;
     hkl_list.init( spgr, cell1, reso );
@@ -321,78 +320,80 @@ int main(int argc, char **argv)
         cmath.summary();
     }
     
-    // check for pseudo translation (taken from cpatterson)
-    // get Patterson spacegroup
-    clipper::Spacegroup
-    pspgr( clipper::Spgr_descr( spgr.generator_ops().patterson_ops() ) );
-    hklp.init( pspgr, cell1, reso_Patt, true );
-    
-    // make patterson coeffs
-    clipper::HKL_data<clipper::data32::F_phi> fphi( hklp );
-    for ( HRI ih = fphi.first(); !ih.last(); ih.next() ) {
-        clipper::data32::I_sigI i = isig[ih.hkl()];
-        if ( !i.missing() ) {
-            fphi[ih].f() = i.I();
-            fphi[ih].phi() = 0.0 ;
+    //Completeness information
+    //what is our working resolution (85% of I/sigI > 3.0)
+    clipper::Range<double> reso_range;
+    int NBINS = 60;
+    ctruncate::Completeness<data32::I_sigI> compt(NBINS);
+    compt(isig);
+    compt.plot();
+    {
+        clipper::Range<double> range = hklinf.invresolsq_range();
+        int i = 0;
+        for ( ; i != NBINS-1 ; ++i) {
+            if ( compt.completeness3(compt.bin2invresolsq(i)) > 0.85 && compt.completeness3(compt.bin2invresolsq(i+1)) > 0.85 ) break;
+        }
+        if ( i != (NBINS-1) ) {
+            int j = NBINS-1;
+            for ( ; j != 1 ; --j) {
+                if ( compt.completeness3(compt.bin2invresolsq(j)) > 0.85 && compt.completeness3(compt.bin2invresolsq(j-1)) > 0.85 ) break;
+            }
+            if (j != 0 )
+				if (i != 0) {
+					float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
+					reso_range.include(d);
+				} else {
+					reso_range.include(range.min() );
+				}
+            if (j != NBINS-1 ) {
+                float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
+                reso_range.include(d);	
+            } else {
+                reso_range.include(range.max() );
+            }
         }
     }
-    
-    // make grid if necessary
-    if ( grid.is_null() ) grid.init( pspgr, cell1, reso_Patt );
-    
-    // make xmap
-    clipper::Xmap<float> patterson( pspgr, cell1, grid );
-    patterson.fft_from( fphi );
-    
-    
-    // use Charles's stuff to find peaks
-    PeakSearch pksch;                      // peak search object
-    PeakInterp pkinterp;                   // peak interpolation methods
-    
-    int npeak = 5;
-    
-    std::vector<int> ppks = pksch( patterson );
-    
-    float top_peak = patterson.get_data( ppks[0] );
-    float next_peak = patterson.get_data( ppks[1] );
-    clipper::Coord_frac c0 = patterson.coord_of( ppks[1] ).coord_frac(grid);
-    float ratio = next_peak/top_peak;
-    float dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
-    // look for peaks > 20% of origin peak and at least 0.1 distant from origin
-    // precentage estimate is Zwartz CCP4 Newsletter 42
-    const double aval = 0.0679;
-    const double bval = 3.56;
-    double pval = (1.0 - std::exp(-std::pow(ratio/(aval*(1.0-ratio)),-bval)) )*100.0;;
     prog.summary_beg();
-    printf("\n\nTRANSLATIONAL NCS:\n");
-    if ( debug || (ratio > 0.2 && dist2 > 0.01) ) { 
-        printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability, based on peak ratio, is %5.2f that this is\n by chance (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],pval,reso_Patt.limit() );
-        printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
-        printf("Peak Ratio = %5.2f \n",ratio);
-        printf("Peak Vector = (%6.3f, %6.3f, %6.3f)\n",c0[0],c0[1],c0[2]);
-    }
-    else {
-        printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso_Patt.limit() );
-        if ( dist2 > 0.01 ) printf("Top off origin peak at (%6.3f, %6.3f, %6.3f) with a probability of %5.2f\n",c0[0],c0[1],c0[2],100.0-pval); 
-    }
+    printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
+    printf("\nUsing I/sigI > 3 with completeness above 0.85, the estimated useful\nResolution Range ");
+    printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
     prog.summary_end();
     printf("\n");
+    printf("The high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
     
-    // falloff and completeness for input intensities
-    //if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog);
+    
+    // limit resolution of Patterson calculation for tNCS (default 4 A), or set to
+    // limit from completeness analysis
+    invopt = reso_range.max();
+    resopt = 1.0/std::sqrt(invopt);
+    reso_Patt = clipper::Resolution( std::max( double(resopt), reso_Patt.limit() ) );
+    //user override of defaults
+    if (!reso_u1.is_null() ) {
+        reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_u1.limit() ) );
+    }
+
+    // check for pseudo translation (taken from cpatterson)
+    ctruncate::tNCS<float> tncs;
+    const std::vector<clipper::Coord_frac>& cf = tncs(isig, reso_Patt );
+    prog.summary_beg();
+    tncs.summary();
+    prog.summary_end();
+    printf("\n");
     
     // anisotropy estimation
     clipper::U_aniso_orth uao;
     double Itotal = 0.0;
     
     prog.summary_beg();
-    printf("\nANISOTROPY ESTIMATION (using intensities):\n");
+    printf("\nANISOTROPY ANALYSIS (using intensities):\n");
     
     for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  
-        double I = isig[ih].I();
-        double sigI = isig[ih].sigI();
+        if (reso_range.contains(ih.invresolsq() ) ) {
+        float I = isig[ih].I();
+        float sigI = isig[ih].sigI();
         if ( I > 0.0 ) Itotal += I;
         ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+        }
     }
     
     AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
@@ -408,16 +409,13 @@ int main(int argc, char **argv)
     printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
     printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
     if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
-    invopt = maxres*v[0]/v[2];
+    float ratio = std::min(v[0],std::min(v[1],v[2]) )/max;
+    invopt *= ratio;
     resopt = 1.0/sqrt(invopt);
     printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
-    if ( v[0]/max < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
+    if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
     prog.summary_end();
     printf("\n");
-    
-    //std::cout << "estimated Biso: " << clipper::Util::u2b(0.5*uao.u_iso()) << std::endl;
-    
-    //if (!amplitudes) yorgo_modis_plot(isig,maxres,60,prog, uao);
     
     printf("\nAnisotropic U (orthogonal coords):\n\n");
     printf("| %8.4f %8.4f %8.4f |\n", uao(0,0) ,  uao(0,1) ,  uao(0,2)  );
@@ -438,6 +436,11 @@ int main(int argc, char **argv)
     printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
     printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
     
+    // falloff calculation (Yorgo Modis)
+    YorgoModis<data32::I_sigI> ym(resopt,60,uao);
+    ym(isig);
+    ym.plot();
+    
     //want to use anisotropy correction and resolution truncation for twinning tests
     {
         double FFtotal = 0.0;
@@ -454,9 +457,9 @@ int main(int argc, char **argv)
         
         printf("\n");
         
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {    
-            if ( !isig[ih].missing() ) {
-                FFtotal += ianiso[ih].I();
+        for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {    
+            if ( !ianiso[ih].missing() ) {
+                if (ianiso[ih].I() > 0.0 ) FFtotal += ianiso[ih].I();
             }
         }                                                         
         
@@ -477,13 +480,17 @@ int main(int argc, char **argv)
     
     // calculate moments of Z using truncate methods
     
-    moments_Z(ianiso, maxres, nbins);
+    moments_Z(ianiso, invopt, nbins);
     
     
     printf("\nTWINNING ANALYSIS:\n\n");
     float hval(0.0), lval(0.0);
     //reduced resolution range for twinning tests
-    reso_Twin = clipper::Resolution( clipper::Util::max( clipper::ftype(resopt), reso_Twin.limit() ) );
+    reso_Twin = clipper::Resolution(resopt);
+    //user override of defaults
+    if (!reso_u2.is_null() ) {
+        reso_Patt = clipper::Resolution( clipper::Util::max( reso_Twin.limit(), reso_u2.limit() ) );
+    }
     HKL_info hklt(spgr, cell1, reso_Twin, true);
     HKL_data<data32::I_sigI> itwin(hklt);
     for ( HRI ih = itwin.first() ; !ih.last() ; ih.next() ) {
@@ -514,7 +521,7 @@ int main(int argc, char **argv)
     
     //Parity group analysis
     
-    ctruncate::parity(isig, maxres, nbins);	
+    ctruncate::parity(itwin, invopt, nbins);	
     
     // Ice rings
     ctruncate::Rings icerings;
@@ -688,13 +695,10 @@ int main(int argc, char **argv)
         seqf.read_file( ipseq );
         seqf.import_molecule_sequence( seq );
         MPolymerSequence poly = seq[0];
-        //wilson = wilson_plot(isig,poly,maxres,nprm, prog, xsig);
         wilson(isig,poly,&icerings);
     } else if (nresidues > 0) {
-        //wilson = wilson_plot(isig,nresidues,maxres,nprm, prog, xsig);
         wilson(isig,nresidues,&icerings);
     } else {
-        //wilson = wilson_plot(isig,maxres,nprm, prog, xsig);
         wilson(isig,&icerings);
     }		
     // end of Norm calc
@@ -714,7 +718,7 @@ int main(int argc, char **argv)
     
     if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
     int nrej = 0; 
-    
+
     if (!amplitudes) {
         // scale the norm for the anisotropy
         if (aniso) {
@@ -722,6 +726,10 @@ int main(int argc, char **argv)
             ascl(xsig,isig);
         }
         
+        //user override of truncate procedure and output
+        if (!reso_u3.is_null() ) {
+                reso_trunc = clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
+        }
         if (anomalous) {
             truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
             int iwarn = 0;
@@ -792,7 +800,7 @@ int main(int argc, char **argv)
     
     
     // moments of E using clipper binning
-    // moments_Z(ianiso,invopt,nbins,prog);
+    // moments_Z(ianiso,resopt,nbins,prog);
     
     
     // construct cumulative distribution function for intensity (using Z rather than E)
@@ -806,7 +814,7 @@ int main(int argc, char **argv)
     
     
     // falloff calculation (Yorgo Modis)
-    yorgo_modis_plot(fsig,maxres,60,prog,uao);
+    //yorgo_modis_plot(fsig,maxres,60,prog,uao);
     
     // anomalous signal
     if (anomalous ) {

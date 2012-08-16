@@ -18,26 +18,21 @@
 
 namespace ctruncate {
 	
-	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, 
-								   CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
-	
-	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, float maxres, 
-								   int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
-	
-	std::vector<float> wilson_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, 
-								   float maxres, int nbins, CCP4Program& prog, clipper::HKL_data<clipper::data32::I_sigI>& norm);
-	
 	class Scattering {
 	public:
-		float proteinScat(const int nres);
-		float nucleicScat(const int nres);
-		float proteinScat(const clipper::MPolymerSequence& poly);
-		float nucleicScat(const clipper::MPolymerSequence& poly);
-		float proteinScat(const clipper::Cell& cell, const clipper::Spacegroup& spg, float solvent=0.5);
+		enum MODE { PROTEIN, NUCLEIC, COMPLEX };
+		Scattering( MODE mode=PROTEIN) : _mode(mode) { init(); }
+		~Scattering() {}
+		clipper::ftype operator()(const int nres, clipper::ftype power=2.0 );
+		clipper::ftype operator()(const clipper::MPolymerSequence& poly, clipper::ftype power=2.0);
+		clipper::ftype operator()(const clipper::Cell& cell, const clipper::Spacegroup& spg, clipper::ftype solvent=0.5, clipper::ftype power=2.0 );
+		clipper::ftype operator()(clipper::MMDBManager& mmdb, const clipper::Spacegroup& spg, clipper::ftype power=2.0);
+		clipper::ftype operator()(std::vector<clipper::Atom>& mmdb, const clipper::Spacegroup& spg, clipper::ftype power=2.0 );
 		
-		static const float C, O, N, H, S, P;
+		static const clipper::ftype C, O, N, H, S, P;
 		
 	private:
+		void init();
 		static const std::string ProteinAtomNames[5];  //atom names
 		static const char ProteinResidueNames[20];  //residue names
 		static const int ProteinCatoms[20];         // number of C per residue
@@ -45,7 +40,7 @@ namespace ctruncate {
 		static const int ProteinNatoms[20];         // number of N per residue
 		static const int ProteinOatoms[20];         // number of O per residue
 		static const int ProteinSatoms[20];         // number of S per residue
-		static const float ProteinComp[5];          // average composition
+		static const clipper::ftype ProteinComp[5];          // average composition
 		
 		static const std::string NucleicAtomNames[5];
 		static const char NucleicResidueNames[5];
@@ -54,7 +49,11 @@ namespace ctruncate {
 		static const int NucleicNatoms[5];
 		static const int NucleicOatoms[5];
 		static const int NucleicPatoms[5];
-		static const float NucleicComp[5]; 
+		static const clipper::ftype NucleicComp[5]; 
+		
+        MODE _mode;                                   // mode of operation
+		std::vector<std::string> atomtype;
+		std::vector<clipper::ftype> scattering;
 		
 	};
 	
