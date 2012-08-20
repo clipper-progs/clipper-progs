@@ -750,127 +750,11 @@ namespace ctruncate {
 			printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
 		}
 	}
-	
-	void WilsonB::plot(clipper::HKL_data<clipper::data32::I_sigI>& ref, clipper::String& name)
+		
+	void WilsonB::plot(int nbins)
 	{
-		int nbins = 60;
-		const clipper::HKL_info& hklinf = intensity->hkl_info();
-		const clipper::HKL_info& hklinf_ref = ref.hkl_info();
-		int nsym = hklinf.spacegroup().num_symops();
-		
-        clipper::ftype scale = 1.0f;
-        clipper::ftype off = 0.0f;
-		if (mode == WilsonB::STRAIGHT) {
-			std::vector<clipper::ftype> xi(200), yi(200), wi(200,1.0), xxi(200), yyi(200), yy2i(200);
-			for (int i = 0 ; i != 200 ; ++i ) {
-				float res = 0.13223 + i*0.004091973;
-				float totalscat = 0;
-				for (int j=0;j!=5;++j) {
-					clipper::Atom atom;
-					atom.set_occupancy(1.0);
-					atom.set_element(WilsonB::AtomNames[j]);
-					atom.set_u_iso(0.0);
-					atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
-					clipper::AtomShapeFn sf(atom);
-					float scat = sf.f(res);
-					totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
-				}
-				yi[i] = totalscat;
-				xi[i] = _totalscat*ctruncate::BEST(res);
-			}
-			int nobs = 200;
-            clipper::ftype siga,sigb;
-			straight_line_fit(xi,yi,wi,nobs,scale,off,siga,sigb);
-		}
-		
-		//calc wilson plot (double handling unfortunately)
-		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_linear basis_fo_wilson( *intensity, nbins, 2.0 );
-		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( *intensity, 1);
-		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
-		
-		// Sigma or Normalisation curve
-		// calculate Sigma (mean intensity in resolution shell) 
-		// use intensities uncorrected for anisotropy
-		std::vector<double> params_ref( nbins, 1.0 );
-		clipper::BasisFn_spline basis_ref( ref, nbins, 2.0 );
-		TargetFn_meanInth<clipper::data32::I_sigI> target_ref( ref, 1 );
-		clipper::ResolutionFn Sigma( hklinf_ref, basis_ref, target_ref, params_ref );
-		
-		// end of Norm calc
-		
-		// wilson plot plus Norm curve
-		printf("$TABLE: Wilson plot:\n");
-		printf("$GRAPHS");
-		//printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
-		if ( _a != -1.0 ) {
-			printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4,5:\n$$", this->B());  
-			printf(" 1/resol^2 ln(I/I_th) %s Linear Best $$\n$$\n", name.c_str());
-		} else {
-			printf(": Wilson plot :A:1,2,3:\n$$");  
-			printf(" 1/resol^2 ln(I/I_th) %s $$\n$$\n", name.c_str());
-		}
-		
-		for ( int i=0; i!=nbins; ++i ) {
-			float res = maxres*(float(i)+0.5)/float(nbins); 
-			float totalscat = 0;
-			for (int j=0;j!=5;++j) {
-				clipper::Atom atom;
-				atom.set_occupancy(1.0);
-				atom.set_element(WilsonB::AtomNames[j]);
-				atom.set_u_iso(0.0);
-				atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
-				clipper::AtomShapeFn sf(atom);
-				float scat = sf.f(res);
-				totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
-			}
-			if ( _a != -1.0) 
-				printf("%10.5f %10.5f %10.5f %10.5f %10.5f\n",
-					   res,
-					   log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-					   log(basis_ref.f_s( res, Sigma.params() ))-log(totalscat),
-					   -_a*res-_b, 
-					   std::log(exp(-_a*res-_b)*(_bscale*scale*_totalscat*ctruncate::BEST(res)+_boff+off))-log(totalscat) );
-			else printf("%10.5f %10.5f %10.5f \n", 
-						res,
-						log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-						log(basis_ref.f_s( res, Sigma.params() ))-log(totalscat));
-		}
-		
-		printf("$$\n\n");
-
-	}
-	
-	void WilsonB::plot()
-	{
-		int nbins = 60;
 		const clipper::HKL_info& hklinf = intensity->hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
-		
-        clipper::ftype scale = 1.0f;
-        clipper::ftype off = 0.0f;
-		if (mode == WilsonB::STRAIGHT) {
-			std::vector<clipper::ftype> xi(200), yi(200), wi(200,1.0), xxi(200), yyi(200), yy2i(200);
-			for (int i = 0 ; i != 200 ; ++i ) {
-				float res = 0.13223 + i*0.004091973;
-				float totalscat = 0;
-				for (int j=0;j!=5;++j) {
-					clipper::Atom atom;
-					atom.set_occupancy(1.0);
-					atom.set_element(WilsonB::AtomNames[j]);
-					atom.set_u_iso(0.0);
-					atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
-					clipper::AtomShapeFn sf(atom);
-					float scat = sf.f(res);
-					totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
-				}
-				yi[i] = totalscat;
-				xi[i] = _totalscat*ctruncate::BEST(res);
-			}
-			int nobs = 200;
-            clipper::ftype siga,sigb;
-			straight_line_fit(xi,yi,wi,nobs,scale,off,siga,sigb);
-		}
 		
 		//calc wilson plot (double handling unfortunately)
 		std::vector<double> params_init( nbins, 1.0 );
@@ -882,41 +766,40 @@ namespace ctruncate {
 		printf("$GRAPHS");
 		//printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
 		if ( _a != -1.0 ) {
-			printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3,4:\n$$", this->B());  
-			printf(" 1/resol^2 ln(I/I_th) Linear Best $$\n$$\n");
-		} else {
-			printf(": Wilson plot :A:1,2,3:\n$$");  
-			printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
-		}
-					
-		for ( int i=0; i!=nbins; ++i ) {
-			float res = maxres*(float(i)+0.5)/float(nbins); 
-			float totalscat = 0;
-			for (int j=0;j!=5;++j) {
-				clipper::Atom atom;
-				atom.set_occupancy(1.0);
-				atom.set_element(WilsonB::AtomNames[j]);
-				atom.set_u_iso(0.0);
-				atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
-				clipper::AtomShapeFn sf(atom);
-				float scat = sf.f(res);
-				totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
-			}
-			if ( _a != -1.0) //printf("%10.5f %10.5f %10.5f %10.5f \n", res,log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-							//		-_a*res-_b, -_a*res-_b+std::log(ctruncate::BEST(res))-std::log(totalscat));
-					printf("%10.5f %10.5f %10.5f %10.5f \n", 
-						   res,
-						   basis_fo_wilson.f_s( res, wilsonplot.params() ),
-						   exp(-_a*res-_b)*totalscat, 
-						   exp(-_a*res-_b)*(scale*_bscale*_totalscat*ctruncate::BEST(res)+off+_boff));
-			else printf("%10.5f %10.5f \n", 
-						res,
-						log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat));
-		}
-		
-		printf("$$\n\n");
-		
-	}
+            printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3:\n$$", this->B());  
+            if (mode == BEST ) printf(" 1/resol^2 ln(I/I_th) Best $$\n$$\n");
+            else printf(" 1/resol^2 ln(I/I_th) linear $$\n$$\n");
+        } else {
+            printf(": Wilson plot :A:1,2:\n$$");  
+            printf(" 1/resol^2 ln(I/I_th) $$\n$$\n");
+        }
+        
+        for ( int i=0; i!=nbins; ++i ) {
+            float res = maxres*(float(i)+0.5)/float(nbins); 
+            float totalscat = 0;
+            for (int j=0;j!=5;++j) {
+                clipper::Atom atom;
+                atom.set_occupancy(1.0);
+                atom.set_element(WilsonB::AtomNames[j]);
+                atom.set_u_iso(0.0);
+                atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
+                clipper::AtomShapeFn sf(atom);
+                float scat = sf.f(res);
+                totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
+            }
+            if ( _a != -1.0) 
+                printf("%10.5f %10.5f %10.5f \n", 
+                       res,
+                       log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
+                       ( mode == BEST ) ? std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST(res)))-log(totalscat) : -_a*res-_b );
+            else printf("%10.5f %10.5f \n", 
+                        res,
+                        log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat));
+        }
+        
+        printf("$$\n\n");
+        
+    }
 	
 	void WilsonB::wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings& icerings)
 	// common part
@@ -943,7 +826,8 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> xi, yi, wi, xxi, yyi, yy2i; 
 		float totalscat; 
-		const float minres_scaling = 0.0625;   // 4 Angstroms
+		const float minres_scaling = 0.0517;   // 4.4 Angstroms
+        const float res_scaling = 0.0625;      // 4 Angstroms
 		const float maxres_scaling = 0.0816;    // 3.5 Angstroms
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -967,9 +851,7 @@ namespace ctruncate {
 				if (res > minres_scaling && ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell() ) ) == -1 ) ) {  
 					xi.push_back(res);
 					yi.push_back(lnS);
-					//float weight = pow(isig[ih].sigI(),2);
-                    clipper::ftype weight = isig[ih].sigI();
-					//if (res > 0.1) printf("%f\n",weight);
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();
 					if (weight > 0.0) {
 						wi.push_back(1.0/weight);
 					}
@@ -995,31 +877,9 @@ namespace ctruncate {
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		// Wilson plot
 		int nbins = 60;
+                const float res_scaling = 0.04;   // 7.5 Angstrom
 		const clipper::HKL_info& hklinf = isig.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
-		
-		{
-			std::vector<clipper::ftype> xi(200), yi(200), wi(200,1.0), xxi(200), yyi(200), yy2i(200);
-			for (int i = 0 ; i != 200 ; ++i ) {
-				float res = 0.13223 + i*0.004091973;
-				float totalscat = 0;
-				for (int j=0;j!=5;++j) {
-					clipper::Atom atom;
-					atom.set_occupancy(1.0);
-					atom.set_element(WilsonB::AtomNames[j]);
-					atom.set_u_iso(0.0);
-					atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
-					clipper::AtomShapeFn sf(atom);
-					float scat = sf.f(res);
-					totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
-				}
-				yi[i] = totalscat;
-				xi[i] = _totalscat*ctruncate::BEST(res);
-			}
-			int nobs = 200;
-            clipper::ftype siga,sigb;
-			straight_line_fit(xi,yi,wi,nobs,_bscale,_boff,siga,sigb);
-		}
 		
 		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -1043,15 +903,13 @@ namespace ctruncate {
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
-				totalscat = _bscale*_totalscat*ctruncate::BEST(res)+_boff;
+				totalscat = _totalscat*ctruncate::BEST(res);
 				lnS += log(totalscat);
 				
 				if ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell()  ) == -1 ) ) {  
 					xi.push_back(res);
 					yi.push_back(lnS);
-					//float weight = pow(isig[ih].sigI(),2);
-					float weight = ( res < 0.04 ) ? std::pow(0.04/res, 2.0)*isig[ih].sigI() : isig[ih].sigI();  //poorer fit at resolution below 7.5A
-					//if (res > 0.1) printf("%f\n",weight);
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();  //poorer fit at resolution below 7.5A
 					if (weight > 0.0) {
 						wi.push_back(1.0/weight);
 					}

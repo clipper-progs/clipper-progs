@@ -709,7 +709,7 @@ int main(int argc, char **argv)
     wilson.summary();
     prog.summary_end();
     printf("\n");
-    wilson.plot(xsig,comment);
+    wilson.plot();
     
     // apply the Truncate procedure, unless amplitudes have been input
     

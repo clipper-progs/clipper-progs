@@ -61,8 +61,7 @@ namespace ctruncate {
 	public:
 		enum MODE {STRAIGHT, BEST };
 		
-		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0), 
-		_bscale(1.0f), _boff(0.0f)
+		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0)
 		{ numatoms.resize(5); }
 		
 		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings* ice = NULL);
@@ -79,8 +78,7 @@ namespace ctruncate {
 		float sibb() {return _sigb;}
 		
 		void summary();
-		void plot ();
-		void plot(clipper::HKL_data<clipper::data32::I_sigI>& ref, clipper::String& name);
+		void plot (int nbins = 60);
 		
 	private:			
 		MODE mode;
@@ -88,9 +86,9 @@ namespace ctruncate {
         clipper::ftype _b;  // intercept
         clipper::ftype _siga; // uncertainty in intercept
         clipper::ftype _sigb; //uncertainty in b-value
-        clipper::ftype _bscale; // scale best to scattering
-        clipper::ftype _boff; //offset on best to scattering
 		clipper::HKL_data<clipper::data32::I_sigI>* intensity;
+        
+        
 		
 		bool nresidue_supplied, sequence_supplied; //book keeping
 		int nresidues; // number of residues
