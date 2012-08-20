@@ -324,6 +324,7 @@ int main(int argc, char **argv)
     //what is our working resolution (85% of I/sigI > 3.0)
     clipper::Range<double> reso_range;
     int NBINS = 60;
+    const double ACCEPTABLE = 0.85;
     ctruncate::Completeness<data32::I_sigI> compt(NBINS);
     compt(isig);
     compt.plot();
@@ -331,12 +332,12 @@ int main(int argc, char **argv)
         clipper::Range<double> range = hklinf.invresolsq_range();
         int i = 0;
         for ( ; i != NBINS-1 ; ++i) {
-            if ( compt.completeness3(compt.bin2invresolsq(i)) > 0.85 && compt.completeness3(compt.bin2invresolsq(i+1)) > 0.85 ) break;
+            if ( compt.completeness3(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
         }
         if ( i != (NBINS-1) ) {
             int j = NBINS-1;
             for ( ; j != 1 ; --j) {
-                if ( compt.completeness3(compt.bin2invresolsq(j)) > 0.85 && compt.completeness3(compt.bin2invresolsq(j-1)) > 0.85 ) break;
+                if ( compt.completeness3(compt.bin2invresolsq(j)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(j-1)) > ACCEPTABLE ) break;
             }
             if (j != 0 )
 				if (i != 0) {
