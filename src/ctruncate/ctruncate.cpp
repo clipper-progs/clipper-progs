@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     // clipper seems to use its own column labels, then append yours
     
     CCP4MTZfile mtzfile, mtzout;
-    HKL_info hklinf, hklp;
+    HKL_info hklinf;
     
     // command input
     prog.summary_beg();
@@ -181,7 +181,6 @@ int main(int argc, char **argv)
     HKL_data<data32::J_sigJ_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
     HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
     HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
-    HKL_data<data32::I_sigI> ianiso(hklinf);   // anisotropy corrected I and sigma
     HKL_data<data32::ISym> freidal_sym(hklinf);
     HKL_data<data32::Flag> free(hklinf);
     
@@ -388,10 +387,14 @@ int main(int argc, char **argv)
     prog.summary_beg();
     printf("\nANISOTROPY ANALYSIS (using intensities):\n");
     
-    for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {  
+    
+    clipper::HKL_info hkla(spgr, cell1, clipper::Resolution(resopt),true);
+    HKL_data<data32::I_sigI> ianiso(hkla);   // anisotropy corrected I and sigma
+    
+    for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
         if (reso_range.contains(ih.invresolsq() ) ) {
-        float I = isig[ih].I();
-        float sigI = isig[ih].sigI();
+        float I = isig[ih.hkl()].I();
+        float sigI = isig[ih.hkl()].sigI();
         if ( I > 0.0 ) Itotal += I;
         ianiso[ih] = clipper::data32::I_sigI( I, sigI );
         }
@@ -466,8 +469,8 @@ int main(int argc, char **argv)
         
         double scalefac = Itotal/FFtotal;
         if (debug) printf("\nscalefactor = %6.3f %8.3f %8.3f\n\n",scalefac,Itotal,FFtotal);
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            if ( !isig[ih].missing() ) {
+        for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
+            if ( !ianiso[ih].missing() ) {
                 ianiso[ih].I() *= scalefac;
                 ianiso[ih].sigI() *=scalefac;
             }
