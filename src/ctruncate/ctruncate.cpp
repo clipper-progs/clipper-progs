@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.2", "$Date: 2012/08/22" );
+    CCP4Program prog( "ctruncate", "1.8.3", "$Date: 2012/08/22" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -447,19 +447,25 @@ int main(int argc, char **argv)
     
     //want to use anisotropy correction and resolution truncation for twinning tests
     {
+        clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
+        clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
+        uaoc = uaoc+biso;
+        clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uaoc);
+        ianiso.compute(ianiso, compute_s);
+        
         double FFtotal = 0.0;
-        printf("\nANISOTROPY CORRECTION (using intensities):\n");
+        //printf("\nANISOTROPY CORRECTION (using intensities):\n");
         
-        Iscale_aniso<float> sfscl( 3.0 );
-        sfscl( ianiso);
+        //Iscale_aniso<float> sfscl( 3.0 ); 
+        //sfscl( ianiso);
         
-        printf("\nAnisotropic scaling (orthogonal coords):\n\n");
+        //printf("\nAnisotropic scaling (orthogonal coords):\n\n");
         
-        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(0,0), sfscl.u_aniso_orth(Scaling::I)(0,1), sfscl.u_aniso_orth(Scaling::I)(0,2) );
-        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(1,0), sfscl.u_aniso_orth(Scaling::I)(1,1), sfscl.u_aniso_orth(Scaling::I)(1,2) );
-        printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(2,0), sfscl.u_aniso_orth(Scaling::I)(2,1), sfscl.u_aniso_orth(Scaling::I)(2,2) );
+        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(0,0), sfscl.u_aniso_orth(Scaling::I)(0,1), sfscl.u_aniso_orth(Scaling::I)(0,2) );
+        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(1,0), sfscl.u_aniso_orth(Scaling::I)(1,1), sfscl.u_aniso_orth(Scaling::I)(1,2) );
+        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(2,0), sfscl.u_aniso_orth(Scaling::I)(2,1), sfscl.u_aniso_orth(Scaling::I)(2,2) );
         
-        printf("\n");
+        //printf("\n");
         
         for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {    
             if ( !ianiso[ih].missing() ) {

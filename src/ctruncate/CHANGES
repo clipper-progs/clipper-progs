@@ -1,3 +1,6 @@
+1.8.3
+- use ML aniso values, corrected for Biso, to scale data for twinning tests
+
 1.8.2
 - restrict resolution range for aniso to tidy plots
 
