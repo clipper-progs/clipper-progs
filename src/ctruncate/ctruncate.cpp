@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.3", "$Date: 2012/08/22" );
+    CCP4Program prog( "ctruncate", "1.8.4", "$Date: 2012/08/23" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -446,8 +446,8 @@ int main(int argc, char **argv)
     ym.plot();
     
     //want to use anisotropy correction and resolution truncation for twinning tests
+    clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
     {
-        clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
         clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
         uaoc = uaoc+biso;
         clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uaoc);
@@ -732,8 +732,43 @@ int main(int argc, char **argv)
     if (!amplitudes) {
         // scale the norm for the anisotropy
         if (aniso) {
-            Iscale_logLikeAniso<float> ascl;
-            ascl(xsig,isig);
+            /*{
+                //clipper::Range<clipper::ftype> resfilter = isig.hkl_info().invresolsq_range();
+                //std::vector<bool> mask(7,false);
+                //mask[0] = true;
+                //Iscale_logLikeAniso<float> ascl;
+                //ascl(xsig,isig);
+            }*/
+            /*{
+                for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+                    if (reso_range.contains(ih.invresolsq() ) ) {
+                        float I = isig[ih.hkl()].I();
+                        float sigI = isig[ih.hkl()].sigI();
+                        if ( I > 0.0 ) Itotal += I;
+                        ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+        }
+                }
+        
+                Iscale_logLikeAniso<float> bscl;
+                bscl(ianiso);
+                clipper::U_aniso_orth uao2 = bscl.u_aniso_orth(Scaling::F);
+                clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uao2);
+                xsig.compute(xsig, compute_s);
+                // falloff calculation (Yorgo Modis)
+                //printf("\nAnisotropic U (orthogonal coords):\n\n");
+                //printf("| %8.4f %8.4f %8.4f |\n", uao2(0,0) ,  uao2(0,1) ,  uao2(0,2)  );
+                //printf("| %8.4f %8.4f %8.4f |\n", uao2(1,0) ,  uao2(1,1) ,  uao2(1,2)  );
+                //printf("| %8.4f %8.4f %8.4f |\n", uao2(2,0) ,  uao2(2,1) ,  uao2(2,2)  );
+            }*/
+            {
+                clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
+                xsig.compute(xsig, compute_s);
+                //printf("\nAnisotropic U (orthogonal coords):\n\n");
+                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(0,0) ,  uaoc(0,1) ,  uaoc(0,2)  );
+                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(1,0) ,  uaoc(1,1) ,  uaoc(1,2)  );
+                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(2,0) ,  uaoc(2,1) ,  uaoc(2,2)  );
+
+            }
         }
         
         //user override of truncate procedure and output

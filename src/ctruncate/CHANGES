@@ -1,4 +1,8 @@
-1.8.3
+1.8.4
+- use ML aniso values, corrected for Biso, to scale prior for truncate
+- this should gain some of the speed back
+
+ 1.8.3
 - use ML aniso values, corrected for Biso, to scale data for twinning tests
 
 1.8.2
@@ -16,7 +20,7 @@ and above 85%
 1.7.1
 - make twinning test output more consistent
 
--1.7
+1.7
 - use anisotopy in prior for truncate procedure
 - no-aniso keyword now controls use of anisotropy in prior
 - anisotropy corrected for twinning statistics, now not optional
