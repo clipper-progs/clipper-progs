@@ -80,6 +80,7 @@ namespace ctruncate {
 		{}
 		void operator() (clipper::HKL_data<D>& fo, clipper::Resolution reso=clipper::Resolution() );
 		clipper::ftype completeness(const clipper::ftype invresolsq) { return _compsig[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
+        clipper::ftype completeness2(const clipper::ftype invresolsq) { return _compsig2[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
 		clipper::ftype completeness3(const clipper::ftype invresolsq) { return _compsig3[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
 		clipper::ftype standard(const clipper::ftype invresolsq) { return _standard[int( double(_nbins) * invresolsq / _reso.invresolsq_limit() - 0.001)]; }
 		clipper::ftype bin2invresolsq(const int i) { return _reso.invresolsq_limit()*(double(i)+0.5)/double(_nbins);; }

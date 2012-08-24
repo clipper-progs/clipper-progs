@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.4", "$Date: 2012/08/23" );
+    CCP4Program prog( "ctruncate", "1.8.5", "$Date: 2012/08/24" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
     //what is our working resolution (85% of I/sigI > 3.0)
     clipper::Range<double> reso_range;
     int NBINS = 60;
-    const double ACCEPTABLE = 0.85;
+    double ACCEPTABLE = 0.85;
     ctruncate::Completeness<data32::I_sigI> compt(NBINS);
     compt(isig);
     compt.plot();
@@ -353,15 +353,59 @@ int main(int argc, char **argv)
             }
         }
     }
+    
     prog.summary_beg();
+    double rr = 0.0;
     printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
-    printf("\nUsing I/sigI > 3 with completeness above 0.85, the estimated useful\nResolution Range ");
-    printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+    if ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
+        printf("WARNING: The resolution range with I/sigI > 3  and completeness above %4.2f could not be\n",ACCEPTABLE);
+        printf("         determined.  This data is of poor quality.\n\n");
+    } else {
+        printf("\nUsing I/sigI > 3 with completeness above %4.2f, the estimated useful\nResolution Range ",ACCEPTABLE);
+        printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+        rr = 1.0/std::sqrt(reso_range.min() ) - 1.0/std::sqrt(reso_range.max() );
+    }
     prog.summary_end();
     printf("\n");
-    printf("The high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
-    
-    
+
+    // how big is reso_range
+    {
+        if ( rr < 2.0 ) {
+            printf("WARNING: The resolution range with I/sigI > 3 with completeness above 0.85 is small\n");
+            do {
+                printf("         Recalculating using I/sigI > 2 with completeness aboue %4.2f for\n",ACCEPTABLE);
+                printf("         use in the following statistics, which must be treated with extreme caution\n\n");
+                int i = 0;
+                clipper::Range<double> range = hklinf.invresolsq_range();
+                for ( ; i != NBINS-1 ; ++i) {
+                    if ( compt.completeness2(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
+                }
+                if ( i != (NBINS-1) ) {
+                    int j = NBINS-1;
+                    for ( ; j != 1 ; --j) {
+                        if ( compt.completeness2(compt.bin2invresolsq(j)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(j-1)) > ACCEPTABLE ) break;
+                    }
+                    if (j != 0 )
+                        if (i != 0) {
+                            float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
+                            reso_range.include(d);
+                        } else {
+                            reso_range.include(range.min() );
+                        }
+                    if (j != NBINS-1 ) {
+                        float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
+                        reso_range.include(d);	
+                    } else {
+                        reso_range.include(range.max() );
+                    }
+                }
+                rr = ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(reso_range.min() ) - 1.0/std::sqrt(reso_range.max() );
+                ACCEPTABLE -= 0.1;
+            } while ( rr < 4.0);
+        }
+    }
+    printf("\nThe high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
+
     // limit resolution of Patterson calculation for tNCS (default 4 A), or set to
     // limit from completeness analysis
     invopt = reso_range.max();
@@ -746,9 +790,9 @@ int main(int argc, char **argv)
                         float sigI = isig[ih.hkl()].sigI();
                         if ( I > 0.0 ) Itotal += I;
                         ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-        }
+                    }
                 }
-        
+
                 Iscale_logLikeAniso<float> bscl;
                 bscl(ianiso);
                 clipper::U_aniso_orth uao2 = bscl.u_aniso_orth(Scaling::F);
