@@ -254,7 +254,7 @@ namespace ctruncate {
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 			}
 		}
 		
@@ -560,7 +560,7 @@ namespace ctruncate {
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 			}
 		}
 		
@@ -1019,7 +1019,7 @@ namespace ctruncate {
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) {
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) {
                 fo1[ih] = f;
                 n += 1.0f;
             }
@@ -1798,7 +1798,7 @@ namespace ctruncate {
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			D f = fo[ih.hkl()];
-			if ( obs(f) >= this->nsig_ * sigobs(f) ) fo1[ih] = f;
+			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) fo1[ih] = f;
 		}
 		}
 		

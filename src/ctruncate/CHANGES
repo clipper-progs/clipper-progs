@@ -1,3 +1,6 @@
+1.8.6
+- update for gcc 4.7
+
 1.8.5
 - allow poorer data to be used
 
