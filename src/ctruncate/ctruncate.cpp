@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.6", "$Date: 2012/09/10" );
+    CCP4Program prog( "ctruncate", "1.8.7", "$Date: 2012/09/17" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -443,8 +443,10 @@ int main(int argc, char **argv)
         ianiso[ih] = clipper::data32::I_sigI( I, sigI );
         }
     }
-    
-    AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+    try { 
+        AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+    } catch (clipper::Message_fatal) {
+    }
     
     uao = llscl.u_aniso_orth(Scaling::I);
     

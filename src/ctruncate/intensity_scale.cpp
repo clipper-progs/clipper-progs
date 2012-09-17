@@ -1179,7 +1179,7 @@ namespace ctruncate {
      convergence with difficult bases/target conbinations */
     ResolutionFn_nonlinear::ResolutionFn_nonlinear( const clipper::HKL_info& hkl_info, const clipper::BasisFn_base& basisfn, const clipper::TargetFn_base& targetfn, 
 															 const std::vector<clipper::ftype>& params, const std::vector<bool>& mask, 
-															 const clipper::ftype damp, const bool debug )
+															 const clipper::ftype damp, const bool debug ) throw(clipper::Message_fatal)
     {
         clipper::ftype r0, r1, w, scale, g, s, dotprod;
         
@@ -1228,7 +1228,9 @@ namespace ctruncate {
             }
             g = sqrt(g);
             s = sqrt(s);
-            
+
+            if (std::isnan(g)) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: gradient is Nan"));
+ 
             // make gradient shift to match NR shift
             for ( int k = 0; k != nparams; ++k ) shiftg[k] = drdp[k] * s / g;
             
@@ -1286,6 +1288,7 @@ namespace ctruncate {
     ResolutionFn_nonlinear_rest::ResolutionFn_nonlinear_rest( const clipper::HKL_info& hkl_info, const clipper::BasisFn_base& basisfn, const clipper::TargetFn_base& targetfn, 
 															 const std::vector<clipper::ftype>& params, const std::vector<bool>& mask, 
         const ctruncate::RestraintFn_base& restraint,const clipper::ftype damp, const bool debug )
+        throw(clipper::Message_fatal)
     {
         clipper::ftype r0, r1, w, scale, g, s, dotprod;
         
@@ -1340,7 +1343,9 @@ namespace ctruncate {
             }
             g = sqrt(g);
             s = sqrt(s);
-            
+           
+            if (std::isnan(g)) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: gradient is Nan")); 
+
             // make gradient shift to match NR shift
             for ( int k = 0; k != nparams; ++k ) shiftg[k] = drdp[k] * s / g;
             

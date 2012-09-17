@@ -137,9 +137,9 @@ namespace ctruncate {
                                     const clipper::BasisFn_base& basisfn, 
                                     const clipper::TargetFn_base& targetfn, 
                                     const std::vector<clipper::ftype>& params, 
-									const std::vector<bool>& mask,
+			        	const std::vector<bool>& mask,
                                     const clipper::ftype damp = 0.0, 
-                                    const bool debug = false );
+                                    const bool debug = false ) throw(clipper::Message_fatal);
 		
     };
 	
@@ -175,10 +175,10 @@ namespace ctruncate {
                                     const clipper::BasisFn_base& basisfn, 
                                     const clipper::TargetFn_base& targetfn, 
                                     const std::vector<clipper::ftype>& params, 
-									const std::vector<bool>& mask,
+					const std::vector<bool>& mask,
                                     const ctruncate::RestraintFn_base& restraint,
                                     const clipper::ftype damp = 0.0, 
-                                    const bool debug = false );
+                                    const bool debug = false ) throw(clipper::Message_fatal);
 		
     protected:
         const RestraintFn_base* restfn_;   //!< retraints function        
