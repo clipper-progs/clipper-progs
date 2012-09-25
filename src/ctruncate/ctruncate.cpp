@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.7", "$Date: 2012/09/17" );
+    CCP4Program prog( "ctruncate", "1.8.8", "$Date: 2012/09/24" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -426,6 +426,7 @@ int main(int argc, char **argv)
     
     // anisotropy estimation
     clipper::U_aniso_orth uao;
+    clipper::U_aniso_orth uaoc;
     double Itotal = 0.0;
     
     prog.summary_beg();
@@ -445,10 +446,13 @@ int main(int argc, char **argv)
     }
     try { 
         AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+        uao = llscl.u_aniso_orth(Scaling::I);
+        uaoc = llscl.u_aniso_orth(Scaling::F);
     } catch (clipper::Message_fatal) {
+        CCP4::ccperror(1, "Anisotropy correction failed.");
     }
     
-    uao = llscl.u_aniso_orth(Scaling::I);
+    //uao = llscl.u_aniso_orth(Scaling::I);
     
     // Eigenvalue calculation
     AnisoDirection<float> direction(uao);
@@ -492,7 +496,7 @@ int main(int argc, char **argv)
     ym.plot();
     
     //want to use anisotropy correction and resolution truncation for twinning tests
-    clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
+    //clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
     {
         clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
         uaoc = uaoc+biso;
