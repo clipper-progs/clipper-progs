@@ -228,7 +228,7 @@ namespace ctruncate {
 			twin_cell[3] = cell.alpha();
 			twin_cell[4] = cell.beta();
 			twin_cell[5] = cell.gamma();
-			for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) for (int k = 0 ; k != 3 ; ++k ) vv[i][j][k] = rot[i](j,k);
+			for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) for (int k = 0 ; k != 3 ; ++k ) vv[i][j][k] = rot[i](k,j);
 			for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) ww[i][j] = trans[i][j];
 		}
 		
