@@ -577,9 +577,9 @@ namespace ctruncate {
 		
 		straight_line_fit(x,y,weights,_nbins,a,b,siga,sigb);
 		
-		_P000 = std::exp(-a);
+		_P000 = std::exp(-b);
 		
-		float btemp = 0.25*b;
+		float btemp = 0.25*a;
 		
 		_sigma = std::sqrt(1.0f/std::abs(2.0f*btemp) );
 		
