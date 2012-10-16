@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.8.9", "$Date: 2012/10/15" );
+    CCP4Program prog( "ctruncate", "1.9.0", "$Date: 2012/10/16" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -69,6 +69,7 @@ int main(int argc, char **argv)
     bool freein = false;
     bool amplitudes = false;
     bool anomalous = false;
+    bool is_nucl = false;
     
     int mtzinarg = 0;
     int mtzoutarg = 0;
@@ -145,6 +146,8 @@ int main(int argc, char **argv)
             aniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
             amplitudes = true;
+        } else if ( args[arg] == "-nucleic" ) {
+            is_nucl = true;
         } else if ( args[arg] == "-debug" ) {
             debug = true;
         } else if ( args[arg] == "-i" ) {
@@ -749,17 +752,23 @@ int main(int argc, char **argv)
     //nprm = 60*std::max(int(sqrt(float(Nreflections))),nbins );
     clipper::MMoleculeSequence seq;
     
-    WilsonB wilson( WilsonB::BEST);
+	WilsonB::MODE wilson_flag;
+	if (is_nucl) {
+		wilson_flag = WilsonB::RNA;
+	} else { 
+		wilson_flag = WilsonB::BEST;
+	}
+    WilsonB wilson( wilson_flag);
     if ( ipseq != "NONE" ) {
         clipper::SEQfile seqf;
         seqf.read_file( ipseq );
         seqf.import_molecule_sequence( seq );
         MPolymerSequence poly = seq[0];
-        wilson(isig,poly,&icerings);
+        wilson(isig,poly,&reso_range, &icerings);
     } else if (nresidues > 0) {
-        wilson(isig,nresidues,&icerings);
+        wilson(isig,nresidues,&reso_range, &icerings);
     } else {
-        wilson(isig,&icerings);
+        wilson(isig,&reso_range,&icerings);
     }		
     // end of Norm calc
     clipper::String comment("Smooth");

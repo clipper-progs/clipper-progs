@@ -59,16 +59,16 @@ namespace ctruncate {
 	
 	class WilsonB {
 	public:
-		enum MODE {STRAIGHT, BEST };
+		enum MODE {STRAIGHT, BEST, RNA };
 		
 		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0)
 		{ numatoms.resize(5); }
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings* ice = NULL);
+		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, ctruncate::Rings* ice = NULL);
+		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, ctruncate::Rings* ice = NULL);
+		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
 		float a() {return _a;}
 		float b() {return _b;}
@@ -87,6 +87,7 @@ namespace ctruncate {
         clipper::ftype _siga; // uncertainty in intercept
         clipper::ftype _sigb; //uncertainty in b-value
 		clipper::HKL_data<clipper::data32::I_sigI>* intensity;
+		clipper::Range<clipper::ftype> activeRange; //range of data used in calculation
         
         
 		
@@ -96,16 +97,18 @@ namespace ctruncate {
 		int _totalscat;  //number of scattering electrons in cell (scale for BEST)
 		float maxres;
 		
-		static const std::string AtomNames[5];  //atom names
-		static const char ResidueNames[21];  //residue names
-		static const int Catoms[21];         // number of C per residue
-		static const int Hatoms[21];         // number of H per residue
-		static const int Natoms[21];         // number of N per residue
-		static const int Oatoms[21];         // number of O per residue
-		static const int Satoms[21];         // number of S per residue
+		static const std::string AtomNames[];  //atom names
+		static const char ResidueNames[];  //residue names
+		static const int Catoms[];         // number of C per residue
+		static const int Hatoms[];         // number of H per residue
+		static const int Natoms[];         // number of N per residue
+		static const int Oatoms[];         // number of O per residue
+		static const int Satoms[];         // number of S per residue
+		static const int Patoms[];         // number of P per residue
 		
-		void wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings& ice);
-		void wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings& ice);
+		void wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
+		void wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
+		void wilson_rna(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
 	};
 		
 }

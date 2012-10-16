@@ -13,6 +13,7 @@
 #include "intensity_scale.h"
 #include "intensity_target.h"
 #include "best.h"
+#include "best_rna.h"
 
 namespace ctruncate {
 
@@ -623,29 +624,48 @@ namespace ctruncate {
 	}
 	
 	
-	const std::string WilsonB::AtomNames[5] = { "C", "N", "O", "H", "S" };
-	const char WilsonB::ResidueNames[21] = {'A','R','N','D','C','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V'};
-	const int WilsonB::Catoms[21] = { 3,  6,  4,  4,  3,  3,  5,  5,  2,  6,  6,  6,  6,  5,  9,  5,  3,  4, 11,  9,  5 };
-	const int WilsonB::Hatoms[21] = { 7, 14,  8,  7,  7,  7, 10,  9,  5,  9, 13, 13, 14, 11, 11,  9,  7,  9, 12, 11, 11 };
-	const int WilsonB::Natoms[21] = { 1,  4,  2,  1,  1,  1,  2,  1,  1,  3,  1,  1,  2,  1,  1,  1,  1,  1,  2,  1,  1 };
-	const int WilsonB::Oatoms[21] = { 2,  2,  3,  4,  2,  2,  3,  4,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  2,  3,  2 };
-	const int WilsonB::Satoms[21] = { 0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 };
+	const std::string WilsonB::AtomNames[] = { "C", "N", "O", "H", "S", "P" };
+	const char WilsonB::ResidueNames[] = {'A','R','N','D','C','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V','A','T','G','C','U'};
+	const int WilsonB::Catoms[] = { 3,  6,  4,  4,  3,  3,  5,  5,  2,  6,  6,  6,  6,  5,  9,  5,  3,  4, 11,  9,  5,  10,  10,  10,  9,  9 };
+	const int WilsonB::Hatoms[] = { 7, 14,  8,  7,  7,  7, 10,  9,  5,  9, 13, 13, 14, 11, 11,  9,  7,  9, 12, 11, 11, 11, 12, 11, 11, 10 };
+	const int WilsonB::Natoms[] = { 1,  4,  2,  1,  1,  1,  2,  1,  1,  3,  1,  1,  2,  1,  1,  1,  1,  1,  2,  1,  1,  5,  2,  5,  3,  2 };
+	const int WilsonB::Oatoms[] = { 2,  2,  3,  4,  2,  2,  3,  4,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  2,  3,  2,  5,  7,  6,  6,  8 };
+	const int WilsonB::Satoms[] = { 0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 };
+	const int WilsonB::Patoms[] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1 };
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings *ice)
+	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
 		const clipper::HKL_info& hklinf = isig.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		maxres = hklinf.resolution().invresolsq_limit();
 		intensity = &isig;
+		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
 		
-		nresidues = int(0.5*hklinf.cell().volume()/(nsym*157)); 
-		numatoms[0] = 5.35*nresidues;
-		numatoms[1] = int(1.45*nresidues);
-		numatoms[2] = int(2.45*nresidues);
-		numatoms[3] = 9.85*nresidues;
-		numatoms[4] = int(0.1*nresidues);
+		//nresidues = int(hklinf.cell().volume()/(nsym*157)); 
+		// using average MW of 307.3Da, and median inv. density of 2.34 A3/Da (64% solvent)
+		// Kantardjieff and Rupp, Protein Science (2003) 12:1865
+		// values are for monophosphate RNA
+		if ( mode == RNA ) {   //9.6, 3.4, 6.4, 11.0, 0.0, 1.0
+			nresidues = int(hklinf.cell().volume()/(nsym*719.1));
+			numatoms[0] = int(9.6*nresidues);
+			numatoms[1] = int(3.4*nresidues);
+			numatoms[2] = int(6.4*nresidues);
+			numatoms[3] = int(11.0*nresidues);
+			numatoms[4] = 0;
+			numatoms[5] = 1;
+		} else {
+			// using average MW of 136.8Da, and median inv. density of 2.52 A3/Da (47% solvent)
+			// Kantardjieff and Rupp, Protein Science (2003) 12:1865
+			nresidues = int(hklinf.cell().volume()/(nsym*344.7));
+			numatoms[0] = int(5.35*nresidues);
+			numatoms[1] = int(1.45*nresidues);
+			numatoms[2] = int(2.45*nresidues);
+			numatoms[3] = int(9.85*nresidues);
+			numatoms[4] = int(0.1*nresidues);
+			numatoms[5] = 0;
+		}			
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0;
+		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
@@ -653,29 +673,42 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 		if (mode == BEST ) {
-			wilson_best(isig, *ice);
+			wilson_best(isig, activeRange, *ice);
+		} else if (mode == RNA ) {
+			wilson_rna(isig, activeRange, *ice);
 		} else {
-			wilson_straight(isig, *ice);
+			wilson_straight(isig, activeRange, *ice);
 		}
 		
 		return this->B();
 	}
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, ctruncate::Rings *ice)
+	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
 		nresidue_supplied = true;
 		const clipper::HKL_info& hklinf = isig.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		maxres = hklinf.resolution().invresolsq_limit();
 		intensity = &isig;
+		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
 		
-		numatoms[0] = 5.35*nresidues;
-		numatoms[1] = int(1.45*nresidues);
-		numatoms[2] = int(2.45*nresidues);
-		numatoms[3] = 9.85*nresidues;
-		numatoms[4] = int(0.1*nresidues);
+		if ( mode == RNA ) {   //9.6, 3.4, 6.4, 11.0, 0.0, 1.0
+			numatoms[0] = int(9.6*nresidues);
+			numatoms[1] = int(3.4*nresidues);
+			numatoms[2] = int(6.4*nresidues);
+			numatoms[3] = int(11.0*nresidues);
+			numatoms[4] = 0;
+			numatoms[5] = 1;
+		} else {
+			numatoms[0] = int(5.35*nresidues);
+			numatoms[1] = int(1.45*nresidues);
+			numatoms[2] = int(2.45*nresidues);
+			numatoms[3] = int(9.85*nresidues);
+			numatoms[4] = int(0.1*nresidues);
+			numatoms[5] = 0;
+		}			
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0;
+		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
@@ -683,37 +716,57 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 			if (mode == BEST ) {
-				wilson_best(isig, *ice);
+				wilson_best(isig, activeRange, *ice);
+			} else if ( mode == RNA ) {
+				wilson_rna(isig, activeRange, *ice);
 			} else {
-				wilson_straight(isig, *ice);
+				wilson_straight(isig, activeRange, *ice);
 			}
 		
 		return this->B();
 	}
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, ctruncate::Rings *ice)
+	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
 		nresidue_supplied = true;
 		const clipper::HKL_info& hklinf = isig.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		maxres = hklinf.resolution().invresolsq_limit();
 		intensity = &isig;
+		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
 		
 		clipper::String sequence = poly.sequence();
-		for (int i=0; i != sequence.length(); ++i) {
-			for (int j=0; j<21; j++) {
-				if (sequence[i] == ResidueNames[j]) {
-					numatoms[0] += Catoms[j];
-					numatoms[1] += Natoms[j];
-					numatoms[2] += Oatoms[j];
-					numatoms[3] += Hatoms[j];
-					numatoms[4] += Satoms[j];
-					break;
+		if ( mode == RNA ) {
+			for (int i=0; i != sequence.length(); ++i) {
+				for (int j=21; j != 26; j++) {
+					if (sequence[i] == ResidueNames[j]) {
+						numatoms[0] += Catoms[j];
+						numatoms[1] += Natoms[j];
+						numatoms[2] += Oatoms[j];
+						numatoms[3] += Hatoms[j];
+						numatoms[4] += Satoms[j];
+						numatoms[5] += Patoms[j];
+						break;
+					}
+				}
+			}
+		} else {			
+			for (int i=0; i != sequence.length(); ++i) {
+				for (int j=0; j!=21; j++) {
+					if (sequence[i] == ResidueNames[j]) {
+						numatoms[0] += Catoms[j];
+						numatoms[1] += Natoms[j];
+						numatoms[2] += Oatoms[j];
+						numatoms[3] += Hatoms[j];
+						numatoms[4] += Satoms[j];
+						numatoms[5] += Patoms[j];
+						break;
+					}
 				}
 			}
 		}
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0;
+		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
@@ -721,9 +774,11 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 			if (mode == BEST ) {
-				wilson_best(isig, *ice);
+				wilson_best(isig, activeRange, *ice);
+			} else if ( mode == RNA ) {
+				wilson_rna(isig, activeRange, *ice);
 			} else {
-				wilson_straight(isig, *ice);
+				wilson_straight(isig, activeRange, *ice);
 			}
 				
 		return this->B();
@@ -744,6 +799,7 @@ namespace ctruncate {
 		printf("\nResults Wilson plot:\n");
 		if ( _a != 0.0 ) {
 			if ( mode == BEST ) printf("Computed using Popov & Bourenkov, Acta D (2003) D59, 1145\n");
+			if ( mode == RNA ) printf("Computed using RNA reference set\n");
 			printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",this->B(),_b,_siga,_sigb);
 			printf("scale factor on intensity = %10.4f\n\n",this->intercept());
 		} else {
@@ -768,6 +824,7 @@ namespace ctruncate {
 		if ( _a != -1.0 ) {
             printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3:\n$$", this->B());  
             if (mode == BEST ) printf(" 1/resol^2 ln(I/I_th) Best $$\n$$\n");
+			else if (mode == RNA ) printf(" 1/resol^2 ln(I/I_th) RNA $$\n$$\n");
             else printf(" 1/resol^2 ln(I/I_th) linear $$\n$$\n");
         } else {
             printf(": Wilson plot :A:1,2:\n$$");  
@@ -791,7 +848,8 @@ namespace ctruncate {
                 printf("%10.5f %10.5f %10.5f \n", 
                        res,
                        log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-                       ( mode == BEST ) ? std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST(res)))-log(totalscat) : -_a*res-_b );
+                       ( mode == BEST ) ? std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST(res)))-log(totalscat) :  
+					   ( mode == RNA ) ? std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST_rna(res)))-log(totalscat) :  -_a*res-_b );
             else printf("%10.5f %10.5f \n", 
                         res,
                         log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat));
@@ -801,7 +859,7 @@ namespace ctruncate {
         
     }
 	
-	void WilsonB::wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings& icerings)
+	void WilsonB::wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -831,12 +889,12 @@ namespace ctruncate {
 		const float maxres_scaling = 0.0816;    // 3.5 Angstroms
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+			if ( resfilter.contains(ih.invresolsq() ) && !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
 				totalscat = 0;
-				for (int i=0;i!=5;++i) {
+				for (int i=0;i!=6;++i) {
 					clipper::Atom atom;
 					atom.set_occupancy(1.0);
 					atom.set_element(WilsonB::AtomNames[i]);
@@ -864,14 +922,20 @@ namespace ctruncate {
 		
 		int nobs = xi.size();
 
-		if ( wi.size() > 200 && maxres > maxres_scaling) {               // 3.5 Angstroms
+		if ( wi.size() > 200 ) {
 			_a = _b = 0.0f;
-			straight_line_fit(xi,yi,wi,nobs,_a,_b,_siga,_sigb);
+			try {
+				straight_line_fit(xi,yi,wi,nobs,_a,_b,_siga,_sigb);
+			} catch (...) {
+				_a = _b = clipper::Util::nan();
+			}
+		} else {
+			_a = _b = clipper::Util::nan();
 		}
 	}
 	
 	
-	void WilsonB::wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, ctruncate::Rings& icerings)
+	void WilsonB::wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -899,7 +963,7 @@ namespace ctruncate {
 		float totalscat; 
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+			if ( resfilter.contains(ih.invresolsq() ) && !isig[ih].missing() && wilsonplot.f(ih) > 0.0 ) {
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
@@ -921,10 +985,78 @@ namespace ctruncate {
 		}
 		
 		int nobs = xi.size();
+		if ( wi.size() > 200 ) {
+			_a = _b = 0.0f;
+			try {
+			straight_line_fit(xi,yi,wi,nobs,_a,_b,_siga,_sigb);
+			} catch (...) {
+				_a = _b = clipper::Util::nan();
+			}
+		} else {
+			_a = _b = clipper::Util::nan();
+		}
+	}
+	
+	void WilsonB::wilson_rna(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
+	// common part
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		// Wilson plot
+		int nbins = 60;
+		const float res_scaling = 0.04;   // 7.5 Angstrom
+		const clipper::HKL_info& hklinf = isig.hkl_info();
+		int nsym = hklinf.spacegroup().num_symops();
+		
+		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.hkl().invresolsq(hklinf.cell());
+			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
+			//if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( icerings.InRing(reso) != -1 ) 
+				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}		
+		
+		std::vector<double> params_init( nbins, 1.0 );
+		clipper::BasisFn_linear basis_fo_wilson( xsig, nbins, 2.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
+		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
+		
+		std::vector<clipper::ftype> xi, yi, wi, xxi, yyi, yy2i; 
+		float totalscat; 
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( resfilter.contains(ih.invresolsq() )  && !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+				float lnS = -log(wilsonplot.f(ih));
+				float res = ih.invresolsq();
+				
+				totalscat = _totalscat*ctruncate::BEST_rna(res);
+				lnS += log(totalscat);
+				
+				if ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell()  ) == -1 ) ) {  
+					xi.push_back(res);
+					yi.push_back(lnS);
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();  //poorer fit at resolution below 7.5A
+					if (weight > 0.0) {
+						wi.push_back(1.0/weight);
+					}
+					else {
+						wi.push_back(0.0);
+					}
+				}
+			}
+		}
+		
+		int nobs = xi.size();
 		
 		if ( wi.size() > 200 ) {
 			_a = _b = 0.0f;
-			straight_line_fit(xi,yi,wi,nobs,_a,_b,_siga,_sigb);
+			try {
+				straight_line_fit(xi,yi,wi,nobs,_a,_b,_siga,_sigb);
+			} catch (...) {
+				_a = _b = clipper::Util::nan();
+			}
+		} else {
+			_a = _b = clipper::Util::nan();
 		}
 	}
 	

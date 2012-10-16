@@ -74,6 +74,7 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/ctruncate_wilson.cpp \
 				  src/ctruncate/intensity_scale.cpp \
 				  src/ctruncate/best.cpp \
+                                  src/ctruncate/best_rna.cpp \
 				  src/ctruncate/ctruncate_utils.h \
 				  src/ctruncate/cpsf_utils.h \
 				  src/ctruncate/twinlaws.h \
@@ -86,6 +87,7 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/ctruncate_wilson.h \
 				  src/ctruncate/intensity_scale.h \
 				  src/ctruncate/best.h \
+                                  src/ctruncate/best_rna.h \
 				  src/ctruncate/intensity_target.h \
 				  src/ctruncate/alt_hkl_datatypes.h
 
