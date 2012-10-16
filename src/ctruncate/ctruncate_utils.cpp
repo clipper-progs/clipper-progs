@@ -219,10 +219,10 @@ namespace ctruncate
 	}
 	//--------------------------------------------------------------
 	void Rings::AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI,
-					   const double& invresolsq)
+					   const double& invresolsq, const double& multiplicity)
 	{
 		CheckRing(Iring);
-		rings[Iring].AddObs(I_sigI, invresolsq);
+		rings[Iring].AddObs(I_sigI, invresolsq, multiplicity );
 	}
 	//--------------------------------------------------------------
 	void Rings::SetReject(const int& Iring)
@@ -261,7 +261,7 @@ namespace ctruncate
 		return rings[Iring].MeanSSqr();
 	}
 	//--------------------------------------------------------------
-	int Rings::N(const int& Iring) const
+	double Rings::N(const int& Iring) const
 	{
 		CheckRing(Iring);
 		return rings[Iring].N();
@@ -292,12 +292,12 @@ namespace ctruncate
 		reject = false;
 	}
 	//--------------------------------------------------------------
-	void IceRing::AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq)
+	void IceRing::AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq, const double& multiplicity)
 	{
-		sum_I += I_sigI.I();
-		sum_sigI += I_sigI.sigI();
-		sum_sSqr += invresolsq;
-		nI++;
+		sum_I += multiplicity*I_sigI.I();
+		sum_sigI += multiplicity*I_sigI.sigI();
+		sum_sSqr += multiplicity*invresolsq;
+		nI+=multiplicity;
 	}
 	//--------------------------------------------------------------
 	double IceRing::MeanI() const

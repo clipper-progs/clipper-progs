@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.9.0", "$Date: 2012/10/16" );
+    CCP4Program prog( "ctruncate", "1.9.1", "$Date: 2012/10/16" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -596,8 +596,9 @@ int main(int argc, char **argv)
         if ( !isig[ih].missing() )
             if (! ih.hkl_class().centric() ) {
                 double reso = ih.hkl().invresolsq(hklinf.cell());
+				float mult=spgr.num_symops()/ih.hkl_class().epsilon();
                 int ice = icerings.InRing(reso);
-                if ( ice != -1 ) icerings.AddObs(ice,isig[ih],reso); //symmetry?
+                if ( ice != -1 ) icerings.AddObs(ice,isig[ih],reso,mult ); 
             }
     }
     
@@ -619,35 +620,45 @@ int main(int argc, char **argv)
         std::vector<float> icemeas(icerings.Nrings(),0.0);
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
             double reso = ih.hkl().invresolsq(hklinf.cell());
+			float mult=spgr.num_symops()/ih.hkl_class().epsilon();
             int ring=icerings.InRing(reso);
             if ( ring == -1 ) {
                 int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
                 //if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
                 if ( bin < nbins && bin >= 0 ) {
-                    sumov[bin] += 1.0;
-                    if ( !isig[ih].missing() ) summeas[bin] += 1.0;
+                    sumov[bin] += mult;
+                    if ( !isig[ih].missing() ) summeas[bin] += mult;
                 }
             } else {
                 if ( ring <  icerings.Nrings() && ring >= 0 ) {
-                    iceov[ring] += 1.0;
-                    if ( !isig[ih].missing() ) icemeas[ring] += 1.0;
+                    iceov[ring] += mult;
+                    if ( !isig[ih].missing() ) icemeas[ring] += mult;
                 }
             }
         }
         // smooth the mean values, also means values are over 3 bins so hopefully get fewer empty bins
-        for (int i = 0 ; i != nbins ; ++i ) {
-            if ( i == 0 ) {
-                sumov[i] += sumov[i+1];
-                summeas[i] += summeas[i+1];
-            } else if ( i == (nbins-1) ) {
-                sumov[i] += sumov[i-1];
-                summeas[i] += summeas[i-1];
-            } else {
-                sumov[i] += sumov[i+1] + sumov[i-1];
-                summeas[i] += summeas[i+1] + summeas[i-1];
-            }
+		{
+			float tmp1, tmp2, tmp3, tmp4;
+			tmp1 = sumov[0];
+			tmp2 = summeas[0];
+			for (int ii = 0 ; ii != nbins ; ++ii) {
+				if (ii == 0 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
+				} else if ( ii == 299 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
+				} else {
+					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
+				}
+				tmp1 = sumov[ii];
+				tmp2 = summeas[ii];
+				sumov[ii] = tmp3;
+				summeas[ii] = tmp4;
+			}
         }
-        
+		        
         HKL_data<data32::I_sigI> tr1(hklinf);
         tr1 = data32::I_sigI(1.0f,1.0f);
         for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( ih.hkl_class().epsilon() ); //tage into account  epsilon
@@ -687,14 +698,27 @@ int main(int argc, char **argv)
         TargetFn_meanInth<clipper::data32::I_sigI> target_ice( xsig, 1 );
         clipper::ResolutionFn Sigma( hklinf, basis_ice, target_ice, params_ice );
         
+		std::vector<float> expectedI(icerings.Nrings(),0.0);
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+            double reso = ih.hkl().invresolsq(hklinf.cell());
+			float mult=spgr.num_symops();
+            int ring=icerings.InRing(reso);
+            if ( ring != -1 ) {
+				if ( ring <  icerings.Nrings() && ring >= 0 ) {
+                    expectedI[ring] += mult*exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+                }
+            }
+        }
+		
         for (int i = 0; i != icerings.Nrings(); ++i) {
             bool reject = false;
             float reso = icerings.MeanSSqr(i);
             if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
                 float imean = icerings.MeanI(i);
                 float sigImean = icerings.MeanSigI(i);
-                float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-                if ((imean-expectedI)/sigImean > iceTolerance) reject = true;
+				expectedI[i]/=iceov[i];
+                //float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+                if ((imean-expectedI[i])/sigImean > iceTolerance) reject = true;
             }
             icerings.SetReject(i, reject);
         }
@@ -718,8 +742,9 @@ int main(int argc, char **argv)
                     int bin = int( double(nbins) * reso / maxres - 0.001);
                     float imean = icerings.MeanI(i);
                     float sigImean = icerings.MeanSigI(i);
-                    float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-                    printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI,(imean-expectedI)/sigImean,icemeas[i]/iceov[i],summeas[bin]/sumov[bin]);
+                    //float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+                    printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI[i],
+						   (imean-expectedI[i])/sigImean,icemeas[i]/iceov[i],summeas[bin]/sumov[bin]);
                 }
             }
         }

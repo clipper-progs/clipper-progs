@@ -36,7 +36,7 @@ namespace ctruncate {
 		// Clear intensity sums
 		void ClearSums();
 		// Add in IsigI, use clipper version for now rather than pointless version
-		void AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq);
+		void AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq,const double& multiplicity=1.0);
 		
 		void SetReject() {reject=true;}
 		void SetReject(const bool& Rej) {reject=Rej;}
@@ -45,7 +45,7 @@ namespace ctruncate {
 		double MeanI() const;
 		double MeanSigI() const;
 		double MeanSSqr() const;
-		int N() const {return nI;}
+		double N() const {return nI;}
 		
 		// Reject flag, true means reject reflection in this range
 		bool Reject() const {return reject;}
@@ -56,7 +56,7 @@ namespace ctruncate {
 		double sum_I;
 		double sum_sigI;
 		double sum_sSqr;
-		int nI;
+		double nI;
 		bool reject;
 	};
 	//--------------------------------------------------------------
@@ -88,7 +88,7 @@ namespace ctruncate {
 		// Clear intensity sums
 		void ClearSums();
 		// Add in IsigI
-		void AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq);
+		void AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq, const double& multiplicity=1.0);
 		
 		void SetReject(const int& Iring);
 		void SetReject(const int& Iring, const bool& Rej);
@@ -99,7 +99,7 @@ namespace ctruncate {
 		double MeanSSqr(const int& Iring) const;
 		// Reject flag, true means reject reflection in this range
 		bool Reject(const int& Iring) const; 
-		int N(const int& Iring) const;
+		double N(const int& Iring) const;
 		
 	private:
 		int nrings;
