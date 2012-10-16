@@ -14,6 +14,7 @@
 #include "ctruncate_wilson.h"
 #include "cpsf_utils.h"
 #include "best.h"
+#include "best_rna.h"
 #include <cmath>
 
 #define ASSERT assert
@@ -1026,17 +1027,27 @@ namespace ctruncate {
         const clipper::HKL_info& hklinf = isig.hkl_info();
         clipper::Cell cell(hklinf.cell());
         clipper::Spacegroup spgr(hklinf.spacegroup());
-        
+		clipper::HKL_data<DATA> Ibest(hklinf);
+		
         //generate reference scattering curve (initially protein only)
+		if (protein) {
         Scattering scat;
         clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
         
-        clipper::HKL_data<DATA> Ibest(hklinf);
 		for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
             T reso = ih.invresolsq();
             Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
 		} // scale against BEST
-        
+        } else {
+			Scattering scat(Scattering::NUCLEIC);
+			clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
+			
+			for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
+				T reso = ih.invresolsq();
+				Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST_rna(reso), 1.0f);
+			} // scale against BEST
+			
+		}
         _iscale( Ibest, isig );
 
         return ;
