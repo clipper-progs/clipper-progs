@@ -1,4 +1,7 @@
-1.10.9
+1.10.1
+- fix issue of going out of range in moments plot
+
+1.10.0
 - use flat prior when request, or when have tNCS or twinning
 - implementation is based on acentric case for Wilson prior
 

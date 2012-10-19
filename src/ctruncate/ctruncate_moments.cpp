@@ -40,9 +40,12 @@ namespace ctruncate {
 				double I = isig[ih].I() / ih.hkl_class().epsilon();
 				int bin = int( nbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
 				int cbin = int( ncbins * pow( ih.invresolsq() / double(maxres), 1.0 ) - 0.5  );
-				if (bin >= nbins || bin < 0) printf("Warning: (moments) illegal bin number %d\n", bin);
 				//printf("%3d %11.4f %11.6f\n",bin,I,ih.invresolsq());
 				if (!ih.hkl_class().centric()) {
+					if (bin >= nbins || bin < 0) {
+						printf("Warning: (moments) illegal bin number %d\n", bin);
+						continue;
+					}					
 					Na[bin]++;
 					if (I > 0.0) {
 						E1a[bin] += sqrt(I);
@@ -54,8 +57,11 @@ namespace ctruncate {
 					}
 				}
 				else if (ncentric != 0) {
+					if (cbin >= ncbins || cbin < 0) {
+						printf("Warning: (moments) illegal cbin number %d\n", cbin);
+						continue;
+					}
 					Nc[cbin]++;
-					if (cbin >= ncbins || cbin < 0) printf("Warning: (moments) illegal cbin number %d\n", cbin);
 					if (I > 0.0) {
 						E1c[cbin] += sqrt(I);
 						I1c[cbin] += I;
