@@ -267,8 +267,8 @@ namespace ctruncate {
 				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 				//ih.hkl_class().epsilon());
 				if (iflag) {
-					jsig[ih].I() = J;
-					jsig[ih].sigI() = sigJ;
+					jsig[ih].I() = J*weight;
+					jsig[ih].sigI() = sigJ*weight;
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
@@ -314,8 +314,8 @@ namespace ctruncate {
 				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 				//ih.hkl_class().epsilon());
 				if (iflag) {
-					jsig[ih].I_pl() = J;
-					jsig[ih].sigI_pl() = sigJ;
+					jsig[ih].I_pl() = J*weight;
+					jsig[ih].sigI_pl() = sigJ*weight;
 					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
 					fsig[ih].f_pl() = F*scalef*sqwt;
 					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
@@ -342,8 +342,8 @@ namespace ctruncate {
 				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 				//ih.hkl_class().epsilon());
 				if (iflag) {
-					jsig[ih].I_mi() = J;
-					jsig[ih].sigI_mi() = sigJ;
+					jsig[ih].I_mi() = J*weight;
+					jsig[ih].sigI_mi() = sigJ*weight;
 					//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
 					fsig[ih].f_mi() = F*scalef*sqwt;
 					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
@@ -385,8 +385,8 @@ namespace ctruncate {
 				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 				//ih.hkl_class().epsilon());
 				if (iflag) {
-					jsig[ih].I() = J;
-					jsig[ih].sigI() = sigJ;
+					jsig[ih].I() = J*weight;
+					jsig[ih].sigI() = sigJ*weight;
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
@@ -432,8 +432,8 @@ namespace ctruncate {
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 					//ih.hkl_class().epsilon());
 					if (iflag) {
-						jsig[ih].I_pl() = J;
-						jsig[ih].sigI_pl() = sigJ;
+						jsig[ih].I_pl() = J*weight;
+						jsig[ih].sigI_pl() = sigJ*weight;
 						//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
 						fsig[ih].f_pl() = F*scalef*sqwt;
 						fsig[ih].sigf_pl() = sigF*scalef*sqwt;
@@ -460,8 +460,8 @@ namespace ctruncate {
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 					//ih.hkl_class().epsilon());
 					if (iflag) {
-						jsig[ih].I_mi() = J;
-						jsig[ih].sigI_mi() = sigJ;
+						jsig[ih].I_mi() = J*weight;
+						jsig[ih].sigI_mi() = sigJ*weight;
 						//jsig[ih] = datatypes::I_sigI_ano<float>( J, sigJ );
 						fsig[ih].f_mi() = F*scalef*sqwt;
 						fsig[ih].sigf_mi() = sigF*scalef*sqwt;
@@ -474,5 +474,229 @@ namespace ctruncate {
 		return(1);
 	}
 	
+	// flat prior should be the same as acentric wilson (normal function) without the correction for Sigma
+	int truncate_flat(float I, float sigma, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
+	{
+		// look up tables calculated using quadpack
+		// tables give values from h = -4.0 to h = 10.0 in steps of 0.1
+		// declare as doubles for now, to avoid compiler warnings  
+		
+		double ZJ[] = {
+			
+			0.22561, 0.23037, 0.23531, 0.24046, 0.24581, 0.25139, 0.25721, 0.26327, 0.26959, 0.27620,
+            0.28310, 0.29031, 0.29787, 0.30577, 0.31406, 0.32274, 0.33186, 0.34143, 0.35150, 0.36208,
+            0.37322, 0.38495, 0.39731, 0.41036, 0.42413, 0.43868, 0.45406, 0.47033, 0.48755, 0.50580,
+            0.52514, 0.54564, 0.56740, 0.59050, 0.61503, 0.64108, 0.66876, 0.69817, 0.72942, 0.76262,
+            0.79788, 0.83533, 0.87507, 0.91722, 0.96188, 1.00916, 1.05915, 1.11192, 1.16756, 1.22611,
+            1.28760, 1.35205, 1.41944, 1.48974, 1.56288, 1.63879, 1.71735, 1.79844, 1.88189, 1.96756,
+            2.05525, 2.14478, 2.23597, 2.32863, 2.42258, 2.51764, 2.61365, 2.71046, 2.80794, 2.90596,
+            3.00444, 3.10327, 3.20239, 3.30172, 3.40123, 3.50087, 3.60061, 3.70042, 3.80029, 3.90020,
+            4.00013, 4.10009, 4.20006, 4.30004, 4.40002, 4.50002, 4.60001, 4.70001, 4.80000, 4.90000,
+            5.00000, 5.10000, 5.20000, 5.30000, 5.40000, 5.50000, 5.60000, 5.70000, 5.80000, 5.90000,
+            6.00000, 6.10000, 6.20000, 6.30000, 6.40000, 6.50000, 6.60000, 6.70000, 6.80000, 6.90000,
+            7.00000, 7.10000, 7.20000, 7.30000, 7.40000, 7.50000, 7.60000, 7.70000, 7.80000, 7.90000,
+            8.00000, 8.10000, 8.20000, 8.30000, 8.40000, 8.50000, 8.60000, 8.70000, 8.80000, 8.90000,
+            9.00000, 9.10000, 9.20000, 9.30000, 9.40000, 9.50000, 9.60000, 9.70000, 9.80000, 9.90000,
+            10.00000  };
+		
+		double ZJSD[] = {
+			
+			0.21604, 0.22024, 0.22459, 0.22910, 0.23377, 0.23861, 0.24362, 0.24882, 0.25422, 0.25982,
+            0.26563, 0.27167, 0.27794, 0.28446, 0.29124, 0.29828, 0.30562, 0.31324, 0.32118, 0.32945,
+            0.33805, 0.34701, 0.35634, 0.36606, 0.37618, 0.38671, 0.39768, 0.40910, 0.42099, 0.43335,
+            0.44620, 0.45956, 0.47343, 0.48781, 0.50272, 0.51815, 0.53410, 0.55056, 0.56751, 0.58494,
+            0.60281, 0.62109, 0.63974, 0.65869, 0.67789, 0.69726, 0.71673, 0.73619, 0.75555, 0.77470,
+            0.79353, 0.81192, 0.82977, 0.84696, 0.86339, 0.87895, 0.89357, 0.90718, 0.91972, 0.93117,
+            0.94152, 0.95076, 0.95894, 0.96609, 0.97226, 0.97755, 0.98200, 0.98573, 0.98880, 0.99130,
+            0.99331, 0.99491, 0.99617, 0.99715, 0.99790, 0.99847, 0.99890, 0.99921, 0.99945, 0.99961,
+            0.99973, 0.99982, 0.99988, 0.99992, 0.99995, 0.99996, 0.99998, 0.99999, 0.99999, 0.99999,
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000,
+            1.00000  };
+		
+		double ZF[] = {
+			
+			0.42336, 0.42789, 0.43256, 0.43736, 0.44232, 0.44742, 0.45266, 0.45809, 0.46370, 0.46950,
+            0.47549, 0.48168, 0.48810, 0.49473, 0.50161, 0.50873, 0.51611, 0.52378, 0.53173, 0.53999,
+            0.54857, 0.55749, 0.56677, 0.57643, 0.58650, 0.59696, 0.60788, 0.61927, 0.63115, 0.64354,
+            0.65648, 0.66999, 0.68410, 0.69884, 0.71424, 0.73033, 0.74715, 0.76471, 0.78305, 0.80220,
+            0.82218, 0.84301, 0.86472, 0.88732, 0.91082, 0.93522, 0.96052, 0.98672, 1.01379, 1.04171,
+            1.07043, 1.09992, 1.13013, 1.16097, 1.19239, 1.22431, 1.25663, 1.28928, 1.32215, 1.35516,
+            1.38822, 1.42125, 1.45416, 1.48689, 1.51936, 1.55153, 1.58334, 1.61476, 1.64576, 1.67632,
+            1.70644, 1.73609, 1.76528, 1.79402, 1.82231, 1.85016, 1.87758, 1.90459, 1.93121, 1.95743,
+            1.98329, 2.00880, 2.03396, 2.05879, 2.08331, 2.10752, 2.13144, 2.15508, 2.17845, 2.20156,
+            2.22441, 2.24703, 2.26940, 2.29155, 2.31347, 2.33519, 2.35669, 2.37799, 2.39910, 2.42001,
+            2.44074, 2.46129, 2.48167, 2.50187, 2.52191, 2.54179, 2.56150, 2.58107, 2.60048, 2.61974,
+            2.63887, 2.65785, 2.67669, 2.69540, 2.71397, 2.73242, 2.75074, 2.76894, 2.78702, 2.80498,
+            2.82282, 2.84055, 2.85816, 2.87567, 2.89307, 2.91036, 2.92755, 2.94464, 2.96163, 2.97852,
+            2.99531, 3.01201, 3.02862, 3.04513, 3.06156, 3.07789, 3.09414, 3.11030, 3.12638, 3.14237,
+            3.15829  };
+		
+		double ZFSD[] = {
+			
+			0.21534, 0.21742, 0.21956, 0.22174, 0.22399, 0.22629, 0.22871, 0.23112, 0.23360, 0.23614,
+            0.23877, 0.24145, 0.24419, 0.24701, 0.24989, 0.25286, 0.25590, 0.25902, 0.26222, 0.26550,
+            0.26886, 0.27230, 0.27583, 0.27944, 0.28309, 0.28690, 0.29075, 0.29468, 0.29867, 0.30274,
+            0.30687, 0.31106, 0.31529, 0.31956, 0.32386, 0.32816, 0.33246, 0.33673, 0.34095, 0.34510,
+            0.34915, 0.35307, 0.35683, 0.36039, 0.36372, 0.36678, 0.36951, 0.37190, 0.37389, 0.37544,
+            0.37653, 0.37711, 0.37716, 0.37667, 0.37561, 0.37398, 0.37179, 0.36906, 0.36581, 0.36207,
+            0.35789, 0.35332, 0.34841, 0.34323, 0.33783, 0.33228, 0.32663, 0.32095, 0.31529, 0.30968,
+            0.30416, 0.29878, 0.29355, 0.28848, 0.28360, 0.27891, 0.27440, 0.27009, 0.26596, 0.26201,
+            0.25823, 0.25462, 0.25116, 0.24784, 0.24466, 0.24161, 0.23868, 0.23586, 0.23314, 0.23053,
+            0.22800, 0.22556, 0.22321, 0.22093, 0.21872, 0.21658, 0.21451, 0.21250, 0.21054, 0.20865,
+            0.20680, 0.20501, 0.20326, 0.20156, 0.19990, 0.19828, 0.19670, 0.19516, 0.19366, 0.19220,
+            0.19076, 0.18936, 0.18799, 0.18665, 0.18534, 0.18406, 0.18281, 0.18158, 0.18037, 0.17919,
+            0.17804, 0.17690, 0.17579, 0.17470, 0.17363, 0.17257, 0.17154, 0.17053, 0.16953, 0.16856,
+            0.16760, 0.16665, 0.16572, 0.16481, 0.16391, 0.16303, 0.16216, 0.16131, 0.16047, 0.15964,
+            0.15882  };
+		
+		float h,x,delta;
+		int n;
+		
+        const float LIMIT1(10.0);
+		// Bayesian statistics tells us to modify I/sigma by subtracting off sigma/S
+		// where S is the mean intensity in the resolution shell
+		h = I/sigma;
+		// reject as unphysical reflections for which I < -3.7 sigma, or h < -4.0
+		if (I/sigma < -3.7 || h < -4.0 ) {
+			nrej++;
+			if (debug) printf("unphys: %f %f %f\n",I,sigma,h);
+			return(0);
+		}
+		else {
+			if (h < LIMIT1) {
+				// use look up table if -4.0 < h < 10.0
+				x = 10.0*(h+4.0);
+				n = int(x);
+				delta = x-n;
+				// linear interpolation
+				J = (1.0-delta)*ZJ[n] + delta*ZJ[n+1];
+				sigJ = (1.0-delta)*ZJSD[n] + delta*ZJSD[n+1];
+				F = (1.0-delta)*ZF[n] + delta*ZF[n+1];
+				sigF = (1.0-delta)*ZFSD[n] + delta*ZFSD[n+1];
+				// look up table gives J/sigma, so multiply by sigma to get output intensity
+				J *= sigma;
+				sigJ *= sigma;
+				F *= sqrt(sigma);
+				sigF *= sqrt(sigma);
+			}
+			else {
+				// if h > 10.0 intensities are unchanged by truncate
+				J = h*sigma;
+				sigJ = sigma;
+				F = sqrt(J);
+				sigF = 0.5*sigma/F;
+			}
+			return(1);
+		}
+	}
+	
+	// flat prior of Sivia and David, based on PDE of F
+	int truncate_sivia(float I, float sigma, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
+	{
+		if (I/sigma < -3.7 || I < -4.0 ) {
+			nrej++;
+			if (debug) printf("unphys: %f %f\n",I,sigma);
+			return(0);
+		}
+		F = 0.5*std::sqrt(2.0*I+std::sqrt(4.0*I*I+8.0*sigma*sigma));
+		sigF = 1.0/std::sqrt( (1.0/(F*F))+2.0*(3.0*F*F-I)/(sigma*sigma) );
+		J = F*F;
+		sigJ = 2.0*std::sqrt(I)*sigF;
+		return(1);
+ 	}
+	
+	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		float J, sigJ, F, sigF;
+		int iflag;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
+				float I = isig[ih].I();
+				float sigma = isig[ih].sigI();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);
+				if (iflag) {
+					jsig[ih].I() = J*weight;
+					jsig[ih].sigI() = sigJ*weight;
+					fsig[ih].f() = F*scalef*sqwt;
+					fsig[ih].sigf() = sigF*scalef*sqwt;
+				}
+			}
+		}
+		return(1);
+	}
+	
+	
+	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+	
+	// takes anomalous I's as input for flat prior
+	
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		float J, sigJ, F, sigF;
+		float invr2 = reso.invresolsq_limit();
+		int iflag;
+		
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
+				float I = isig[ih].I_pl();
+				float sigma = isig[ih].sigI_pl();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);	
+				if (iflag) {
+					jsig[ih].I_pl() = J*weight;
+					jsig[ih].sigI_pl() = sigJ*weight;
+					fsig[ih].f_pl() = F*scalef*sqwt;
+					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+				}
+			}
+			
+			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
+				float I = isig[ih].I_mi();
+				float sigma = isig[ih].sigI_mi();
+				clipper::HKL hkl = ih.hkl();
+				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float sqwt = sqrt(weight);
+				
+				I /= weight;
+				sigma /= weight;
+				
+				iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);	
+				if (iflag) {
+					jsig[ih].I_mi() = J*weight;
+					jsig[ih].sigI_mi() = sigJ*weight;
+					fsig[ih].f_mi() = F*scalef*sqwt;
+					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+				}
+			}
+		}
+		return(1);
+	}
 
+	
 } //end namespace

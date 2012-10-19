@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.9.1", "$Date: 2012/10/16" );
+    CCP4Program prog( "ctruncate", "1.10.0", "$Date: 2012/10/18" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -63,6 +63,8 @@ int main(int argc, char **argv)
     clipper::String ipfile = "NONE";
     clipper::String twintest = "first_principles";
     clipper::String ipseq = "NONE";
+	clipper::String composition = "protein";
+	clipper::String prior_select = "auto";
     
     bool aniso = true;
     bool debug = false;
@@ -78,6 +80,9 @@ int main(int argc, char **argv)
     int nresidues = 0;
     int nprm = 60;
     
+	enum MODE {AUTO,WILSON,FLAT};
+	MODE prior = AUTO;
+	
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
     clipper::Resolution reso_Twin;
     clipper::Resolution reso_trunc;
@@ -146,8 +151,10 @@ int main(int argc, char **argv)
             aniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
             amplitudes = true;
-        } else if ( args[arg] == "-nucleic" ) {
-            is_nucl = true;
+        } else if ( args[arg] == "-comp" ) {
+			if ( ++arg < args.size() ) composition = args[arg];
+		} else if ( args[arg] == "-prior" ) {
+			if ( ++arg < args.size() ) prior_select = args[arg];
         } else if ( args[arg] == "-debug" ) {
             debug = true;
         } else if ( args[arg] == "-i" ) {
@@ -168,7 +175,12 @@ int main(int argc, char **argv)
     if ( args.size() <= 1 ) {
         CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
     }
+	
+	if ( composition == "nucleic" ) is_nucl = true;
     
+	if ( prior_select == "wilson" ) prior = WILSON;
+	else if ( prior_select == "flat" ) prior = FLAT;
+		
     if (mtzinarg == 0) CCP4::ccperror(1, "No input mtz file");
     
     typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -857,10 +869,16 @@ int main(int argc, char **argv)
         
         //user override of truncate procedure and output
         if (!reso_u3.is_null() ) {
-                reso_trunc = clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
+                reso_trunc = 
+			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
         }
+		if ( prior == AUTO && (tncs.hasNCS() || 0.440 > lval) ) {
+			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
+			prior = FLAT;
+		}
         if (anomalous) {
-            truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig_ano, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
+            else truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
             int iwarn = 0;
             for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
                 freidal_sym[ih].isym() = 0; //mimic old truncate
@@ -893,12 +911,16 @@ int main(int argc, char **argv)
         }
         
         else {
-            truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
+            if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
+			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
         }
     }
     printf("\n");
     prog.summary_beg();
     printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
+	if ( prior == FLAT ) printf("Calculation using flat prior\n");
+	else printf("Calculation using Wilson prior\n");
+	
     printf("%d intensities have been rejected as unphysical\n", nrej);
     prog.summary_end();
     printf("\n");

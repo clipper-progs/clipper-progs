@@ -29,7 +29,8 @@
 <b>-nres </b><i>number of residues</i>
 <b>-no-aniso </b>
 <b>-amplitudes </b>
-<b>-nucleic </b>
+<b>-comp </b><i>nucleic or protein</i>
+<b>-prior </b><i>wilson or flat</i>
 <br />
 [<a href="#keywords">Keyworded input</a>]</p>
 
@@ -114,10 +115,16 @@ of residues will be estimated assuming 50% solvent content.</i></h3>
 
 <p> Input data is structure factors rather than intensities.</p>
 
-<h3><a name="nucleic"></a>-nucleic </h3>
+<h3><a name="nucleic"></a>-comp nucleic </h3>
 
 <p> Nucleic acid reference curve to be used in Wilson calculation. For complexes and
 proteins the Best reference curve is used.</p>
+
+<h3><a name="prior"></a>-prior flat  or -prior wilson</h3>
+
+<p>Force the use of either the <em>flat</em> or <em>wilson</em> prior for the truncate calculaton.
+The default is to use the <em>wilson</em> prior execpt in cases with twinning or tNCS where the
+wilson distribution may not apply.</p>
 
 </blockquote>
 

@@ -1,3 +1,7 @@
+1.10.9
+- use flat prior when request, or when have tNCS or twinning
+- implementation is based on acentric case for Wilson prior
+
 1.9.1
 - correct Ice Rings statistic as we are working with merged data, unlike aimless
 
