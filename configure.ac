@@ -16,7 +16,15 @@ AM_PROG_CC_C_O
 
 AC_PROGS_OPTIONS
 
-AX_PTHREAD([], [AC_MSG_ERROR([Failed to find threading library])])
+# pthreads are used by clipper only on Unix. We need to know pthread flags
+# for linking with static clipper library.
+case $host_os in
+  cygwin* | mingw* | pw32* | cegcc*)
+    ;;
+  *)
+    AX_PTHREAD
+    ;;
+esac
 
 AC_SEARCH_LIBS(cos, m, , AC_MSG_ERROR([need math library]))
 
