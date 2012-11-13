@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.10.1", "$Date: 2012/10/18" );
+    CCP4Program prog( "ctruncate", "1.10.2", "$Date: 2012/11/13" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -478,7 +478,7 @@ int main(int argc, char **argv)
     printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
     printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
     if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
-    float ratio = std::min(v[0],std::min(v[1],v[2]) )/max;
+    float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
     invopt *= ratio;
     resopt = 1.0/sqrt(invopt);
     printf("Resolution limit in weakest direction = %7.3f A\n",resopt);

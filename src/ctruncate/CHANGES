@@ -1,3 +1,6 @@
+1.10.2
+- use mean anisotropic eigenvalue when computing poorest resolution cuttoff
+
 1.10.1
 - fix issue of going out of range in moments plot
 
