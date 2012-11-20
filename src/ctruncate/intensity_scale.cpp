@@ -1098,8 +1098,8 @@ namespace ctruncate {
         const int& np = num_params();
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
-        clipper::ftype Adet2 = params[1]*params[2]+params[1]*params[3]+params[2]*params[3];
-        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*(sigma_*sigma_/Adet2);
+        clipper::ftype Adet2 = (params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6];
+        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
         
         clipper::ftype d = std::fabs(params[1]-Uiso)+std::fabs(params[2]-Uiso)+std::fabs(params[3]-Uiso)+2.0*(params[4]+params[5]+params[6]);
         clipper::ftype d2 = std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
@@ -1155,8 +1155,9 @@ namespace ctruncate {
         const int& np = num_params();
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
-        clipper::ftype Adet2 = params[1]*params[2]+params[1]*params[3]+params[2]*params[3];
-        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*(sigma_*sigma_/Adet2);
+        clipper::ftype Adet2 = (params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6];
+        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
+
         
         clipper::ftype d2 = std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
             +std::fabs(params[2]-Uiso)*std::fabs(params[2]-Uiso)

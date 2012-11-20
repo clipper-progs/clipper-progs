@@ -48,18 +48,17 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.10.2", "$Date: 2012/11/13" );
+    CCP4Program prog( "ctruncate", "1.11.0", "$Date: 2012/11/13" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
     clipper::String outcol = "";
     clipper::String freecol = "/*/*/[FreeR_flag]";
     clipper::String appendcol = "";
-    clipper::String meancol = "/*/*/[IMEAN,SIGIMEAN]";
-    //clipper::String meancol = "NONE";
-    clipper::String pluscol = "/*/*/[I(+),SIGI(+)]";
-    clipper::String minuscol = "/*/*/[I(-),SIGI(-)]";
-    clipper::String anocols = "/*/*/[I(+),SIGI(+),I(-),SIGI(-)]";
+	clipper::String meancol = "NONE";
+    clipper::String pluscol = "";
+    clipper::String minuscol = "";
+    clipper::String anocols = "NONE";
     clipper::String ipfile = "NONE";
     clipper::String twintest = "first_principles";
     clipper::String ipseq = "NONE";
@@ -71,6 +70,7 @@ int main(int argc, char **argv)
     bool freein = false;
     bool amplitudes = false;
     bool anomalous = false;
+	bool refl_mean = false;
     bool is_nucl = false;
     
     int mtzinarg = 0;
@@ -113,6 +113,7 @@ int main(int argc, char **argv)
             }
         } else if ( args[arg] == "-colin" ) {
             if ( ++arg < args.size() ) meancol = args[arg];
+			refl_mean = true;
         } else if ( args[arg] == "-colplus" ) {
             if ( ++arg < args.size() ) pluscol = args[arg];
             anomalous = true;
@@ -172,7 +173,7 @@ int main(int argc, char **argv)
         clipper::CCP4MTZ_type_registry::add_type( "ISym", "Y", 1.0);
         clipper::CCP4MTZ_type_registry::add_group( "ISym", "ISYM" );
     }
-    if ( args.size() <= 1 ) {
+    if ( args.size() <= 1 || ( !refl_mean && !anomalous )) {
         CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
     }
 	
@@ -192,35 +193,33 @@ int main(int argc, char **argv)
     HKL_data<data32::I_sigI> isig(hklinf);   // raw I and sigma
     HKL_data<data32::I_sigI> jsig(hklinf);   // post-truncate I and sigma
     HKL_data<data32::F_sigF> fsig(hklinf);   // post-truncate F and sigma 
-    HKL_data<data32::J_sigJ_ano> isig_ano(hklinf);   // raw I(+) and sigma and I(-) and sigma
+    HKL_data<data32::J_sigJ_ano> isig_ano_import(hklinf);   // raw I(+) and sigma and I(-) and sigma
     HKL_data<data32::J_sigJ_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
     HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
     HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
     HKL_data<data32::ISym> freidal_sym(hklinf);
     HKL_data<data32::Flag> free(hklinf);
     
-    //  clipper::MTZcrystal cxtl;
-    //  mtzfile.import_crystal( cxtl, meancol );
-    //  clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf, cxtl );  // don't seem to need crystal info
     clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
     
-    if (amplitudes) {
-        mtzfile.import_hkl_data( fsig, meancol );
-    }
-    else {
-        //meancol = "/*/*/[" + meancol + ",SIG" + meancol + "]";
-        mtzfile.import_hkl_data( isig, meancol );
+    if (amplitudes ) {
+        if ( refl_mean ) {
+			mtzfile.import_hkl_data( fsig, meancol );
+		}
+		if (anomalous) {
+            mtzfile.import_hkl_data( fsig_ano, anocols );
+        }		
+    } else {
+        if ( refl_mean ) mtzfile.import_hkl_data( isig, meancol );
         
         if (anomalous) {
-            mtzfile.import_hkl_data( isig_ano, anocols );
-            //pluscol = "/*/*/[" + pluscol + ",SIG" + pluscol + "]";
-            //mtzfile.import_hkl_data( isig_plus, pluscol );
-            //minuscol = "/*/*/[" + minuscol + ",SIG" + minuscol + "]";
-            //mtzfile.import_hkl_data( isig_minus, minuscol );
+            mtzfile.import_hkl_data( isig_ano_import, anocols );
         }
     }
     if (freein) mtzfile.import_hkl_data( free, freecol );
     
+	clipper::String mcol = ( refl_mean ) ? meancol : anocols;
+	
     prog.summary_beg();
     printf("\nCRYSTAL INFO:\n\n");
     std::cout << "Crystal/dataset names: " << mtzfile.assigned_paths()[0].notail() << "\n"; 
@@ -251,19 +250,54 @@ int main(int argc, char **argv)
     
     MTZdataset cset; 
     MTZcrystal cxtl; 
-    mtzfile.import_crystal ( cxtl, meancol );
-    mtzfile.import_dataset ( cset, meancol );
+    mtzfile.import_crystal ( cxtl, mcol );
+    mtzfile.import_dataset ( cset, mcol );
     
     mtzfile.close_read();
-    
-    if (amplitudes) {
-        for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-            if ( !fsig[ih].missing() )
-                //isig[ih] = datatypes::I_sigI<float>( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
-                isig[ih] = clipper::data32::I_sigI( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
-            //printf("%f %f \n",fsig[ih].f(), isig[ih].I() );
-        }
-    }
+	
+	// reconstruct Imean if it was not given
+    if ( refl_mean ) {
+		if (amplitudes) {
+			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+				if ( !fsig[ih].missing() )
+					isig[ih] = clipper::data32::I_sigI( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
+			}
+		}
+	} else {
+		if ( amplitudes) {
+			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+				if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
+					isig[ih].I() = 0.5*(std::pow(fsig_ano[ih].f_pl(),2.0f) + std::pow(fsig_ano[ih].f_mi(), 2.0f));
+					isig[ih].sigI() = 
+					0.5*std::sqrt(std::pow( 2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(), 2.0f ) + std::pow( 2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 2.0f ) );
+				} else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
+					isig[ih].I() = std::pow(fsig_ano[ih].f_pl(),2.0f);
+					isig[ih].sigI() = 2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl();
+				} else if ( !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
+					isig[ih].I() = std::pow(fsig_ano[ih].f_mi(),2.0f);
+					isig[ih].sigI() = 2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi();
+				} else {
+					isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
+				}
+			}
+		} else {
+			for ( HRI ih = isig_ano_import.first(); !ih.last(); ih.next() ) {
+				if ( !Util::is_nan(isig_ano_import[ih].I_pl() )  &&  !Util::is_nan(isig_ano_import[ih].I_mi() ) ) {
+					isig[ih].I() = 0.5 * ( isig_ano_import[ih].I_pl() + isig_ano_import[ih].I_mi() );
+					isig[ih].sigI() = 0.5*std::sqrt(std::pow( isig_ano_import[ih].sigI_pl(), 2.0f ) + std::pow( isig_ano_import[ih].sigI_mi(), 2.0f ) );
+				} else if ( !Util::is_nan(isig_ano_import[ih].I_pl() ) ) {
+					isig[ih].I() = isig_ano_import[ih].I_pl();
+					isig[ih].sigI() = isig_ano_import[ih].sigI_pl();
+				} else if ( !Util::is_nan(isig_ano_import[ih].I_mi() ) ) {
+					isig[ih].I() = isig_ano_import[ih].I_mi();
+					isig[ih].sigI() = isig_ano_import[ih].sigI_mi();
+				} else {
+					isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
+				}			
+			}				
+		}
+	}
+			
     
     int Ncentric = 0;
     int Nreflections = 0;
@@ -877,8 +911,8 @@ int main(int argc, char **argv)
 			prior = FLAT;
 		}
         if (anomalous) {
-			if (prior == FLAT ) truncate( isig_ano, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
-            else truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
+            else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
             int iwarn = 0;
             for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
                 freidal_sym[ih].isym() = 0; //mimic old truncate
@@ -970,7 +1004,7 @@ int main(int argc, char **argv)
     // anomalous signal
     if (anomalous ) {
         if (amplitudes) AnomStats<float> anomstats(fsig_ano);
-        else AnomStats<float> anomstats(isig_ano);
+        else AnomStats<float> anomstats(isig_ano_import);
     }
     
     
@@ -1082,10 +1116,11 @@ int main(int argc, char **argv)
         mtzout.export_hkl_info( hkl_list );
         //mtzout.export_hkl_data( jsig, outcol );
         clipper::String labels;
-        if (appendcol == "") labels = outcol + "[F,SIGF]";
-        else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
-        mtzout.export_hkl_data( fsig, labels );
-        
+		if ( refl_mean ) {
+			if (appendcol == "") labels = outcol + "[F,SIGF]";
+			else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
+			mtzout.export_hkl_data( fsig, labels );
+        }
         if (freein) {
             if (appendcol != "") {
                 String::size_type loc = freecol.find("]",0);
@@ -1093,7 +1128,7 @@ int main(int argc, char **argv)
             }
             mtzout.export_hkl_data( free, outcol + freecol.tail() );
         }
-        
+
         if (anomalous) {
             if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
             else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
@@ -1105,14 +1140,18 @@ int main(int argc, char **argv)
             else labels = outcol + "[ISYM_" + appendcol + "]";
             mtzout.export_hkl_data( freidal_sym, labels );
         }
-        if (appendcol != "") {
-            String::size_type loc = meancol.find(",",0);
-            meancol.insert(loc,"_"+appendcol);
-            loc = meancol.find("]",0);
-            meancol.insert(loc,"_"+appendcol);
+		
+		//output original input
+		if ( refl_mean ) {
+			if (appendcol != "") {
+				String::size_type loc = meancol.find(",",0);
+				meancol.insert(loc,"_"+appendcol);
+				loc = meancol.find("]",0);
+				meancol.insert(loc,"_"+appendcol);
+			}
+			mtzout.export_hkl_data( isig, outcol + meancol.tail() );
         }
-        mtzout.export_hkl_data( isig, outcol + meancol.tail() );
-        
+		
         if (anomalous) {
             if (appendcol != "") {
                 String::size_type loc = anocols.find("+",0);
@@ -1126,7 +1165,7 @@ int main(int argc, char **argv)
                 loc = anocols.find("-",loc+1);
                 anocols.insert(loc-1,"_"+appendcol);
             }
-            mtzout.export_hkl_data( isig_ano, outcol + anocols.tail() );
+            mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );
         }
         
         //mtzout.close_append();
