@@ -1,3 +1,6 @@
+1.11.1
+- correct anomalous measurebility plot and phil plot for anonalous input
+
 1.11.0
 - allow use of friedal pairs, without Imean
 

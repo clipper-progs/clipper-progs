@@ -1225,7 +1225,7 @@ namespace ctruncate {
 		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
 		for(int i=0;i!=nbins;++i){
 			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i1])/float(sumov[i1]));
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i])/float(sumov[i]));
 		}
 		printf("$$\n\n");
         
@@ -1343,7 +1343,7 @@ namespace ctruncate {
 		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
 		for(int i=0;i!=nbins;++i){
 			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i1])/float(sumov[i1]));
+			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i])/float(sumov[i]));
 		}
 		printf("$$\n\n");
     }

@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.11.0", "$Date: 2012/11/13" );
+    CCP4Program prog( "ctruncate", "1.11.1", "$Date: 2012/11/20" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -942,6 +942,21 @@ int main(int argc, char **argv)
                     Dano[ih].sigd() = 0.0;
                 }
             }
+			// use for phil plot
+			if (!refl_mean ) {
+				for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+					if ( !Util::is_nan(jsig_ano[ih].I_pl() )  &&  !Util::is_nan(jsig_ano[ih].I_mi() ) ) {
+						jsig[ih].I() = 0.5 * ( jsig_ano[ih].I_pl() + jsig_ano[ih].I_mi() );
+						jsig[ih].sigI() = 0.5 * sqrt( pow( jsig_ano[ih].sigI_pl(), 2 ) + pow( jsig_ano[ih].sigI_mi(), 2 ) );					
+					} else if ( !Util::is_nan(jsig_ano[ih].I_pl() ) ) {
+						jsig[ih].I() = jsig_ano[ih].I_pl();
+						jsig[ih].sigI() = jsig_ano[ih].sigI_pl();
+					} else if ( !Util::is_nan(jsig_ano[ih].I_mi() ) ) {
+						jsig[ih].I() = jsig_ano[ih].I_mi();
+						jsig[ih].sigI() = jsig_ano[ih].sigI_mi();
+					}
+				}
+			}
         }
         
         else {
