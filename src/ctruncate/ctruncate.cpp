@@ -48,7 +48,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.11.1", "$Date: 2012/11/20" );
+    CCP4Program prog( "ctruncate", "1.11.2", "$Date: 2012/11/21" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -266,34 +266,18 @@ int main(int argc, char **argv)
 	} else {
 		if ( amplitudes) {
 			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-				if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
-					isig[ih].I() = 0.5*(std::pow(fsig_ano[ih].f_pl(),2.0f) + std::pow(fsig_ano[ih].f_mi(), 2.0f));
-					isig[ih].sigI() = 
-					0.5*std::sqrt(std::pow( 2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(), 2.0f ) + std::pow( 2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 2.0f ) );
-				} else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
-					isig[ih].I() = std::pow(fsig_ano[ih].f_pl(),2.0f);
-					isig[ih].sigI() = 2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl();
-				} else if ( !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
-					isig[ih].I() = std::pow(fsig_ano[ih].f_mi(),2.0f);
-					isig[ih].sigI() = 2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi();
-				} else {
-					isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
-				}
+				isig[ih].I() = clipper::Util::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2));
+				isig[ih].sigI() = clipper::Util::sig_mean(2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
+				//isig[ih].I() = ctruncate::Utils::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2),2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi());
+				//isig[ih].sigI() = ctruncate::Utils::sig_mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2),2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
 			}
 		} else {
 			for ( HRI ih = isig_ano_import.first(); !ih.last(); ih.next() ) {
-				if ( !Util::is_nan(isig_ano_import[ih].I_pl() )  &&  !Util::is_nan(isig_ano_import[ih].I_mi() ) ) {
-					isig[ih].I() = 0.5 * ( isig_ano_import[ih].I_pl() + isig_ano_import[ih].I_mi() );
-					isig[ih].sigI() = 0.5*std::sqrt(std::pow( isig_ano_import[ih].sigI_pl(), 2.0f ) + std::pow( isig_ano_import[ih].sigI_mi(), 2.0f ) );
-				} else if ( !Util::is_nan(isig_ano_import[ih].I_pl() ) ) {
-					isig[ih].I() = isig_ano_import[ih].I_pl();
-					isig[ih].sigI() = isig_ano_import[ih].sigI_pl();
-				} else if ( !Util::is_nan(isig_ano_import[ih].I_mi() ) ) {
-					isig[ih].I() = isig_ano_import[ih].I_mi();
-					isig[ih].sigI() = isig_ano_import[ih].sigI_mi();
-				} else {
-					isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
-				}			
+				//isig[ih].I() = clipper::Util::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi());
+				//isig[ih].sigI() = clipper::Util::sig_mean(isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(), 0.0f );
+				//isig[ih].I() = ctruncate::Utils::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi());
+				//isig[ih].sigI() = ctruncate::Utils::sig_mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(),0.0f );
+				isig[ih] = clipper::data32::I_sigI(isig_ano_import[ih].I(),isig_ano_import[ih].sigI());
 			}				
 		}
 	}
@@ -910,33 +894,21 @@ int main(int argc, char **argv)
 			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
 			prior = FLAT;
 		}
+		
+		if ( refl_mean ) {
+            if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
+			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
+        }
         if (anomalous) {
 			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
             else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
             int iwarn = 0;
             for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-                freidal_sym[ih].isym() = 0; //mimic old truncate
-                if ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
-                    fsig[ih].f() = 0.5 * ( fsig_ano[ih].f_pl() + fsig_ano[ih].f_mi() );
-                    fsig[ih].sigf() = 0.5 * sqrt( pow( fsig_ano[ih].sigf_pl(), 2 ) + pow( fsig_ano[ih].sigf_mi(), 2 ) );
-                    Dano[ih].d() = fsig_ano[ih].f_pl() - fsig_ano[ih].f_mi();
-                    Dano[ih].sigd() = 2.0 * fsig[ih].sigf();
-                    freidal_sym[ih].isym() = 0;
-                }
-                else if ( !Util::is_nan(fsig_ano[ih].f_pl() ) ) {
-                    fsig[ih].f() = fsig_ano[ih].f_pl();
-                    fsig[ih].sigf() = fsig_ano[ih].sigf_pl();
-                    freidal_sym[ih].isym() = 1;
-                }
-                else if ( !Util::is_nan(fsig_ano[ih].f_mi() ) ) {
-                    fsig[ih].f() = fsig_ano[ih].f_mi();
-                    fsig[ih].sigf() = fsig_ano[ih].sigf_mi();
-                    freidal_sym[ih].isym() = 2;
-                }
-                else if ( !isig[ih].missing() && iwarn != 1 ) {
-                    printf("\nWARNING: Imean exists but I(+), I(-) do not\n\n");
-                    iwarn = 1;
-                }
+				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 0 :
+				( !Util::is_nan(fsig_ano[ih].f_pl() ) ) ? 1 :
+				( !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 2 : 0;
+				Dano[ih].d() = fsig_ano[ih].d();
+				Dano[ih].sigd() = fsig_ano[ih].sigd();
                 if ( ih.hkl_class().centric() ) {
                     Dano[ih].d() = 0.0;
                     Dano[ih].sigd() = 0.0;
@@ -945,24 +917,13 @@ int main(int argc, char **argv)
 			// use for phil plot
 			if (!refl_mean ) {
 				for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-					if ( !Util::is_nan(jsig_ano[ih].I_pl() )  &&  !Util::is_nan(jsig_ano[ih].I_mi() ) ) {
-						jsig[ih].I() = 0.5 * ( jsig_ano[ih].I_pl() + jsig_ano[ih].I_mi() );
-						jsig[ih].sigI() = 0.5 * sqrt( pow( jsig_ano[ih].sigI_pl(), 2 ) + pow( jsig_ano[ih].sigI_mi(), 2 ) );					
-					} else if ( !Util::is_nan(jsig_ano[ih].I_pl() ) ) {
-						jsig[ih].I() = jsig_ano[ih].I_pl();
-						jsig[ih].sigI() = jsig_ano[ih].sigI_pl();
-					} else if ( !Util::is_nan(jsig_ano[ih].I_mi() ) ) {
-						jsig[ih].I() = jsig_ano[ih].I_mi();
-						jsig[ih].sigI() = jsig_ano[ih].sigI_mi();
-					}
+					jsig[ih].I() = jsig_ano[ih].I();
+					jsig[ih].sigI() = jsig_ano[ih].sigI();
+					fsig[ih].f() = fsig_ano[ih].f();
+					fsig[ih].sigf() = fsig_ano[ih].sigf();
 				}
 			}
-        }
-        
-        else {
-            if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
-			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
-        }
+        } 
     }
     printf("\n");
     prog.summary_beg();

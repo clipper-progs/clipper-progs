@@ -1,3 +1,7 @@
+1.11.2
+- rationalise computation of means and sigmas from anomalous data
+- use I/sigI derived data for F/sigI if it is given with anomalous flag
+
 1.11.1
 - correct anomalous measurebility plot and phil plot for anonalous input
 
