@@ -16,6 +16,48 @@ void straight_line_fit(std::vector<clipper::ftype>& x, std::vector<clipper::ftyp
 
 namespace ctruncate {
 	
+	class Utils
+	{
+		
+	public:
+		//! Convert +/-/cov to mean , with NaN checks and weights
+		template<class T> inline static T mean( const T& pl, const T& mi, const T& spl, const T& smi )
+		{
+			if ( clipper::Util::is_nan(pl) ) return mi;
+			else if (clipper::Util::is_nan(mi) ) return pl;
+			else {
+				T wpl = T(1.0)/(spl*spl);
+				T wmi = T(1.0)/(smi*smi);
+				return (wpl*pl+wmi*mi)/(wpl+wmi);
+			}
+			return clipper::Util::nan();
+		}
+		//! Convert sig+/sig-/cov to sig , with NaN checks and weights
+		template<class T> inline static T sig_mean( const T& pl, const T& mi, const T& spl, const T& smi, const T& cov )
+		{
+			if ( clipper::Util::is_nan(pl) ) return smi;
+			else if (clipper::Util::is_nan(mi) ) return spl;
+			else if (clipper::Util::is_nan(cov) ) {
+				T wpl = T(1.0)/(spl*spl);
+				T wmi = T(1.0)/(smi*smi);
+				T mean = (wpl*pl+wmi*mi)/(wpl+wmi);
+				T sig1 = std::sqrt(spl*spl+smi*smi);
+				T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+smi*(mi*mi+smi*smi))/(wpl+wmi) - mean*mean);
+				//T sig2 = 0.0;
+				return (sig1 > sig2 ) ? sig1 : sig2;
+			} else {
+				T wpl = T(1.0)/(spl*spl);
+				T wmi = T(1.0)/(smi*smi);
+				T mean = (wpl*pl+wmi*mi)/(wpl+wmi);
+				T sig1 = std::sqrt(spl*spl+smi*smi+2.0*cov);
+				T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+wmi*(mi*mi+smi*smi)+(wpl+wmi)*cov)/(wpl+wmi) - mean*mean);
+				//T sig2 = 0.0;
+				return (sig1 > sig2 ) ? sig1 : sig2;
+			}
+			return clipper::Util::nan();
+		}
+	};
+	
 	// Close(a,b[,tol])  true if a == b within tolerance
 	template<class T1, class T2> inline static bool
 	Close(const T1& a, const T2& b,
