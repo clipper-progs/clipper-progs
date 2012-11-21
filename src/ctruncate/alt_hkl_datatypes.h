@@ -83,13 +83,16 @@ namespace clipper
       const dtype& sigI_pl() const { return sigI_pl_; }  //<! read access
       const dtype& I_mi() const { return I_mi_; }  //<! read access
       const dtype& sigI_mi() const { return sigI_mi_; }  //<! read access
+		dtype d() const { if ( Util::is_nan(I_pl_) || Util::is_nan(I_mi_) ) return 0.0; else return I_pl_ - I_mi_; } //<! read access
+		dtype sigd() const { if ( Util::is_nan(sigI_pl_) ) return sigI_mi_; if ( Util::is_nan(sigI_mi_) ) return sigI_pl_;
+			else return std::sqrt(std::pow(sigI_pl_,dtype(2.0))+std::pow(sigI_mi_,dtype(2.0)) ); } //<! read access
       dtype& I_pl() { return I_pl_; }  //<! write access
       dtype& sigI_pl() { return sigI_pl_; }  //<! write access
       dtype& I_mi() { return I_mi_; }  //<! write access
       dtype& sigI_mi() { return sigI_mi_; }  //<! write access
       // nonanomalous-type accessors
       dtype I() const { return Util::mean(I_pl_,I_mi_); }  //<! read access as simple
-      dtype sigI() const { return Util::sig_mean(sigI_pl_,sigI_mi_,0.0); }  //<! read access as simple
+      dtype sigI() const { return Util::sig_mean(sigI_pl_,sigI_mi_,dtype(0.0)); }  //<! read access as simple
     private:
       dtype I_pl_, I_mi_, sigI_pl_, sigI_mi_ ;
     };
@@ -119,13 +122,16 @@ namespace clipper
       const dtype& sigf_pl() const { return sigf_pl_; }  //<! read access
       const dtype& f_mi() const { return f_mi_; }  //<! read access
       const dtype& sigf_mi() const { return sigf_mi_; }  //<! read access
+		dtype d() const { if ( Util::is_nan(f_pl_) || Util::is_nan(f_mi_) ) return 0.0; else return f_pl_ - f_mi_; } //<! read access
+		dtype sigd() const { if ( Util::is_nan(sigf_pl_) ) return sigf_mi_; if ( Util::is_nan(sigf_mi_) ) return sigf_pl_;
+			else return std::sqrt(std::pow(sigf_pl_,dtype(2.0))+std::pow(sigf_mi_,dtype(2.0)) ); } //<! read access
       dtype& f_pl() { return f_pl_; }  //<! write access
       dtype& sigf_pl() { return sigf_pl_; }  //<! write access
       dtype& f_mi() { return f_mi_; }  //<! write access
       dtype& sigf_mi() { return sigf_mi_; }  //<! write access
       // nonanomalous-type accessors
       dtype f() const { return Util::mean(f_pl_,f_mi_); }  //<! read access as simple
-      dtype sigf() const { return Util::sig_mean(sigf_pl_,sigf_mi_,0.0); }  //<! read access as simple
+      dtype sigf() const { return Util::sig_mean(sigf_pl_,sigf_mi_,dtype(0.0)); }  //<! read access as simple
     private:
       dtype f_pl_, f_mi_, sigf_pl_, sigf_mi_ ;
     };
@@ -155,7 +161,7 @@ namespace clipper
 		//    refer to I+ or to I-  ISYM is set to 1 or 2 indicating that
 		//    FMEAN value is biased.
 	};
-	
+		  
 }
   namespace data32
   {
