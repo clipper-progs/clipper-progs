@@ -12,8 +12,10 @@ extern "C" {
 void NautilusUtil::set_reference( clipper::String& pdb )
 {
   const char* clibdptr = getenv( "CLIBD" );
+  const char* ccp4ptr = getenv( "CCP4" );
   if ( clibdptr != NULL ) {
     clipper::String clibd( clibdptr );
+    clipper::String ccp4( ccp4ptr );
     clipper::String path;
     std::ifstream file;
     if ( pdb == "NONE" ) {
@@ -23,6 +25,16 @@ void NautilusUtil::set_reference( clipper::String& pdb )
     }
     if ( pdb == "NONE" ) {
       path = clibd+"\\nautilus_lib.pdb";
+      file.open( path.c_str(), std::ifstream::in ); file.close();
+      if ( !file.fail() ) pdb = path;
+    }
+    if ( pdb == "NONE" ) {
+      path = ccp4+"/share/nautilus_lib.pdb";
+      file.open( path.c_str(), std::ifstream::in ); file.close();
+           if ( !file.fail() ) pdb = path;
+    }
+    if ( pdb == "NONE" ) {
+      path = ccp4+"\\share\\nautilus_lib.pdb";
       file.open( path.c_str(), std::ifstream::in ); file.close();
       if ( !file.fail() ) pdb = path;
     }
