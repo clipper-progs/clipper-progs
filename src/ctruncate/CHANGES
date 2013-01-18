@@ -1,3 +1,6 @@
+1.11.3
+- output missing FMEAN and SIGFMEAN when output DANO
+
 1.11.2
 - rationalise computation of means and sigmas from anomalous data
 - use I/sigI derived data for F/sigI if it is given with anomalous flag

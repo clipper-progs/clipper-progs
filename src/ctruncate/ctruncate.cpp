@@ -48,29 +48,29 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.11.2", "$Date: 2012/11/21" );
+    CCP4Program prog( "ctruncate", "1.11.3", "$Date: 2013/01/17" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
     clipper::String outcol = "";
     clipper::String freecol = "/*/*/[FreeR_flag]";
     clipper::String appendcol = "";
-	clipper::String meancol = "NONE";
+    clipper::String meancol = "NONE";
     clipper::String pluscol = "";
     clipper::String minuscol = "";
     clipper::String anocols = "NONE";
     clipper::String ipfile = "NONE";
     clipper::String twintest = "first_principles";
     clipper::String ipseq = "NONE";
-	clipper::String composition = "protein";
-	clipper::String prior_select = "auto";
+    clipper::String composition = "protein";
+    clipper::String prior_select = "auto";
     
     bool aniso = true;
     bool debug = false;
     bool freein = false;
     bool amplitudes = false;
     bool anomalous = false;
-	bool refl_mean = false;
+    bool refl_mean = false;
     bool is_nucl = false;
     
     int mtzinarg = 0;
@@ -80,8 +80,8 @@ int main(int argc, char **argv)
     int nresidues = 0;
     int nprm = 60;
     
-	enum MODE {AUTO,WILSON,FLAT};
-	MODE prior = AUTO;
+    enum MODE {AUTO,WILSON,FLAT};
+    MODE prior = AUTO;
 	
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
     clipper::Resolution reso_Twin;
@@ -1106,6 +1106,11 @@ int main(int argc, char **argv)
         }
 
         if (anomalous) {
+            if ( !refl_mean ) {
+                if (appendcol == "") labels = outcol + "[FMEAN,SIGFMEAN]";
+                else labels = outcol + "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
+                mtzout.export_hkl_data( fsig, labels );
+            }
             if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
             else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
             mtzout.export_hkl_data( Dano, labels );

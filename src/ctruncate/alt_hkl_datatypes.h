@@ -46,6 +46,7 @@
 #define CLIPPER_ALT_HKL_DATATYPES
 
 #include <complex>
+#include "ctruncate_utils.h"
 #include "clipper/core/hkl_data.h"
 
 
@@ -91,8 +92,10 @@ namespace clipper
       dtype& I_mi() { return I_mi_; }  //<! write access
       dtype& sigI_mi() { return sigI_mi_; }  //<! write access
       // nonanomalous-type accessors
-      dtype I() const { return Util::mean(I_pl_,I_mi_); }  //<! read access as simple
-      dtype sigI() const { return Util::sig_mean(sigI_pl_,sigI_mi_,dtype(0.0)); }  //<! read access as simple
+      dtype I() const { return Util::mean(I_pl_,I_mi_); } //use 0.5a+0.5b
+      dtype sigI() const { return Util::sig_mean(sigI_pl_,sigI_mi_,dtype(0.0)); } // use 0.5s1+0.5s2 
+      //dtype I() const { return ctruncate::Utils::mean(I_pl_,I_mi_,sigI_pl_,sigI_mi_); }  //<! read access as simple sigma weighted
+      //dtype sigI() const { return ctruncate::Utils::sig_mean(I_pl_,I_mi_,sigI_pl_,sigI_mi_,dtype(0.0)); }  //<! read access as simple
     private:
       dtype I_pl_, I_mi_, sigI_pl_, sigI_mi_ ;
     };
@@ -130,8 +133,10 @@ namespace clipper
       dtype& f_mi() { return f_mi_; }  //<! write access
       dtype& sigf_mi() { return sigf_mi_; }  //<! write access
       // nonanomalous-type accessors
-      dtype f() const { return Util::mean(f_pl_,f_mi_); }  //<! read access as simple
-      dtype sigf() const { return Util::sig_mean(sigf_pl_,sigf_mi_,dtype(0.0)); }  //<! read access as simple
+      dtype f() const { return Util::mean(f_pl_,f_mi_); }
+      dtype sigf() const { return Util::sig_mean(sigf_pl_,sigf_mi_,dtype(0.0)); } 
+      //dtype f() const { return ctruncate::Utils::mean(f_pl_,f_mi_,sigf_pl_,sigf_mi_); }  //<! read access as simple
+      //dtype sigf() const { return ctruncate::Utils::sig_mean(f_pl_,f_mi_,sigf_pl_,sigf_mi_,dtype(0.0)); }  //<! read access as simple
     private:
       dtype f_pl_, f_mi_, sigf_pl_, sigf_mi_ ;
     };
