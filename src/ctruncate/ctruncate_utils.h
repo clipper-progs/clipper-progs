@@ -42,17 +42,17 @@ namespace ctruncate {
 				T wmi = T(1.0)/(smi*smi);
 				T mean = (wpl*pl+wmi*mi)/(wpl+wmi);
 				T sig1 = std::sqrt(spl*spl+smi*smi);
-				T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+smi*(mi*mi+smi*smi))/(wpl+wmi) - mean*mean);
-				//T sig2 = 0.0;
-				return (sig1 > sig2 ) ? sig1 : sig2;
+                                return sig1;
+				//T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+smi*(mi*mi+smi*smi))/(wpl+wmi) - mean*mean);
+				//return (sig1 > sig2 ) ? sig1 : sig2;
 			} else {
 				T wpl = T(1.0)/(spl*spl);
 				T wmi = T(1.0)/(smi*smi);
 				T mean = (wpl*pl+wmi*mi)/(wpl+wmi);
 				T sig1 = std::sqrt(spl*spl+smi*smi+2.0*cov);
-				T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+wmi*(mi*mi+smi*smi)+(wpl+wmi)*cov)/(wpl+wmi) - mean*mean);
-				//T sig2 = 0.0;
-				return (sig1 > sig2 ) ? sig1 : sig2;
+                                return sig1;
+				//T sig2 = std::sqrt( (wpl*(pl*pl+spl*spl)+wmi*(mi*mi+smi*smi)+(wpl+wmi)*cov)/(wpl+wmi) - mean*mean);
+				//return (sig1 > sig2 ) ? sig1 : sig2;
 			}
 			return clipper::Util::nan();
 		}
