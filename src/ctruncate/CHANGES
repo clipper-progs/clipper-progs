@@ -1,3 +1,7 @@
+1.11.5
+- fix memory corruption on ubuntu
+- correct residue based cell contents correction
+
 1.11.4
 - use weighted mean and sig_mean=sqrt(s1*s1+s2+s2) for I and F
 - not using combined sig_mean as this gives a large value for sigma on Fmean and Imean

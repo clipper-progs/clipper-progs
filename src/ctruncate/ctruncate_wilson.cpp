@@ -665,7 +665,7 @@ namespace ctruncate {
 			numatoms[5] = 0;
 		}			
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
+		_totalscat = nsym*(numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0);
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
@@ -708,7 +708,7 @@ namespace ctruncate {
 			numatoms[5] = 0;
 		}			
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
+		_totalscat = nsym*(numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0);
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
@@ -766,7 +766,7 @@ namespace ctruncate {
 			}
 		}
 		
-		_totalscat = nsym*numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0;
+		_totalscat = nsym*(numatoms[0]*36.0+numatoms[1]*49.0+numatoms[2]*64.0+numatoms[3]*1.0+numatoms[4]*256.0+numatoms[5]*225.0);
 		
 		ctruncate::Rings icerings;
 		icerings.DefaultIceRings();
