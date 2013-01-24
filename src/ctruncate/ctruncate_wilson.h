@@ -62,7 +62,7 @@ namespace ctruncate {
 		enum MODE {STRAIGHT, BEST, RNA };
 		
 		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0)
-		{ numatoms.resize(5); }
+		{ numatoms.resize(6); }
 		
 		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
