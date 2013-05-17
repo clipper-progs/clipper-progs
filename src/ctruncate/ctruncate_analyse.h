@@ -152,6 +152,8 @@ namespace ctruncate {
 		clipper::ftype prob(int i) { return peak_prob[i]; }
 		//! print out text summary
 		void summary();
+        //! return tNCS operator as fractional coordinate
+        const clipper::Coord_frac& operator[](const int i) { return peaks[i]; }
 		
 	private:
 		clipper::HKL_data<clipper::datatypes::I_sigI<T> >* intensity; //!< dataset

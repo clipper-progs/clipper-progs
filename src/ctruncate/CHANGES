@@ -1,3 +1,13 @@
+1.12.2
+- obtain twinning fraction estimate from L-test (P&Y)
+
+1.12.1
+- reset anisotropy corrected data for moments
+
+1.12.0
+- reconfigure twinning tests
+- add ML Britton
+
 1.11.5
 - fix memory corruption on ubuntu
 - correct residue based cell contents correction

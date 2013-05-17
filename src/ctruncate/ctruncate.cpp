@@ -22,6 +22,9 @@
 #include "ccp4/csymlib.h"
 #include <iostream>
 #include <math.h>
+#include <algorithm>
+#include <iomanip>
+
 #include "ccp4/ccp4_fortran.h"
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
 #include "intensity_scale.h"   // contains additions to sfscale.cpp, sfscale.h, function_object_bases.h
@@ -48,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.11.5", "$Date: 2013/01/24" );
+    CCP4Program prog( "ctruncate", "1.12.2", "$Date: 2013/05/17" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -531,6 +534,13 @@ int main(int argc, char **argv)
     //want to use anisotropy correction and resolution truncation for twinning tests
     //clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
     {
+		//reset ianiso to full range
+		for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+				float I = isig[ih.hkl()].I();
+				float sigI = isig[ih.hkl()].sigI();
+				ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+			}
+			
         clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
         uaoc = uaoc+biso;
         clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uaoc);
@@ -577,12 +587,12 @@ int main(int argc, char **argv)
     
     
     printf("\nTWINNING ANALYSIS:\n\n");
-    float hval(0.0), lval(0.0);
+    float lval(0.0);
     //reduced resolution range for twinning tests
     reso_Twin = clipper::Resolution(resopt);
     //user override of defaults
     if (!reso_u2.is_null() ) {
-        reso_Patt = clipper::Resolution( clipper::Util::max( reso_Twin.limit(), reso_u2.limit() ) );
+        reso_Twin = clipper::Resolution( clipper::Util::max( reso_Twin.limit(), reso_u2.limit() ) );
     }
     HKL_info hklt(spgr, cell1, reso_Twin, true);
     HKL_data<data32::I_sigI> itwin(hklt);
@@ -593,21 +603,84 @@ int main(int argc, char **argv)
     printf("\nData has been truncated at %6.2f A resolution\n",reso_Twin.limit());
     printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
     
-    // H test for twinning
     
-    if (twintest != "table") {
-        hval = Htest_driver_fp(itwin, debug);
+    
+    TwinSymops ts1(cell1,spgr);
+    
+    L_test ltest;
+    lval=ltest(itwin);
+    ltest.summary();
+    ltest.loggraph();
+    
+    std::vector<clipper::ftype> hval(ts1.size() );
+    std::vector<clipper::ftype> bval(ts1.size() );
+    std::vector<clipper::ftype> mval(ts1.size() );
+    std::vector<clipper::ftype> mrval(ts1.size() );
+    
+    std::vector<H_test> htests(ts1.size() );
+    for (int i = 0; i != ts1.size() ; ++i ) {
+        hval[i]=htests[i](itwin,ts1[i]);
+        //htests[i].summary();
+        htests[i].loggraph();
     }
     
-    if (twintest != "first_principles") {
-        hval = Htest_driver_table(itwin, debug);
+    std::vector<Britton_test> btests(ts1.size() );
+    for (int i = 0; i != ts1.size() ; ++i ) {
+        bval[i]=btests[i](itwin,ts1[i]);
+        //btests[i].summary();
+        btests[i].loggraph();
     }
     
-    // L test for twinning
-    lval = Ltest_driver(ianiso, debug);
+    std::vector<MLBritton_test> mdtests(ts1.size() );
+    for (int i = 0; i != ts1.size() ; ++i ) {
+        clipper::ftype product(0.0);
+        int jp;
+        if ( tncs.hasNCS() ) {
+            for (int j=0; j != tncs.numOps() ; ++j) {
+                clipper::Vec3<clipper::ftype> vect = tncs[i].coord_orth(cell1);
+                clipper::Mat33<int> tmp = ts1[i].rot(); 
+                clipper::Rotation rot(clipper::Mat33<clipper::ftype>(
+                                      clipper::ftype(tmp(0,0) )/12.0,
+                                      clipper::ftype(tmp(0,1) )/12.0,
+                                      clipper::ftype(tmp(0,2) )/12.0,
+                                      clipper::ftype(tmp(1,0) )/12.0,
+                                      clipper::ftype(tmp(1,1) )/12.0,
+                                      clipper::ftype(tmp(1,2) )/12.0,
+                                      clipper::ftype(tmp(2,0) )/12.0,
+                                      clipper::ftype(tmp(2,1) )/12.0,
+                                      clipper::ftype(tmp(2,2) )/12.0));
+                clipper::Vec3<clipper::ftype> vecr(rot.x(),rot.y(),rot.z() );
+                clipper::ftype p = vecr.unit()*vect.unit();
+                if (p > product) {
+                    product = p;
+                    jp = j;
+                }
+            }
+        }
+        if (product > 0.95 ) mval[i]=mdtests[i](itwin,ts1[i],tncs[jp]);
+        else mval[i]=mdtests[i](itwin,ts1[i]);
+        mrval[i]=mdtests[i].deltaR();
+        //mdtests[i].summary();
+        //mdtests[i].loggraph();
+    }
+    
+	std::cout << "Twin fraction estimate from L-test: " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl << std::endl;
+    
+    std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;;
+	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
+	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+    for (int i = 0; i != ts1.size() ; ++i ) {
+        std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= lval && lval < 0.440) ? " Yes " : " No  " ) 
+        << " |  " << std::setw(4) << std::setprecision(2) << hval[i] << "  |  " << bval[i] << "  |  " << mval[i] << " (";
+        if (mrval[i] == 100.0 ) std::cout << " N/A ";
+        else std::cout << std::setw(5) << mrval[i];
+        std::cout << ") |" << std::endl;
+    }
+    std::cout << "-----------------------------------------------------------------" << std::endl << std::endl;
     
     prog.summary_beg();
-    twin_summary(hval,lval);
+    twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
     prog.summary_end(); 
     printf("\n");
     //printf("Starting parity group analysis:\n");
