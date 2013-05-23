@@ -253,8 +253,10 @@ int main(int argc, char **argv)
     
     MTZdataset cset; 
     MTZcrystal cxtl; 
+    std::vector<clipper::String> history;
     mtzfile.import_crystal ( cxtl, mcol );
     mtzfile.import_dataset ( cset, mcol );
+    history = mtzfile.history();
     
     mtzfile.close_read();
 	
@@ -1221,6 +1223,8 @@ int main(int argc, char **argv)
             }
             mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );
         }
+        
+        mtzout.set_history(history);
         
         //mtzout.close_append();
         mtzout.close_write();
