@@ -368,7 +368,7 @@ namespace ctruncate {
 		const clipper::ftype PERFECT_TWIN = 0.2;
 		const clipper::ftype NO_TWIN = 0.333333;
 		clipper::ftype alpha;
-		
+
 		if (_L2av >= NO_TWIN ) {
 			alpha = 0.0;
 		} else if ( _L2av <= PERFECT_TWIN ) {
@@ -421,13 +421,9 @@ namespace ctruncate {
 				if ( (nl - y)/(y2-y1) > 0.0 ) {
 					y1 = y;
 					x1 = x;
-					x2 = (2.0*x2+x)*0.33333333;
-					y2 = meanNL(x2,l);
 				} else {
 					y2 = y;
 					x2 = x;
-					x1 = (2.0*x1+x)*0.3333333;
-					y1 = meanNL(x1,l);
 				}
 			} while ( std::abs(y - nl) > 0.0001 );
 			alpha += x;
@@ -517,7 +513,7 @@ namespace ctruncate {
         _NLT = NLT;
 		_Lav = LT/NLT;
 		_L2av = LT2/NLT;
-        return _L2av;
+        return _Lav;
     }
 	
      

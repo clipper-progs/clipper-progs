@@ -1,3 +1,6 @@
+1.12.4
+- protect output in cases were there are no twinops
+
 1.12.3
 - preserve MTZ history from input file
 

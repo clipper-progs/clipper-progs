@@ -51,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.12.3", "$Date: 2013/05/24" );
+    CCP4Program prog( "ctruncate", "1.12.4", "$Date: 2013/06/04" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -667,7 +667,7 @@ int main(int argc, char **argv)
     }
     
 	std::cout << "Twin fraction estimate from L-test: " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl << std::endl;
-    
+    if ( ts1.size() > 0 ) {
     std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;;
 	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
 	std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
@@ -680,9 +680,11 @@ int main(int argc, char **argv)
         std::cout << ") |" << std::endl;
     }
     std::cout << "-----------------------------------------------------------------" << std::endl << std::endl;
-    
+    }
+
     prog.summary_beg();
-    twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
+    if (ts1.size() == 0 ) twin_summary(0.0,lval);
+    else twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
     prog.summary_end(); 
     printf("\n");
     //printf("Starting parity group analysis:\n");
