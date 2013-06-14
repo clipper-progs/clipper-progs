@@ -1,6 +1,6 @@
 //
 //     CTRUNCATE
-//     Copyright (C) 2006-2011 Norman Stein, Charles Ballard
+//     Copyright (C) 2006-2013 Norman Stein, Charles Ballard
 //
 //     This code is distributed under the terms and conditions of the
 //     CCP4 Program Suite Licence Agreement as a CCP4 Application.
@@ -51,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.12.4", "$Date: 2013/06/04" );
+    CCP4Program prog( "ctruncate", "1.12.5", "$Date: 2013/06/14" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";

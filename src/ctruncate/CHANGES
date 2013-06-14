@@ -1,3 +1,7 @@
+1.12.5
+- use clipper::Range to estimate anomalous limits rather than
+  assuming monatic decrease
+
 1.12.4
 - protect output in cases were there are no twinops
 
