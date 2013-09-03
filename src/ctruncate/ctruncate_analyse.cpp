@@ -966,7 +966,7 @@ namespace ctruncate {
 		
 		//want a point, but use Coord_orth for now
 		template <class T> clipper::Coord_orth AnisoPlot<T>::point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-																clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741)
+																clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac)
 		{
 			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
 			clipper::ftype sinuv = std::sin(angleuv);
@@ -982,7 +982,7 @@ namespace ctruncate {
 		
 		// plot at frac of height
 	template <class T> std::vector<clipper::Coord_orth> AnisoPlot<T>::isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-													  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60) 
+													  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac, int steps)
 		{
 			std::vector<clipper::Coord_orth> points(steps);
 			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
