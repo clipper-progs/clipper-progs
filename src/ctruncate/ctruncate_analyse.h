@@ -123,10 +123,10 @@ namespace ctruncate {
 		std::vector<std::vector<clipper::Coord_orth> > _isoline3;
 		
 		std::vector<clipper::Coord_orth> isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-					 clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac, int steps);
+					 clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60);
 		
 		clipper::Coord_orth point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-								  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac);
+								  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741);
 		
 		void ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
 					 clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav);
