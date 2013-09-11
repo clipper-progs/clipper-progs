@@ -1,3 +1,6 @@
+1.13.1
+- return full range moments plot
+
 1.13.0
 - follow Kay Diederichs and extend range of calculation
   in this case to -37, were R calc becomes unstable

@@ -51,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.13.0", "$Date: 2013/06/24" );
+    CCP4Program prog( "ctruncate", "1.13.1", "$Date: 2013/09/11" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -583,11 +583,6 @@ int main(int argc, char **argv)
         if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
     }
     
-    // calculate moments of Z using truncate methods
-    
-    moments_Z(ianiso, invopt, nbins);
-    
-    
     printf("\nTWINNING ANALYSIS:\n\n");
     float lval(0.0);
     //reduced resolution range for twinning tests
@@ -614,6 +609,22 @@ int main(int argc, char **argv)
     ltest.summary();
     ltest.loggraph();
     
+	Moments<data32::I_sigI> m(isig);
+	m.loggraph();
+	
+	Moments<data32::I_sigI> mc(ianiso,reso_range);
+	printf("\nMean acentric moments I from input data:\n\n");
+	printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_second(), m.theo_untwinned_acentric_second(), m.theo_perfect_acentric_second() );
+	printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_third(), m.theo_untwinned_acentric_third(), m.theo_perfect_acentric_third() );
+	printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_fourth(), m.theo_untwinned_acentric_fourth(), m.theo_perfect_acentric_fourth());
+	
+	printf("\n\nMean acentric moments I from anisotropically corrected data:\n\n");
+	printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_second(), mc.theo_untwinned_acentric_second(), mc.theo_perfect_acentric_second() );
+	printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_third(), mc.theo_untwinned_acentric_third(), mc.theo_perfect_acentric_third() );
+	printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_fourth(), mc.theo_untwinned_acentric_fourth(), mc.theo_perfect_acentric_fourth());	
+
+	std::cout << std::endl << std::endl;
+	
     std::vector<clipper::ftype> hval(ts1.size() );
     std::vector<clipper::ftype> bval(ts1.size() );
     std::vector<clipper::ftype> mval(ts1.size() );
@@ -666,9 +677,12 @@ int main(int argc, char **argv)
         //mdtests[i].loggraph();
     }
     
-	std::cout << "Twin fraction estimate from L-test: " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl << std::endl;
+	std::cout << "Twin fractione estimates exluding operators" << std::endl;
+	std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
+	std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << mc.fraction() << std::endl << std::endl;
+	
+	std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;
     if ( ts1.size() > 0 ) {
-    std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;;
 	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
 	std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
 	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
@@ -680,7 +694,9 @@ int main(int argc, char **argv)
         std::cout << ") |" << std::endl;
     }
     std::cout << "-----------------------------------------------------------------" << std::endl << std::endl;
-    }
+    } else {
+		std::cout << "  No operators found" << std::endl << std::endl;
+	}
 
     prog.summary_beg();
     if (ts1.size() == 0 ) twin_summary(0.0,lval);
