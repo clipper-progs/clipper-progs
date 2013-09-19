@@ -825,9 +825,10 @@ namespace ctruncate {
 			T next_peak = patterson.get_data( ppks[++i] );
 			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid);
 			T ratio = next_peak/top_peak;
-			T dist2 = pow(c0[0], 2.0) + pow(c0[1], 2.0) + pow(c0[2], 2.0);
-			// look for peaks > 20% of origin peak and at least 0.1 distant from origin
+			T dist2 = std::sqrt(c0.lengthsq(cell) );
+			// look for peaks > 20% of origin peak and at least 14A distant from origin
 			// precentage estimate is Zwartz CCP4 Newsletter 42
+                        if (dist2 > 14.0 ) {
 			const T aval = 0.0679;
 			const T bval = 3.56;
 			pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;

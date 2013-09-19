@@ -1,3 +1,6 @@
+1.13.2
+- missing length test in tNCS
+
 1.13.1
 - return full range moments plot
 
