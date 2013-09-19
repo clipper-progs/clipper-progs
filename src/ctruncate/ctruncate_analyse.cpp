@@ -837,7 +837,7 @@ namespace ctruncate {
 				peak_prob.push_back(pval);
 				peak_height.push_back(ratio);
 			}
-			
+	                }		
 		} while ( pval < 1.0 );
 	
 		return peaks;
