@@ -56,31 +56,20 @@ namespace ctruncate {
 			}
 		}
 		
-		abins = std::min(1000,na/100);
-		cbins = std::min(1000,nc/100);
+		abins = std::min(1000,na/100+1);
+		cbins = std::min(1000,nc/100+1);
 		
-//		if (abins > 0 ) {
 			std::vector<clipper::ftype> params_init( abins, 1.0 );
-			//acentric_norm_base = new clipper::BasisFn_binner( fa, abins, 1.0 );
 			clipper::BasisFn_binner acentric_norm(fa, abins, 1.0);
 			
 			TargetFn_meanInth<D >  atarget_fn( fa, pn );
-			//clipper::ResolutionFn af( fsigf.hkl_info() , *acentric_norm_base, target_fn, params_init );
 		clipper::ResolutionFn af( data.hkl_info() , acentric_norm, atarget_fn, params_init );
 			
-			//acentric_norm = af.params();
-//		}
-//		if (cbins > 0 ) {
-//			std::vector<clipper::ftype> params_init( abins, 1.0 );
-//			centric_norm_base = new clipper::BasisFn_binner( fc, cbins, 1.0 );
 		clipper::BasisFn_binner centric_norm(fc, cbins, 1.0);
 			
 		TargetFn_meanInth<D >  ctarget_fn( fc, pn );
-//			clipper::ResolutionFn cf( fsigf.hkl_info(), *centric_norm_base, target_fn, params_init );
 		clipper::ResolutionFn cf( data.hkl_info() , centric_norm, ctarget_fn, params_init );
 		
-//			centric_norm = cf.params();
-//		}
 		
 		normalised.init(data );
 		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
@@ -434,9 +423,9 @@ namespace ctruncate {
 				printf("$$\n\n");
 				
 				if (ncentric != 0) {
-					printf("$TABLE: Centric moments of E:\n");
+					printf("$TABLE: Centric moments of I:\n");
 					printf("$GRAPHS");
-					printf(": 2nd moment of I %5.3f (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,2:\n", acentric_second(), maxres);
+					printf(": 2nd moment of I %5.3f (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,2:\n", centric_second(), maxres);
 					printf(": 3rd & 4th moments of I (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|4:1,3,4:\n", maxres);
 					printf("$$ 1/resol^2 <I**2> <I**3> <I**4> $$\n$$\n");
 					
