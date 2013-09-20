@@ -95,7 +95,7 @@ namespace ctruncate {
 			if (calc_range.contains(ih.invresolsq() ) ) {
 				if ( !data[ih].missing() ) {
 					if ( ih.hkl_class().centric() == centric ) {
-						val += ih.hkl_class().epsilonc()*std::pow(double(obs(normalised[ih]) ),double(power) );
+						val += ih.hkl_class().epsilonc()*std::pow(double(obs(normalised[ih])/double(ih.hkl_class().epsilonc() ) ),double(power) );
 						nval += ih.hkl_class().epsilonc();
 					}
 				}
@@ -115,7 +115,7 @@ namespace ctruncate {
 			if (calc_range.contains(ih.invresolsq() ) ) {
 				if ( !data[ih].missing() ) {
 					if ( ih.hkl_class().centric() == centric) {
-						val += ih.hkl_class().epsilonc()*std::fabs(std::pow(double(obs(normalised[ih]) ),2.0) - mean);
+						val += ih.hkl_class().epsilonc()*std::fabs(std::pow(double(obs(normalised[ih])/double(ih.hkl_class().epsilonc() ) ),2.0) - mean);
 						nval += ih.hkl_class().epsilonc();
 					}
 				}
@@ -335,7 +335,7 @@ namespace ctruncate {
 			for ( HRI ih = normalised.first(); !ih.last(); ih.next() ) {
 				if ( !normalised[ih].missing() ) {
 					int n =ih.hkl_class().epsilonc();
-					double val = obs(normalised[ih]);
+					double val = obs(normalised[ih])/n;
 					int bin = int( nbins * ( ih.invresolsq() / double(maxres) ) - 0.5  );
 					int cbin = int( ncbins * ( ih.invresolsq() / double(maxres) ) - 0.5  );
 						if (!ih.hkl_class().centric()) {
