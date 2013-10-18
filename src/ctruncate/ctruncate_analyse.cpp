@@ -808,6 +808,13 @@ namespace ctruncate {
 		clipper::Xmap<float> patterson( pspgr, cell, grid );
 		patterson.fft_from( fphi );
 		
+		float zfrac=0.1;
+		
+		std::vector<float> vals;
+		for ( clipper::Xmap<float>::Map_reference_index index = patterson.first() ; !index.last() ; index.next() ) {
+			vals.push_back(patterson[index]); }
+		std::sort( vals.begin(), vals.end() );
+		T rho0  = ( vals[ int(zfrac*T(vals.size())) ] );
 		
 		// use Charles's stuff to find peaks
 		PeakSearch pksch;                      // peak search object
@@ -817,12 +824,12 @@ namespace ctruncate {
 		
 		std::vector<int> ppks = pksch( patterson );
 		
-		T top_peak = patterson.get_data( ppks[0] );
+		T top_peak = patterson.get_data( ppks[0] ) - rho0;
 		int i = 0;
 		T pval(0.0);
 		
 		do {
-			T next_peak = patterson.get_data( ppks[++i] );
+			T next_peak = patterson.get_data( ppks[++i] ) - rho0;
 			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid);
 			T ratio = next_peak/top_peak;
 			T dist2 = std::sqrt(c0.lengthsq(cell) );
@@ -837,7 +844,7 @@ namespace ctruncate {
 				peak_prob.push_back(pval);
 				peak_height.push_back(ratio);
 			}
-	                }		
+		        }	
 		} while ( pval < 1.0 );
 	
 		return peaks;
