@@ -16,6 +16,7 @@
 #include "best.h"
 #include "best_rna.h"
 #include <cmath>
+#include <algorithm>
 
 #define ASSERT assert
 #include <assert.h>
