@@ -311,7 +311,8 @@ namespace ctruncate {
      \return type L_test */
     template <class T> L_test::L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso, int nbins) {
         _reso = reso;
-		_alpha = -1.0;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+	_alpha = -1.0;
         _cdf.resize(nbins);
         calc(isig,reso);
         return;
@@ -322,7 +323,8 @@ namespace ctruncate {
      \return L-statistic */
     template <class T> clipper::ftype L_test::operator() (clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso ) {
         _reso = reso;
-		_alpha = -1.0;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+	_alpha = -1.0;
         return calc(isig,reso);
     }
         
@@ -528,6 +530,7 @@ namespace ctruncate {
     template <class T> H_test::H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, const clipper::Resolution reso , int nbins) {
         _nbins = nbins;
         _reso = reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop = twin;
         calc(isig,twin,reso);
     }
@@ -537,6 +540,7 @@ namespace ctruncate {
      \return alphas */
     template <class T> const clipper::ftype H_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, clipper::Resolution reso ) { 
         _reso=reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop=twin;
         calc(isig,twin,reso);
         return _alpha;
@@ -635,6 +639,7 @@ namespace ctruncate {
      \return type Britton_test */
     template <class T> Britton_test::Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso , int nbins) {
         _reso=reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop=twinop;
         calc(isig,twinop,reso);        
     }
@@ -644,6 +649,7 @@ namespace ctruncate {
      \return alphas */
     template <class T> const clipper::ftype Britton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso ) {
         _reso=reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop=twinop;
         calc(isig,twinop,reso);
         return _alpha;
@@ -777,6 +783,7 @@ namespace ctruncate {
      \return type MLBritton_test */
     template <class T> MLBritton_test::MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Coord_frac ncs, clipper::Resolution reso, int nbins ) {
         _reso=reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop = twinop;
         _ncs = ncs;
         //norm using lots of bins
@@ -797,6 +804,7 @@ namespace ctruncate {
      \return alpha */
     template <class T> const clipper::ftype MLBritton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Coord_frac ncs, clipper::Resolution reso ) {
         _reso=reso;
+        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
         _twinop = twinop;
         _ncs = ncs;
         //norm using lots of bins

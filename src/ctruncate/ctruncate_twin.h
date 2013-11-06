@@ -57,9 +57,9 @@ namespace ctruncate {
         // constructor, setup up L-test
         L_test( int nbins=20) : _cdf(nbins,0.0) {}
         // constructor, calculates L statistics if true
-        template<class T> explicit L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(3.0), int nbins=20);
+        template<class T> explicit L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> clipper::ftype operator()(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(3.0)) ;
+        template<class T> clipper::ftype operator()(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(0.0)) ;
         // return L-statistic
         clipper::ftype statistic() const { return _Lav; }
 		// return L2-statistic
@@ -131,9 +131,9 @@ namespace ctruncate {
         // constructor, setup class
         H_test(int nbins=20) { _nbins=nbins; return; };
         // constructor, calculates H tests if true
-        template<class T> explicit H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(3.0), int nbins=20);
+        template<class T> explicit H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(3.0)) ;
+        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0)) ;
         // return Hav from H-test
         const clipper::ftype statistics() const { return _Hav; }   
         // return twin fraction
@@ -169,9 +169,9 @@ namespace ctruncate {
         // constructor, setup class
         Britton_test(int nbins=20) { _nbins=nbins; return; };
         // constructor, calculates Britton tests using fp if true
-        template<class T> explicit Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(3.0), int nbins=20);
+        template<class T> explicit Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,clipper::Resolution reso = clipper::Resolution(3.0)) ;
+        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,clipper::Resolution reso = clipper::Resolution(0.0)) ;
         // return score
         const clipper::ftype statistic() const { return _alpha; }
         // return twin fraction
@@ -209,9 +209,9 @@ namespace ctruncate {
         // constructor, setup class
         MLBritton_test(int nbins=20) {  _nbins=nbins; return; };
         // constructor, calculates Britton tests using fp if true
-        template<class T> explicit MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(3.0), int nbins=20);
+        template<class T> explicit MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(3.0)) ;
+        template<class T> const clipper::ftype operator()( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(0.0)) ;
         // return score
         const clipper::ftype statistics() const { return _llk; }  
         // return twin fraction

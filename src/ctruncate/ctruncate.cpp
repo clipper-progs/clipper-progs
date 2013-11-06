@@ -51,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.13.3", "$Date: 2013/10/18" );
+    CCP4Program prog( "ctruncate", "1.13.4", "$Date: 2013/11/05" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -693,7 +693,7 @@ int main(int argc, char **argv)
         else std::cout << std::setw(5) << mrval[i];
         std::cout << ") |" << std::endl;
     }
-    std::cout << "-----------------------------------------------------------------" << std::endl << std::endl;
+    std::cout << "---------------------------------------------------------------------------------------" << std::endl;
     } else {
 		std::cout << "  No operators found" << std::endl << std::endl;
 	}

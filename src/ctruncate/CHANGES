@@ -1,3 +1,6 @@
+1.13.4
+- correct use of resolution limit in twinning tests
+
 1.13.3
 - use crude 0.9 offset for estimating 0 in patterson map
 
