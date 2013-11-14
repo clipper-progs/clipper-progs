@@ -12,6 +12,7 @@ bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 	       src/cpatterson src/caniso src/convert2mtz \
 	       src/csymmatch src/cmaplocal src/cncsfrommodel \
 	       src/cmodeltoseq src/cmapcut src/comit \
+	       src/cmtzsplit src/cmtzjoin \
 	       src/ctruncate/ctruncate \
 	       src/pirate/cpirate src/pirate/cmakereference \
 	       src/buccaneer/cbuccaneer src/buccaneer/csequins \
@@ -61,6 +62,10 @@ src_cmodeltoseq_SOURCES = src/cmodeltoseq.cpp
 src_cmapcut_SOURCES = src/cmapcut.cpp
 
 src_comit_SOURCES = src/comit.cpp
+
+src_cmtzjoin_SOURCES = src/cmtzjoin.cpp
+
+src_cmtzsplit_SOURCES = src/cmtzsplit.cpp
 
 src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/ctruncate_utils.cpp \
