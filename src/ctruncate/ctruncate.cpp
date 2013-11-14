@@ -51,7 +51,7 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.13.4", "$Date: 2013/11/05" );
+    CCP4Program prog( "ctruncate", "1.13.5", "$Date: 2013/11/14" );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -241,6 +241,7 @@ int main(int argc, char **argv)
     // hkl_info contains all (h,k,l) out to the resolution limit regardless of whether there is any measured data.
     // will need hkl_list when writing to output file.
     clipper::Spacegroup spgr = mtzfile.spacegroup();
+    char spgr_confidence = mtzfile.spacegroup_confidence();
     clipper::Cell      cell1 = mtzfile.cell();
     clipper::Resolution reso = mtzfile.resolution();
     
@@ -1243,6 +1244,7 @@ int main(int argc, char **argv)
         }
         
         mtzout.set_history(history);
+        mtzout.set_spacegroup_confidence(spgr_confidence);
         
         //mtzout.close_append();
         mtzout.close_write();

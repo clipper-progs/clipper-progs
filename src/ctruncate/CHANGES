@@ -1,3 +1,6 @@
+1.13.5
+- copy spacegroup confidence from input mtz to output mtz
+
 1.13.4
 - correct use of resolution limit in twinning tests
 
