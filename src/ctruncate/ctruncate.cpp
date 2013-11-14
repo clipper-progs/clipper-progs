@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <iomanip>
 
-#include "ccp4/ccp4_fortran.h"
+//#include "ccp4/ccp4_fortran.h"
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
 #include "intensity_scale.h"   // contains additions to sfscale.cpp, sfscale.h, function_object_bases.h
 #include "alt_hkl_datatypes.h"
@@ -40,8 +40,9 @@
 #include "ctruncate_matthews.h"
 #include "ctruncate_wilson.h"
 
-#include <mmdb/mmdb_tables.h>
+#include "mmdb/mmdb_tables.h"
 
+#include "ccp4/ccp4_utils.h"
 
 using namespace clipper;
 using namespace ctruncate;
@@ -51,7 +52,10 @@ using namespace ctruncate;
 
 int main(int argc, char **argv)
 {
-    CCP4Program prog( "ctruncate", "1.13.5", "$Date: 2013/11/14" );
+    clipper::String prog_string = "ctruncate";
+    clipper::String prog_vers = "1.13.6";
+    clipper::String prog_date = "$Date: 2013/11/14";
+    CCP4Program prog( prog_vers.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -1242,8 +1246,20 @@ int main(int argc, char **argv)
             }
             mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );
         }
-        
-        mtzout.set_history(history);
+
+        //copy old history and say something about ctruncate run
+        {
+            char run_date[10];
+            CCP4::ccp4_utils_date(run_date);
+            char run_time[8];
+            CCP4::ccp4_utils_time(run_time);
+            clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
+
+            clipper::String hist = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
+            history.push_back(hist);
+            mtzout.set_history(history);
+        }
+
         mtzout.set_spacegroup_confidence(spgr_confidence);
         
         //mtzout.close_append();
