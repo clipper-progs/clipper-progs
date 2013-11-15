@@ -53,8 +53,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.13.6";
-    clipper::String prog_date = "$Date: 2013/11/14";
+    clipper::String prog_vers = "1.13.7";
+    clipper::String prog_date = "$Date: 2013/11/15";
     CCP4Program prog( prog_vers.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -71,6 +71,7 @@ int main(int argc, char **argv)
     clipper::String ipseq = "NONE";
     clipper::String composition = "protein";
     clipper::String prior_select = "auto";
+    std::vector<clipper::String> history;
     
     bool aniso = true;
     bool debug = false;
@@ -165,6 +166,8 @@ int main(int argc, char **argv)
 			if ( ++arg < args.size() ) prior_select = args[arg];
         } else if ( args[arg] == "-debug" ) {
             debug = true;
+        } else if ( args[arg] == "-history" ) {
+            if ( ++arg < args.size() ) history.push_back( args[arg] );
         } else if ( args[arg] == "-i" ) {
             CCP4::ccp4_prog_info();
             return(0);
@@ -258,10 +261,10 @@ int main(int argc, char **argv)
     
     MTZdataset cset; 
     MTZcrystal cxtl; 
-    std::vector<clipper::String> history;
+    std::vector<clipper::String> histin;
     mtzfile.import_crystal ( cxtl, mcol );
     mtzfile.import_dataset ( cset, mcol );
-    history = mtzfile.history();
+    histin = mtzfile.history();
     
     mtzfile.close_read();
 	
@@ -1248,17 +1251,19 @@ int main(int argc, char **argv)
         }
 
         //copy old history and say something about ctruncate run
-        {
+        if (history.size() != 0 ) {
+           for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
+        } else {
             char run_date[10];
             CCP4::ccp4_utils_date(run_date);
             char run_time[8];
             CCP4::ccp4_utils_time(run_time);
             clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
 
-            clipper::String hist = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
-            history.push_back(hist);
-            mtzout.set_history(history);
+            clipper::String history = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
+            histin.push_back(history);
         }
+        mtzout.set_history(histin);
 
         mtzout.set_spacegroup_confidence(spgr_confidence);
         
