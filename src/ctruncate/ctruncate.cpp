@@ -328,7 +328,6 @@ int main(int argc, char **argv)
     float invopt = maxres;
     float resopt = 1.0/sqrt(invopt);
     printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/sqrt(minres),1.0/sqrt(maxres));
-    if (debug) printf("Minimum resolution = %f \nMaximum resolution = %f \n\n",minres,maxres);
     prog.summary_end();
     CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
     prog.summary_beg();
@@ -374,7 +373,7 @@ int main(int argc, char **argv)
     compt(isig);
     compt.plot();
     {
-        clipper::Range<double> range = hklinf.invresolsq_range();
+        clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
         int i = 0;
         for ( ; i != NBINS-1 ; ++i) {
             if ( compt.completeness3(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
@@ -389,7 +388,7 @@ int main(int argc, char **argv)
 					float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
 					reso_range.include(d);
 				} else {
-					reso_range.include(range.min() );
+					reso_range.include(minres );
 				}
             if (j != NBINS-1 ) {
                 float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
@@ -397,6 +396,8 @@ int main(int argc, char **argv)
             } else {
                 reso_range.include(range.max() );
             }
+        } else {
+          reso_range = range;
         }
     }
     
