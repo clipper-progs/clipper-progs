@@ -835,7 +835,7 @@ namespace ctruncate {
             float res = maxres*(float(i)+0.5)/float(nbins); 
             float totalscat = 0;
             for (int j=0;j!=5;++j) {
-                clipper::Atom atom;
+                clipper::Atom atom(clipper::Atom::null() );
                 atom.set_occupancy(1.0);
                 atom.set_element(WilsonB::AtomNames[j]);
                 atom.set_u_iso(0.0);
@@ -895,7 +895,7 @@ namespace ctruncate {
 				
 				totalscat = 0;
 				for (int i=0;i!=6;++i) {
-					clipper::Atom atom;
+					clipper::Atom atom(clipper::Atom::null() );
 					atom.set_occupancy(1.0);
 					atom.set_element(WilsonB::AtomNames[i]);
 					atom.set_u_iso(0.0);
