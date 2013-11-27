@@ -1,3 +1,7 @@
+1.13.9
+- try to make more informed guesses at resolution range for gathering
+  statistics when faced with poor data
+
 1.13.8
 - fix for annoying crash in wilson.plot
 

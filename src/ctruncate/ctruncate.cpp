@@ -53,7 +53,7 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.13.8";
+    clipper::String prog_vers = "1.13.9";
     clipper::String prog_date = "$Date: 2013/11/27";
     CCP4Program prog( prog_vers.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
@@ -417,13 +417,17 @@ int main(int argc, char **argv)
 
     // how big is reso_range
     {
-        if ( rr < 2.0 ) {
+        float rmax = hklinf.resolution().limit();
+        float rmin = 1.0/std::sqrt(minres);
+        float amax = 1.0/std::sqrt(reso_range.max() );
+        if ( rr < 4.0 || amax > std::max(6.0,rmax+2.0)  ) {
+            reso_range = clipper::Range<double>();
             printf("WARNING: The resolution range with I/sigI > 3 with completeness above 0.85 is small\n");
             do {
                 printf("         Recalculating using I/sigI > 2 with completeness aboue %4.2f for\n",ACCEPTABLE);
-                printf("         use in the following statistics, which must be treated with extreme caution\n\n");
+                printf("         use in the following statistics, which must be treated with extreme caution\n");
                 int i = 0;
-                clipper::Range<double> range = hklinf.invresolsq_range();
+                clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
                 for ( ; i != NBINS-1 ; ++i) {
                     if ( compt.completeness2(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
                 }
@@ -441,14 +445,58 @@ int main(int argc, char **argv)
                         }
                     if (j != NBINS-1 ) {
                         float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                        reso_range.include(d);	
+                        reso_range.include(d);
                     } else {
                         reso_range.include(range.max() );
                     }
                 }
-                rr = ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(reso_range.min() ) - 1.0/std::sqrt(reso_range.max() );
+                amax = 1.0/std::sqrt(reso_range.max() );
+                rr = ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(reso_range.min() ) - amax;
                 ACCEPTABLE -= 0.1;
-            } while ( rr < 4.0);
+                printf("         Resolution Range of this data for these values is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), amax );
+                if (ACCEPTABLE <= 0.40) break;
+            } while ( rr < 4.0 || amax > std::max(6.8,rmax+2.0) );
+            if (ACCEPTABLE <= 0.40) reso_range = clipper::Range<double>();
+            
+            // try on Istandard
+            if (reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
+                printf("         Attempt resolution range estimate using Istandard < 1.0 (Ideally would use 0.2) \n");
+                int i = 0;
+                clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
+                for ( ; i != NBINS-1 ; ++i) {
+                    if ( compt.standard(compt.bin2invresolsq(i)) < 1.0 && compt.standard(compt.bin2invresolsq(i+1)) < 1.0 ) break;
+                }
+                if ( i != (NBINS-1) ) {
+                    int j = NBINS-1;
+                    for ( ; j != 1 ; --j) {
+                        if ( compt.standard(compt.bin2invresolsq(j)) < 1.0 && compt.standard(compt.bin2invresolsq(j-1)) < 1.0 ) break;
+                    }
+                    if (j != 0 )
+                        if (i != 0) {
+                            float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
+                            reso_range.include(d);
+                        } else {
+                            reso_range.include(minres );
+                        }
+                    if (j != NBINS-1 ) {
+                        float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
+                        reso_range.include(d);
+                    } else {
+                        reso_range.include(range.max() );
+                    }
+                } else {
+                    reso_range = range;
+                }
+                if ( reso_range.max() != -999999999 && reso_range.min() != 999999999 ) {
+                    printf("         Resolution Range of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+                }
+            }
+            
+            if (reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
+                reso_range.include(minres);
+                reso_range.include(1.0/std::pow(rmax+2.0,2.0));
+                printf("WARNING: Arbitary resolution range of %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+            }
         }
     }
     printf("\nThe high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
@@ -511,9 +559,9 @@ int main(int argc, char **argv)
     printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
     if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
     float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
-    invopt *= ratio;
-    resopt = 1.0/sqrt(invopt);
-    printf("Resolution limit in weakest direction = %7.3f A\n",resopt);
+    //invopt *= ratio;
+    //resopt = 1.0/sqrt(invopt);
+    printf("Resolution limit in weakest direction = %7.3f A\n",1.0/std::sqrt(invopt*ratio));
     if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
     prog.summary_end();
     printf("\n");
@@ -595,7 +643,7 @@ int main(int argc, char **argv)
     printf("\nTWINNING ANALYSIS:\n\n");
     float lval(0.0);
     //reduced resolution range for twinning tests
-    reso_Twin = clipper::Resolution(resopt);
+    reso_Twin = clipper::Resolution(resopt );
     //user override of defaults
     if (!reso_u2.is_null() ) {
         reso_Twin = clipper::Resolution( clipper::Util::max( reso_Twin.limit(), reso_u2.limit() ) );
@@ -618,7 +666,7 @@ int main(int argc, char **argv)
     ltest.summary();
     ltest.loggraph();
     
-	Moments<data32::I_sigI> m(isig);
+	Moments<data32::I_sigI> m(isig,reso_range);
 	m.loggraph();
 	
 	Moments<data32::I_sigI> mc(ianiso,reso_range);
