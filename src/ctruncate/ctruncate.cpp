@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     clipper::String prog_string = "ctruncate";
     clipper::String prog_vers = "1.13.9";
     clipper::String prog_date = "$Date: 2013/11/27";
-    CCP4Program prog( prog_vers.c_str(), prog_vers.c_str(), prog_date.c_str() );
+    CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
