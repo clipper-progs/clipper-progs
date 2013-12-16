@@ -812,9 +812,22 @@ namespace ctruncate {
 		const clipper::HKL_info& hklinf = intensity->hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		
+		//book keeping for resolution values
+		std::vector<int> bins(nbins,0);
+		std::vector<clipper::ftype> rbins(nbins,0.0);
+		clipper::Resolution_ordinal s_ord;
+		s_ord.init(*intensity, intensity->base_cell(), 1.0);
+		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first(); !ih.last(); ih.next() ) {
+			if ( !(*intensity)[ih].missing() ) {
+				int j = int(double(nbins)*s_ord.ordinal(ih.invresolsq() ) );
+				bins[j]++;
+				rbins[j] += ih.invresolsq();
+			}
+		}
+		
 		//calc wilson plot (double handling unfortunately)
 		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_linear basis_fo_wilson( *intensity, nbins, 2.0 );
+		clipper::BasisFn_binner basis_fo_wilson( *intensity, nbins, 1.0 );
 		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( *intensity, 1);
 		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
 		
@@ -832,7 +845,7 @@ namespace ctruncate {
         }
         
         for ( int i=0; i!=nbins; ++i ) {
-            float res = maxres*(float(i)+0.5)/float(nbins); 
+            float res = rbins[i]/bins[i]; 
             float totalscat = 0;
             for (int j=0;j!=5;++j) {
                 clipper::Atom atom(clipper::Atom::null() );
@@ -878,7 +891,7 @@ namespace ctruncate {
 		}		
 		
 		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_linear basis_fo_wilson( xsig, nbins, 2.0 );
+		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
 		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
 		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
 		
@@ -955,7 +968,7 @@ namespace ctruncate {
 		}		
 		
 		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_linear basis_fo_wilson( xsig, nbins, 2.0 );
+		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
 		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
 		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
 		
@@ -1017,7 +1030,7 @@ namespace ctruncate {
 		}		
 		
 		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_linear basis_fo_wilson( xsig, nbins, 2.0 );
+		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
 		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
 		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
 		

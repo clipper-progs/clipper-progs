@@ -1,3 +1,7 @@
+1.13.10
+- use more linear distribution for binning in wilson calculation.
+  Power 2 causes problems with small datasets.
+
 1.13.9
 - try to make more informed guesses at resolution range for gathering
   statistics when faced with poor data
