@@ -734,7 +734,7 @@ int main(int argc, char **argv)
         //mdtests[i].loggraph();
     }
     
-	std::cout << "Twin fractione estimates exluding operators" << std::endl;
+	std::cout << "Twin fraction estimates excluding operators" << std::endl;
 	std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
 	std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << mc.fraction() << std::endl << std::endl;
 	
