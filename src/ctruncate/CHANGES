@@ -1,3 +1,6 @@
+1.13.11
+- defensive code added to estimation of twin fraction from cumulative L-test
+
 1.13.10
 - use more linear distribution for binning in wilson calculation.
   Power 2 causes problems with small datasets.

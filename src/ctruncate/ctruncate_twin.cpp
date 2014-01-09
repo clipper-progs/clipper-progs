@@ -415,20 +415,24 @@ namespace ctruncate {
 			clipper::ftype x1(0.01), x2(0.49), x(0.50), y(0.0);
 			clipper::ftype y1 = meanNL(x1,l);
 			clipper::ftype y2 = meanNL(x2,l);
-
-			
-			do {
-				x = interpolate(nl, y1, y2, x1, x2);
-				y = meanNL(x,l);
-				if ( (nl - y)/(y2-y1) > 0.0 ) {
-					y1 = y;
-					x1 = x;
-				} else {
-					y2 = y;
-					x2 = x;
-				}
-			} while ( std::abs(y - nl) > 0.0001 );
-			alpha += x;
+			if (nl < y1) {
+				alpha += 0.0;
+			} else if ( nl > y2 ) {
+				alpha += 0.5;
+			} else {
+				do {
+					x = interpolate(nl, y1, y2, x1, x2);
+					y = meanNL(x,l);
+					if ( (nl - y)/(y2-y1) > 0.0 ) {
+						y1 = y;
+						x1 = x;
+					} else {
+						y2 = y;
+						x2 = x;
+					}
+				} while ( std::abs(y - nl) > 0.0001 );
+				alpha += x;
+			}
 			na += 1.0;
 		}
 		return alpha/na;
