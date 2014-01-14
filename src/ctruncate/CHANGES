@@ -1,3 +1,6 @@
+1.13.12
+- defensive code added to estimation of twin fraction from Murray-Rust plot
+
 1.13.11
 - defensive code added to estimation of twin fraction from cumulative L-test
 

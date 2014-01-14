@@ -628,7 +628,7 @@ namespace ctruncate {
             }
             _Hav = HT/NT;
             _H2av = HT2/NT;
-            _alpha = (0.5*(1.0 - sqrt(3.0*_H2av)));
+            _alpha = std::max(0.5*(1.0 - sqrt(3.0*_H2av)),0.0);
         }
     }
     
@@ -757,9 +757,14 @@ namespace ctruncate {
             clipper::ftype a, b, siga, sigb;
             straight_line_fit(_zpdf,x,weights,_nbins,a,b,siga,sigb);
             if (b > 0.5) {
-                a = 0.0;
-                b = 0.5;
-            }
+                alpha = 0.5;
+				beta = 0.0;
+				break;
+            } else if (b < 0.0 ) {
+				alpha = 0.0;
+				beta = 1.0;
+				break;
+			}
             alpha1 = alpha;
             alpha = b;
             beta = a;
