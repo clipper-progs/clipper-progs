@@ -240,6 +240,7 @@ am_src_nautilus_cnautilus_OBJECTS = src/nautilus/cnautilus.$(OBJEXT) \
 	src/nautilus/nautilus-join.$(OBJEXT) \
 	src/nautilus/nautilus-ss-find.$(OBJEXT) \
 	src/nautilus/nautilus-util.$(OBJEXT) \
+	src/nautilus/nautilus-tidy.$(OBJEXT) \
 	src/nautilus/nautilus-rebuild-bases.$(OBJEXT) \
 	src/nautilus/nautilus-target.$(OBJEXT) \
 	src/nautilus/nucleicacid_db.$(OBJEXT)
@@ -671,12 +672,14 @@ src_nautilus_cnautilus_SOURCES = src/nautilus/cnautilus.cpp \
 				 src/nautilus/nautilus-join.cpp \
 				 src/nautilus/nautilus-ss-find.cpp \
 				 src/nautilus/nautilus-util.cpp \
+				 src/nautilus/nautilus-tidy.cpp \
 				 src/nautilus/nautilus-rebuild-bases.cpp \
 				 src/nautilus/nautilus-target.cpp \
 				 src/nautilus/nucleicacid_db.cpp \
 				 src/nautilus/nautilus-join.h \
 				 src/nautilus/nautilus-ss-find.h \
 				 src/nautilus/nautilus-util.h \
+				 src/nautilus/nautilus-tidy.h \
 				 src/nautilus/nautilus-rebuild-bases.h \
 				 src/nautilus/nautilus-target.h \
 				 src/nautilus/nucleicacid_db.h \
@@ -1002,6 +1005,8 @@ src/nautilus/nautilus-ss-find.$(OBJEXT): src/nautilus/$(am__dirstamp) \
 	src/nautilus/$(DEPDIR)/$(am__dirstamp)
 src/nautilus/nautilus-util.$(OBJEXT): src/nautilus/$(am__dirstamp) \
 	src/nautilus/$(DEPDIR)/$(am__dirstamp)
+src/nautilus/nautilus-tidy.$(OBJEXT): src/nautilus/$(am__dirstamp) \
+	src/nautilus/$(DEPDIR)/$(am__dirstamp)
 src/nautilus/nautilus-rebuild-bases.$(OBJEXT):  \
 	src/nautilus/$(am__dirstamp) \
 	src/nautilus/$(DEPDIR)/$(am__dirstamp)
@@ -1156,6 +1161,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-target.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tools.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tidy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nucleicacid_db.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/cparrot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-lib.Po@am__quote@
