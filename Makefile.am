@@ -192,12 +192,14 @@ src_nautilus_cnautilus_SOURCES = src/nautilus/cnautilus.cpp \
 				 src/nautilus/nautilus-join.cpp \
 				 src/nautilus/nautilus-ss-find.cpp \
 				 src/nautilus/nautilus-util.cpp \
+				 src/nautilus/nautilus-tidy.cpp \
 				 src/nautilus/nautilus-rebuild-bases.cpp \
 				 src/nautilus/nautilus-target.cpp \
 				 src/nautilus/nucleicacid_db.cpp \
 				 src/nautilus/nautilus-join.h \
 				 src/nautilus/nautilus-ss-find.h \
 				 src/nautilus/nautilus-util.h \
+				 src/nautilus/nautilus-tidy.h \
 				 src/nautilus/nautilus-rebuild-bases.h \
 				 src/nautilus/nautilus-target.h \
 				 src/nautilus/nucleicacid_db.h \

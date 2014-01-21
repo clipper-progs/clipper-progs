@@ -73,13 +73,8 @@ void NautilusLog::log( const clipper::String& id ) {}
 
 void NautilusLog::log( const clipper::String& id, const clipper::MiniMol& mol, bool view )
 {
-  int nnc(0), nna(0);
-  for ( int c = 0; c < mol.size(); c++ )
-    if ( !mol[c].exists_property( "NON-NA" ) ) {
-      nnc += 1;
-      nna += mol[c].size();
-    }
-  std::cout << id << ": " << nna << " nucleic acids built in " << nnc << " chains." << std::endl;
+  clipper::String msg = log_info( mol );
+  std::cout << id << ": " << msg << std::endl;
   if ( view ) {
     for ( int c = 0; c < mol.size(); c++ )
       std::cout << mol[c].size() << " ";
@@ -100,6 +95,19 @@ void NautilusLog::log( const clipper::String& id, const clipper::MiniMol& mol, b
     }
   }
   log( id );
+}
+
+
+clipper::String NautilusLog::log_info( const clipper::MiniMol& mol )
+{
+  int nnc(0), nna(0);
+  for ( int c = 0; c < mol.size(); c++ )
+    if ( !mol[c].exists_property( "NON-NA" ) ) {
+      nnc += 1;
+      nna += mol[c].size();
+    }
+  return clipper::String(nna,4) + " nucleic acids built in " +
+         clipper::String(nna,3) + " chains.";
 }
 
 

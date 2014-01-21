@@ -14,12 +14,13 @@
 #include "nautilus-join.h"
 #include "nautilus-sequence.h"
 #include "nautilus-rebuild-bases.h"
+#include "nautilus-tidy.h"
 #include "nautilus-util.h"
 
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.2", "$Date: 2011/09/30" );
+  CCP4Program prog( "cnautilus", "0.4", "$Date: 2014/01/10" );
   prog.set_termination_message( "Failed" );
 
   // defaults
@@ -40,7 +41,7 @@ int main( int argc, char** argv )
   int nhit = 100;
   double res_in = 2.0;         // Resolution limit
   double srchst = 18.0;        // Search angle step
-  int verbose = 0;
+  int verbose = 5;
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -226,46 +227,49 @@ int main( int argc, char** argv )
 
     // find chains
     mol_wrk = natools.find( xwrk, mol_wrk, nhit/2, nhit/2, srchst );
-    log.log( "FIND", mol_wrk, true );
+    log.log( "FIND", mol_wrk, verbose >= 5 );
 
     // grow chains
     mol_wrk = natools.grow( xwrk, mol_wrk, 25, 0.001 );
-    log.log( "GROW", mol_wrk, true );
+    log.log( "GROW", mol_wrk, verbose >= 5 );
 
     // join
     NucleicAcidJoin na_join;
     mol_wrk = na_join.join( mol_wrk );
-    log.log( "JOIN", mol_wrk, true );
+    log.log( "JOIN", mol_wrk, verbose >= 5 );
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     // link
     mol_wrk = natools.link( xwrk, mol_wrk );
-    log.log( "LINK", mol_wrk, true );
+    log.log( "LINK", mol_wrk, verbose >= 5 );
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     // prune
     mol_wrk = natools.prune( mol_wrk );
-    log.log( "PRUNE", mol_wrk, true );
+    log.log( "PRUNE", mol_wrk, verbose >= 5 );
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     // rebuild
     mol_wrk = natools.rebuild_chain( xwrk, mol_wrk );
-    log.log( "CHAIN", mol_wrk, true );
+    log.log( "CHAIN", mol_wrk, verbose >= 5 );
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     // sequence
     NucleicAcidSequence na_seqnc;
     mol_wrk = na_seqnc.sequence( xwrk, mol_wrk, seq_wrk );
-    log.log( "SEQNC", mol_wrk, true );
+    log.log( "SEQNC", mol_wrk, verbose >= 5 );
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     // rebuild
     NucleicAcidRebuildBases na_bases;
     mol_wrk = na_bases.rebuild_bases( xwrk, mol_wrk );
-    log.log( "BASES", mol_wrk, true );
+    log.log( "BASES", mol_wrk, verbose >= 5 );
     for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
-    std::cout << std::endl;
+    prog.summary_beg();
+    clipper::String msg = log.log_info( mol_wrk );
+    std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << msg << std::endl;
+    prog.summary_end();
   }
 
   // move to match input model
@@ -298,6 +302,7 @@ int main( int argc, char** argv )
     }
     mol_new.insert( mpx );
   }
+  ModelTidy::chain_renumber( mol_new, seq_wrk );
   clipper::MMDBfile pdbfile;
   pdbfile.export_minimol( mol_new );
   pdbfile.write_file( oppdb );
