@@ -78,6 +78,9 @@ protected:
     template <class D > const D& sigobs( const clipper::datatypes::F_sigF<D>& f ) { return f.sigf(); }
     template <class D > const D& sigobs( const clipper::datatypes::F_phi<D>& f ) { return 0.0; }
     template <class D > const D& sigobs( const clipper::datatypes::I_sigI<D>& f ) { return f.sigI(); }
+    template <class D > int   type( const clipper::datatypes::F_sigF<D>& f ) const { return 1; }
+    template <class D > int   type( const clipper::datatypes::F_phi<D>& f ) const { return 1; }
+    template <class D > int   type( const clipper::datatypes::I_sigI<D>& f ) const { return 2; }
 
 private:
 	clipper::ftype power;
@@ -132,9 +135,8 @@ TargetFn_meanInth<T>::rderiv( const clipper::HKL_info::HKL_reference_index& ih, 
     // it's really this bit that does the work
 	Rderiv result;
     const clipper::HKL_data<T>& data = *hkl_data;
-    if ( !data[ih].missing() && (rings.InRing(ih.hkl().invresolsq(data.base_cell() ) ) == -1 ) ) {
-		clipper::ftype d = fh - pow( obs(data[ih]) / ih.hkl_class().epsilon(),  // do we want sqrt / epsilon here?
-						   power );
+	if ( !data[ih].missing() && (rings.InRing(ih.hkl().invresolsq(data.base_cell() ) ) == -1 ) ) {
+		clipper::ftype d = fh - pow( obs(data[ih]) / pow(ih.hkl_class().epsilon(), clipper::ftype(type(data[ih])/2.0) ), power );
 		result.r = d * d;
 		result.dr = 2.0 * d;
 		result.dr2 = 2.0;
@@ -171,8 +173,7 @@ TargetFn_meanSignth<T>::rderiv( const clipper::HKL_info::HKL_reference_index& ih
 	Rderiv result;
     const clipper::HKL_data<T>& data = *hkl_data;
     if ( !data[ih].missing() && (rings.InRing(ih.hkl().invresolsq(data.base_cell() ) ) == -1 ) ) {
-		clipper::ftype d = fh - pow( clipper::ftype(data[ih].sigI()) / ih.hkl_class().epsilon(),  // do we want sqrt / epsilon here?
-									power );
+		clipper::ftype d = fh - pow( clipper::ftype(data[ih].sigI()) / pow(ih.hkl_class().epsilon(), clipper::ftype(type(data[ih])/2.0) ), power );
 		result.r = d * d;
 		result.dr = 2.0 * d;
 		result.dr2 = 2.0;
