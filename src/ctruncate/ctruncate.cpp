@@ -53,8 +53,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.13.12";
-    clipper::String prog_date = "$Date: 2014/01/14";
+    clipper::String prog_vers = "1.13.13";
+    clipper::String prog_date = "$Date: 2014/02/27";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -557,7 +557,7 @@ int main(int argc, char **argv)
     
     printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
     printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
-    if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
+    //if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
     float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
     //invopt *= ratio;
     //resopt = 1.0/sqrt(invopt);

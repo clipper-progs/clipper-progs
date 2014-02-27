@@ -1093,7 +1093,7 @@ namespace ctruncate {
         }
         std::vector<T> v = mat.eigen( true );
         
-        _max = 0.0;
+        _max = -999.0;
         for (int i=0 ; i!=3 ; ++i) 
             if ( v[i] > _max ) _max = v[i];
         
