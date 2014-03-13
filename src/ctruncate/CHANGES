@@ -1,3 +1,8 @@
+1.14.0
+- skip anisotropy if symmetry forbids it
+- use per reflection restraint in anisotropy analysis
+- use tNCS is L-test
+
 1.13.13
 - correct exit when negative eigenvalues occur in anisotropy analysis
 

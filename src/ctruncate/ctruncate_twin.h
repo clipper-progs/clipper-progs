@@ -57,9 +57,11 @@ namespace ctruncate {
         // constructor, setup up L-test
         L_test( int nbins=20) : _cdf(nbins,0.0) {}
         // constructor, calculates L statistics if true
-        template<class T> explicit L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
+        template<class T> explicit L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>(), int nbins=20);
+        template<class T> explicit L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector< clipper::Symop>& tncs, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>(), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> clipper::ftype operator()(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso = clipper::Resolution(0.0)) ;
+        template<class T> clipper::ftype operator()(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>() ) ;
+		template<class T> clipper::ftype operator()(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector< clipper::Symop>& tncs, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>() ) ;
         // return L-statistic
         clipper::ftype statistic() const { return _Lav; }
 		// return L2-statistic
@@ -81,7 +83,7 @@ namespace ctruncate {
         void loggraph() const ;
         
     private:
-        clipper::Resolution _reso; //!< resolution used in calculation
+        clipper::Range<clipper::ftype> _reso; //!< resolution used in calculation
         clipper::ftype _Lav; //!< L-statistic
         clipper::ftype _L2av; //!< L-statistic squared
 		clipper::ftype _alpha; //!< alpha values from H-test
@@ -89,7 +91,7 @@ namespace ctruncate {
         std::vector<clipper::ftype> _cdf; //!< cumulative density function
         
         // perform calculation
-        template<class T> clipper::ftype calc(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution& reso );
+        template<class T> clipper::ftype calc(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector<clipper::Symop>& tncs );
 		//interpolate
 		inline clipper::ftype interpolate(const clipper::ftype y, const clipper::ftype y1, const clipper::ftype y2, const clipper::ftype x1, const clipper::ftype x2) const {
 			return	x1+(y-y1)*(x2-x1)/(y2-y1);
@@ -131,9 +133,9 @@ namespace ctruncate {
         // constructor, setup class
         H_test(int nbins=20) { _nbins=nbins; return; };
         // constructor, calculates H tests if true
-        template<class T> explicit H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
+        template<class T> explicit H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>(), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0)) ;
+        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>()) ;
         // return Hav from H-test
         const clipper::ftype statistics() const { return _Hav; }   
         // return twin fraction
@@ -148,7 +150,7 @@ namespace ctruncate {
         void loggraph() const ;
         
     private:
-        clipper::Resolution _reso; //!< resolution used in calculation
+        clipper::Range<clipper::ftype> _reso; //!< resolution used in calculation
         int _nbins; //!< number of bins in cdfs and pdfs
         clipper::Isymop _twinop; //!< twinning operator
         std::vector<int> _cdf; //!< cumulative density functions
@@ -156,7 +158,7 @@ namespace ctruncate {
         clipper::ftype _Hav;   //!< average value from H-test
         clipper::ftype _H2av;  //!< H statistic squared
         
-        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso);
+        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop);
     };
     
     //! Compute Britton-test on intensities
@@ -169,9 +171,9 @@ namespace ctruncate {
         // constructor, setup class
         Britton_test(int nbins=20) { _nbins=nbins; return; };
         // constructor, calculates Britton tests using fp if true
-        template<class T> explicit Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
+        template<class T> explicit Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>(), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,clipper::Resolution reso = clipper::Resolution(0.0)) ;
+        template<class T> const clipper::ftype operator()(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>()) ;
         // return score
         const clipper::ftype statistic() const { return _alpha; }
         // return twin fraction
@@ -188,14 +190,14 @@ namespace ctruncate {
     private:
         clipper::Isymop _twinop; //!< twinning operator
         int _nbins; //!< number of bins for distributions
-        clipper::Resolution _reso; //!< resolution used in calculation
+        clipper::Range<clipper::ftype> _reso; //!< resolution used in calculation
         std::vector <clipper::ftype> _pdf; //!< Britton plot
         std::vector <clipper::ftype> _zpdf; //!< zero probability density functions
         clipper::ftype _NTL; //!< number of data points
         clipper::ftype _alpha; //!< alpha values from Britton-tests
         clipper::ftype _beta; //!< offsets for Murray-Rust plot
         
-        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso);
+        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop);
     };
 
 
@@ -209,9 +211,11 @@ namespace ctruncate {
         // constructor, setup class
         MLBritton_test(int nbins=20) {  _nbins=nbins; return; };
         // constructor, calculates Britton tests using fp if true
-        template<class T> explicit MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(0.0), int nbins=20);
+        template<class T> explicit MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Symop ncs=clipper::Symop(clipper::Symop::identity() ), clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>(), int nbins=20);
         // perform calculation, or recalculate value
-        template<class T> const clipper::ftype operator()( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Coord_frac ncs=clipper::Coord_frac(0.0,0.0,0.0), clipper::Resolution reso = clipper::Resolution(0.0)) ;
+        template<class T> const clipper::ftype operator()( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Symop ncs=clipper::Symop(clipper::Symop::identity() ), clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>()) ;
+		// perform calculation, or recalculate value
+        template<class T> const clipper::ftype operator()( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop,  clipper::Range<clipper::ftype>& reso, clipper::Symop ncs=clipper::Symop(clipper::Symop::identity() ) ) ;
         // return score
         const clipper::ftype statistics() const { return _llk; }  
         // return twin fraction
@@ -229,8 +233,8 @@ namespace ctruncate {
         
     private:
         clipper::Isymop _twinop; //!< twinning operator
-        clipper::Coord_frac _ncs; //!< ncs vector
-        clipper::Resolution _reso; //!< resolution used in calculation
+        clipper::Symop _ncs; //!< ncs vector
+        clipper::Range<clipper::ftype> _reso; //!< resolution used in calculation
         int _nbins; //!< number of bins for distributions
         std::vector<clipper::ftype> _pdf; //!< zero probability density functions
         clipper::ftype _alpha; //!< alpha values from Britton-tests
@@ -238,7 +242,7 @@ namespace ctruncate {
         clipper::ftype _dr; //!< delta R
         
         
-        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso, const clipper::ResolutionFn& norm, const clipper::Coord_frac& ncs);
+        template<class T> void calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::ResolutionFn& norm, const clipper::Symop& ncs);
         
         template <class T> const clipper::ftype point(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::ResolutionFn& norm, const clipper::Isymop& twinop, const clipper::ftype& alpha, const clipper::ftype& Dr);
     };

@@ -141,7 +141,7 @@ namespace ctruncate {
 	{
 	public:
 		//! operator
-		const std::vector<clipper::Coord_frac>& operator()(clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution reso=clipper::Resolution(4.0));
+		const std::vector<clipper::Symop>& operator()(clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution reso=clipper::Resolution(4.0));
 		//! has tNCS test
 		bool hasNCS() { return peaks.size() != 0; }
 		//! number of operators
@@ -153,12 +153,12 @@ namespace ctruncate {
 		//! print out text summary
 		void summary();
         //! return tNCS operator as fractional coordinate
-        const clipper::Coord_frac& operator[](const int i) { return peaks[i]; }
+        const clipper::Symop& operator[](const int i) { return peaks[i]; }
 		
 	private:
 		clipper::HKL_data<clipper::datatypes::I_sigI<T> >* intensity; //!< dataset
 		clipper::Resolution reso; //!< resolution limits
-		std::vector<clipper::Coord_frac> peaks; //!< located peaks
+		std::vector<clipper::Symop> peaks; //!< located peaks
 		std::vector<T> peak_height; //!< height of located peaks as fraction of origin
 		std::vector<T> peak_prob; //!< Zwartz estimation of probability
 		

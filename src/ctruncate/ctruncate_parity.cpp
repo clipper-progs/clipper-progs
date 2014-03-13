@@ -45,7 +45,7 @@ namespace ctruncate {
 			if ( !isig[ih].missing() ) {
 				clipper::HKL hkl = ih.hkl();
 				int bin = int( double(nbins) * ih.invresolsq()/ double(maxres) - 0.5  );
-				if (bin >= nbins || bin < 0) printf("Warning: (parity) illegal bin number %d\n", bin);
+				if (bin >= nbins || bin < 0) continue;
 				//if ( ih.hkl_class().centric() ) printf("centric: %d %d %d\n", hkl.h(), hkl.k(), hkl.l() );
 				int h = hkl.h();
 				int k = hkl.k();
@@ -115,8 +115,6 @@ namespace ctruncate {
 			   Ntot[0][0]+Ntot[0][1], 
 			   Itot[0][0], Itot[0][1], Itot[1][0], Itot[1][1], Itot[2][0], Itot[2][1], Itot[3][0], Itot[3][1],
 			   Itot[4][0], Itot[4][1], Itot[5][0], Itot[5][1], Itot[6][0], Itot[6][1], Itot[7][0], Itot[7][1] );
+		return 0;
 	}
-
-
-
 }

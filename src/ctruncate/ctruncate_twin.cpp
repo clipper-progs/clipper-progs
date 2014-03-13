@@ -306,28 +306,51 @@ namespace ctruncate {
     
     /*! constructor for the L-test.
      \param isig Experimental intensities
-     \param reso Resolution limit for calculation (default 3.0A)
+     \param reso Resolution range for calculation
      \param nbins Number of bins for the CDF (default 20)
      \return type L_test */
-    template <class T> L_test::L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso, int nbins) {
+    template <class T> L_test::L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Range<clipper::ftype> reso, int nbins) {
         _reso = reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
-	_alpha = -1.0;
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
+		_alpha = -1.0;
         _cdf.resize(nbins);
-        calc(isig,reso);
+		std::vector<clipper::Symop> tncs;
+        calc(isig,tncs);
         return;
     }
+
+	template <class T> L_test::L_test( clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector<clipper::Symop>& tncs, clipper::Range<clipper::ftype> reso, int nbins) {
+        _reso = reso;
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
+		_alpha = -1.0;
+        _cdf.resize(nbins);
+		
+        calc(isig,tncs);
+        return;
+    }
+	
 
     /*! recalculate L-test.
      \param reso Resolution limit for calculation (default 3.0A)
      \return L-statistic */
-    template <class T> clipper::ftype L_test::operator() (clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution reso ) {
+    template <class T> clipper::ftype L_test::operator() (clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Range<clipper::ftype> reso ) {
         _reso = reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
 	_alpha = -1.0;
-        return calc(isig,reso);
+		std::vector<clipper::Symop> tncs;
+		
+        return calc(isig,tncs);
     }
         
+	template <class T> clipper::ftype L_test::operator() (clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector<clipper::Symop>& tncs, clipper::Range<clipper::ftype> reso ) {
+        _reso = reso;
+		if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
+		_alpha = -1.0;
+		
+        return calc(isig,tncs);
+    }
+
+	
 	/*! return alpha estimate from <|L|>
 	 \return alpha */
 	clipper::ftype L_test::estimateAlphafromL() const {
@@ -443,7 +466,7 @@ namespace ctruncate {
     void  L_test::summary() const {
         printf("\nL test for twinning: (Padilla and Yeates Acta Cryst. D59 1124 (2003))\n");
         printf("L statistic = %6.3f  (untwinned 0.5 perfect twin 0.375)\n", _Lav);
-        printf("Data has used to %6.2f A resolution\n",_reso.limit() );
+        printf("Data has used to %6.2f - %6.2f A resolution\n",1.0/std::sqrt(_reso.min()), 1.0/std::sqrt(_reso.max()) );
         
         printf("\n");
 		if (_Lav < 0.44) {
@@ -469,45 +492,76 @@ namespace ctruncate {
 		printf("$$\n\n");
     }
     
-    template <class T> clipper::ftype L_test::calc(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, clipper::Resolution& reso) {
+    template <class T> clipper::ftype L_test::calc(clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, std::vector<clipper::Symop>& tncs) {
         typedef clipper::HKL_data_base::HKL_reference_index HRI;
 
+		clipper::Spacegroup spgr = isig.hkl_info().spacegroup();
         clipper::Cell cell = isig.hkl_info().cell();
-        
+		std::vector<clipper::HKL> steps;
+		
+		for ( int g = 2 ; g != 8 ; g += 2) {
+			for ( int delta1 = -6; delta1 <= 6; delta1 += 2 ) {
+				for ( int delta2 = -6; delta2 <= 6; delta2 += 2 ) {
+					for ( int delta3 = -6; delta3 <= 6; delta3 += 2 ) {
+						clipper::HKL hkl2,hkl3;
+						hkl2.h() = delta1;
+						hkl2.k() = delta2;
+						hkl2.l() = delta3;
+						bool sys_abs(false);
+						if ( !(delta1==0 && delta2==0 && delta3==0) ) {
+							clipper::ftype dist2 = clipper::ftype(delta1*delta1+delta2*delta2+delta3*delta3);
+							if ( dist2 > clipper::ftype((g-2)*(g-2))+.001 && dist2 <= clipper::ftype(g*g)+.001 ) {
+								for ( int i = 1; i != spgr.num_symops(); ++i ) {
+									hkl3 = hkl2.transform(spgr.symop(i));
+									clipper::ftype shift = hkl2.sym_phase_shift(spgr.symop(i));
+									if ( hkl3 == hkl2 ) {
+										if ( cos(shift) < 0.999 ) {
+											sys_abs = true; // flag sysabs
+											break;
+										}
+									}
+								}
+								for (std::vector<clipper::Symop>::const_iterator i = tncs.begin() ; i != tncs.end() ; ++i ) {
+									clipper::ftype shift = hkl2.sym_phase_shift(*i);
+									if ( cos(shift) < 0.999 ) {
+										sys_abs = true;
+										break;
+									}
+								}
+								if (!sys_abs) steps.push_back(hkl2);
+							}
+						}
+					}
+					}
+				}
+			if (steps.size() >= 4) break;
+		}
+			
         double LT=0.0;
 		double LT2=0.0;
 		double NLT=0.0;
         
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-				clipper::HKL hkl = ih.hkl();
-                if ( hkl.invresolsq(cell) > _reso.invresolsq_limit() ) continue;
-				int h = hkl.h();
-				int k = hkl.k();
-				int l = hkl.l();
-				for ( int delta1 = -2; delta1 <= 2; delta1 += 2 ) {
-					for ( int delta2 = -2; delta2 <= 2; delta2 += 2 ) {
-						for ( int delta3 = -2; delta3 <= 2; delta3 += 2 ) {
-							clipper::HKL hkl2;
-							hkl2.h() = h+delta1;
-							hkl2.k() = k+delta2;
-							hkl2.l() = l+delta3;
-							if ( !(delta1==0 && delta2==0 && delta3==0) ) {
-                                clipper::ftype I1 = isig[ih].I();
-                                clipper::ftype I2 = isig[hkl2].I();
-								//double weight = 1.0/(isig[ih].sigI() + isig[jh].sigI());
-                                clipper::ftype weight = 1.0;
-                                clipper::ftype L = 0.0;
-								//if ( I1 != 0.0 && I2 != 0.0 && I1/isig[ih].sigI() > 0.0 && I2/isig[hkl2].sigI() > 0.0 ) L = (I2-I1)/(I2+I1);
-								if ( I1 != 0.0 && I2 != 0.0 ) L = (I2-I1)/(I2+I1);
-								//printf("%f\n",L);
-								if (fabs(L) < 1.0){
-									LT += std::fabs(L)*weight;
-									LT2 += L*L*weight;
-									NLT += weight;
-									for (int i=0;i != _cdf.size() ;++i) {
-										if ( std::fabs(L) < (clipper::ftype(i+1))/double(_cdf.size()) ) _cdf[i]++;
-									}
+				if (_reso.contains(ih.invresolsq() ) ) {
+					clipper::HKL hkl = ih.hkl();
+					clipper::ftype weight = ih.hkl_class().epsilonc();
+					int h = hkl.h();
+					int k = hkl.k();
+					int l = hkl.l();
+					for (std::vector<clipper::HKL>::const_iterator i = steps.begin() ; i != steps.end() ; ++i ) {
+						clipper::HKL hkl2 = hkl + (*i);
+						clipper::ftype I1 = isig[ih].I();
+						if (!isig[hkl2].missing() ) {
+							clipper::ftype I2 = isig[hkl2].I();
+							clipper::ftype L(0.0);
+							if ( I1 != 0.0 && I2 != 0.0 ) L = (I2-I1)/(I2+I1);
+							if (fabs(L) < 1.0){
+								LT += std::fabs(L)*weight;
+								LT2 += L*L*weight;
+								NLT += weight;
+								for (int i=0;i != _cdf.size() ;++i) {
+									if ( std::fabs(L) < (clipper::ftype(i+1))/double(_cdf.size()) ) _cdf[i]++;
 								}
 							}
 						}
@@ -515,7 +569,7 @@ namespace ctruncate {
 				}
 			}
 		}
-        
+			
         _NLT = NLT;
 		_Lav = LT/NLT;
 		_L2av = LT2/NLT;
@@ -531,22 +585,22 @@ namespace ctruncate {
      \param reso Resolution limit for calculation (default 3.0A)
      \param nbins Number of bins for the CDF (default 20)
      \return type H_test */
-    template <class T> H_test::H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, const clipper::Resolution reso , int nbins) {
+    template <class T> H_test::H_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, clipper::Range<clipper::ftype> reso , int nbins) {
         _nbins = nbins;
         _reso = reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop = twin;
-        calc(isig,twin,reso);
+        calc(isig,twin);
     }
     
     /*! recalculate H-test.
      \param reso Resolution limit for calculation (default 3.0A)
      \return alphas */
-    template <class T> const clipper::ftype H_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, clipper::Resolution reso ) { 
+    template <class T> const clipper::ftype H_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twin, clipper::Range<clipper::ftype> reso ) { 
         _reso=reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop=twin;
-        calc(isig,twin,reso);
+        calc(isig,twin);
         return _alpha;
     }
         
@@ -592,7 +646,7 @@ namespace ctruncate {
         
     }
     
-    template <class T>  void H_test::calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso) {
+    template <class T>  void H_test::calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop) {
         typedef clipper::HKL_data_base::HKL_reference_index HRI;
         
         double HT(0.0), HT2(0.0), NT(0.0);
@@ -601,29 +655,31 @@ namespace ctruncate {
         clipper::Vec3<int> jhkl, jhkl2;
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
             if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-                clipper::HKL hkl = ih.hkl();
-                jhkl[0] = hkl.h();
-                jhkl[1] = hkl.k();
-                jhkl[2] = hkl.l();
-                clipper::HKL twin;
-                jhkl2 = twinop*jhkl;
-                twin.h() = jhkl2[0]/scalefac;
-                twin.k() = jhkl2[1]/scalefac;
-                twin.l() = jhkl2[2]/scalefac;
-                if (!isig[twin].missing()) {
-                    double I1 = isig[ih].I();
-                    double I2 = isig[twin].I();
-                    double weight = 1.0;
-                    double H = 0.0;
-                    if ( I1 != 0.0 && I2 != 0.0) H = (I2-I1)/(I2+I1);
-                    if (fabs(H) < 1){
-                        HT += fabs(H)*weight;
-                        HT2 += H*H*weight;
-                        NT += weight;
-                        for (int j=0; j != _cdf.size(); ++j) {
-                            if ( fabs(H) < (double(j+1))/_cdf.size() ) _cdf[j]++;
-                        }
-                    }
+				if (_reso.contains(ih.invresolsq() ) ) {
+					clipper::HKL hkl = ih.hkl();
+					jhkl[0] = hkl.h();
+					jhkl[1] = hkl.k();
+					jhkl[2] = hkl.l();
+					clipper::HKL twin;
+					jhkl2 = twinop*jhkl;
+					twin.h() = jhkl2[0]/scalefac;
+					twin.k() = jhkl2[1]/scalefac;
+					twin.l() = jhkl2[2]/scalefac;
+					if (!isig[twin].missing()) {
+						double I1 = isig[ih].I();
+						double I2 = isig[twin].I();
+						double weight = 1.0;
+						double H = 0.0;
+						if ( I1 != 0.0 && I2 != 0.0) H = (I2-I1)/(I2+I1);
+						if (fabs(H) < 1){
+							HT += fabs(H)*weight;
+							HT2 += H*H*weight;
+							NT += weight;
+							for (int j=0; j != _cdf.size(); ++j) {
+								if ( fabs(H) < (double(j+1))/_cdf.size() ) _cdf[j]++;
+							}
+						}
+					}
                 }
             }
             _Hav = HT/NT;
@@ -641,21 +697,21 @@ namespace ctruncate {
      \param reso Resolution limit for calculation (default 3.0A)
      \param nbins Number of bins for the CDF (default 50)
      \return type Britton_test */
-    template <class T> Britton_test::Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso , int nbins) {
+    template <class T> Britton_test::Britton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype> reso , int nbins) {
         _reso=reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop=twinop;
-        calc(isig,twinop,reso);        
+        calc(isig,twinop);        
     }
     
     /*! recalculate Britton-test.
      \param reso Resolution limit for calculation (default 3.0A)
      \return alphas */
-    template <class T> const clipper::ftype Britton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Resolution reso ) {
+    template <class T> const clipper::ftype Britton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype> reso ) {
         _reso=reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop=twinop;
-        calc(isig,twinop,reso);
+        calc(isig,twinop);
         return _alpha;
     }
     
@@ -701,7 +757,7 @@ namespace ctruncate {
         
     }
     
-    template <class T>  void Britton_test::calc(const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso) {
+    template <class T>  void Britton_test::calc(const clipper::HKL_data<clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop) {
         
         typedef clipper::HKL_data_base::HKL_reference_index HRI;
         
@@ -718,35 +774,37 @@ namespace ctruncate {
         clipper::Vec3<int> jhkl, jhkl2;
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
             if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-                clipper::HKL hkl = ih.hkl();
-                jhkl[0] = hkl.h();
-                jhkl[1] = hkl.k();
-                jhkl[2] = hkl.l();
-                clipper::HKL twin;
-                jhkl2 = twinop*jhkl;
-                twin.h() = jhkl2[0];
-                twin.k() = jhkl2[1];
-                twin.l() = jhkl2[2];
-                twin.h() = jhkl2[0]/scalefac;
-                twin.k() = jhkl2[1]/scalefac;
-                twin.l() = jhkl2[2]/scalefac;
-                //printf("%d %d %d %d %d %d\n",hkl.h(),hkl.k(),hkl.l(),twin.h(),twin.k(),twin.l());
-                //printf("%d %d %d %d %d %d\n",jhkl[0],jhkl[1],jhkl[2],jhkl2[0],jhkl2[1],jhkl2[2]);
-                if (!isig[twin].missing()) {
-                    double I1 = isig[ih].I();
-                    double I2 = isig[twin].I();
-                    ++NT;
-                    
-                    if ( I1 > 0.0 && I2 > 0.0 && I2 < I1 ) {
-                        double B = I2/(I1+I2);
-                        int bin = int(2*_nbins*B);
-                        if (bin >= 0 && bin < _nbins) _pdf[bin]++;
-                    }
-                    for (int j = 0; j != _nbins ; ++j) {
-                        clipper::ftype alpha = 0.5*double(j)/double(_nbins);
-                        clipper::ftype J = ((1.0-alpha)*I1-alpha*I2)/(1.0-2*alpha);
-                        if ( J < 0.0 ) _zpdf[j]++;
-                    }
+				if (_reso.contains(ih.invresolsq() ) ) {
+					clipper::HKL hkl = ih.hkl();
+					jhkl[0] = hkl.h();
+					jhkl[1] = hkl.k();
+					jhkl[2] = hkl.l();
+					clipper::HKL twin;
+					jhkl2 = twinop*jhkl;
+					twin.h() = jhkl2[0];
+					twin.k() = jhkl2[1];
+					twin.l() = jhkl2[2];
+					twin.h() = jhkl2[0]/scalefac;
+					twin.k() = jhkl2[1]/scalefac;
+					twin.l() = jhkl2[2]/scalefac;
+					//printf("%d %d %d %d %d %d\n",hkl.h(),hkl.k(),hkl.l(),twin.h(),twin.k(),twin.l());
+					//printf("%d %d %d %d %d %d\n",jhkl[0],jhkl[1],jhkl[2],jhkl2[0],jhkl2[1],jhkl2[2]);
+					if (!isig[twin].missing()) {
+						double I1 = isig[ih].I();
+						double I2 = isig[twin].I();
+						++NT;
+						
+						if ( I1 > 0.0 && I2 > 0.0 && I2 < I1 ) {
+							double B = I2/(I1+I2);
+							int bin = int(2*_nbins*B);
+							if (bin >= 0 && bin < _nbins) _pdf[bin]++;
+						}
+						for (int j = 0; j != _nbins ; ++j) {
+							clipper::ftype alpha = 0.5*double(j)/double(_nbins);
+							clipper::ftype J = ((1.0-alpha)*I1-alpha*I2)/(1.0-2*alpha);
+							if ( J < 0.0 ) _zpdf[j]++;
+						}
+					}
                 }
             }
         }
@@ -790,9 +848,9 @@ namespace ctruncate {
      \param reso Resolution limit for calculation (default 3.0A)
      \param nbins Number of bins for the CDF (default 20)
      \return type MLBritton_test */
-    template <class T> MLBritton_test::MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Coord_frac ncs, clipper::Resolution reso, int nbins ) {
+    template <class T> MLBritton_test::MLBritton_test( const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Symop ncs, clipper::Range<clipper::ftype> reso, int nbins ) {
         _reso=reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop = twinop;
         _ncs = ncs;
         //norm using lots of bins
@@ -802,7 +860,7 @@ namespace ctruncate {
         TargetFn_meanInth<clipper::data32::I_sigI> target( isig, 1 );
         clipper::ResolutionFn norm( isig.hkl_info(), basis, target, params );
         
-        calc(isig,twinop,reso,norm,ncs);        
+        calc(isig,twinop,norm,ncs);        
     }
     
     /*! calculate Britton-test.
@@ -811,9 +869,9 @@ namespace ctruncate {
      \param ncs tNCS vector as Coord_frac (default NULL)
      \param reso Resolution limit for calculation (default 3.0A)
      \return alpha */
-    template <class T> const clipper::ftype MLBritton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Coord_frac ncs, clipper::Resolution reso ) {
+    template <class T> const clipper::ftype MLBritton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Symop ncs, clipper::Range<clipper::ftype> reso ) {
         _reso=reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
         _twinop = twinop;
         _ncs = ncs;
         //norm using lots of bins
@@ -823,9 +881,32 @@ namespace ctruncate {
         TargetFn_meanInth<clipper::datatypes::I_sigI<T> > target( isig, 1 );
         clipper::ResolutionFn norm( isig.hkl_info(), basis, target, params );
         
-        calc(isig,twinop,reso,norm,ncs);
+        calc(isig,twinop,norm,ncs);
         return _alpha;
     }
+	
+	/*! calculate Britton-test.
+     \param isig Intensity data
+     \param twinop Twinning operator as Isymop
+     \param ncs tNCS vector as Coord_frac (default NULL)
+     \param reso Resolution limit for calculation (default 3.0A)
+     \return alpha */
+    template <class T> const clipper::ftype MLBritton_test::operator() (const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, clipper::Range<clipper::ftype>& reso, clipper::Symop ncs ) {
+        _reso=reso;
+        if (_reso.max() < 0 ) _reso = clipper::Range<clipper::ftype>(isig.hkl_info().invresolsq_range() );
+        _twinop = twinop;
+        _ncs = ncs;
+        //norm using lots of bins
+        unsigned int nprm = 60;
+        std::vector<double> params( nprm, 1.0 );
+        clipper::BasisFn_spline basis( isig, nprm, 2.0 );
+        TargetFn_meanInth<clipper::datatypes::I_sigI<T> > target( isig, 1 );
+        clipper::ResolutionFn norm( isig.hkl_info(), basis, target, params );
+        
+        calc(isig,twinop,norm,ncs);
+        return _alpha;
+    }
+	
         
     /*! output name of operator
      */
@@ -886,112 +967,114 @@ namespace ctruncate {
         clipper::Vec3<int> jhkl, jhkl2;
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
             if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-                clipper::HKL hkl = ih.hkl();
-                jhkl[0] = hkl.h();
-                jhkl[1] = hkl.k();
-                jhkl[2] = hkl.l();
-                clipper::HKL twin;
-                jhkl2 = twinop*jhkl;
-                twin.h() = jhkl2[0];
-                twin.k() = jhkl2[1];
-                twin.l() = jhkl2[2];
-                twin.h() = jhkl2[0]/scalefac;
-                twin.k() = jhkl2[1]/scalefac;
-                twin.l() = jhkl2[2]/scalefac;
-                if (!isig[twin].missing()) {
-                    double D = std::exp(-std::pow(clipper::Util::pi(),3.0)*std::pow(Dr,2.0)*hkl.invresolsq(hklinf.cell())); 
-					// Assume normal distribution of the coordinate errors Luzzatti (1952) Acta Cryst 5 802.
-                    //NT++;
-                    double eps1 = ih.hkl_class().epsilon();
-                    double eps2 = spgr.hkl_class(twin).epsilon(); 
-                    double I1 = isig[ih].I()/eps1;
-                    double I2 = isig[twin].I()/eps2;
-                    double S1 = isig[ih].sigI()/eps1;
-                    double S2 = isig[twin].sigI()/eps2;
-                    double sigma1 = norm.f(ih);
-                    double sigma2 = norm.f(ih);
-                    //double j1 = I1-S1*S1/(sigma1); // mean of J1 integral
-                    //double j2 = I2-S2*S2/(sigma2); // mean of J2 integral
-					double j1 = I1-S1*S1/(sigma1*(1.0-D*D)); // mean of J1 integral
-                    double j2 = I2-S2*S2/(sigma2*(1.0-D*D)); // mean of J2 integral
-                    
-					double n = clipper::Util::twopi()*sigma1*(1.0-D*D);
-					//std::cout << "Norm: " << D << " " << sigma1 << " = " << n << std::endl;
-					
-                    double num(0.0);
-                    double denom(0.0);
-                    
-                    double lrange2 = std::max(0.0,j2 - width*clipper::ftype(nprm/2)*S2);
-                    double urange2 = j2 + width*clipper::ftype(nprm/2)*S2;
-                    double interval2 = (urange2-lrange2)/clipper::ftype(nprm-1);
-                    double lrange1 = std::max(0.0,j1 - width*clipper::ftype(nprm/2)*S1);
-                    double urange1 = j1 + width*clipper::ftype(nprm/2)*S1;
-                    double interval1 = (urange1 - lrange1)/clipper::ftype(nprm-1);
-                    
-                    //denominator
-                    for (int ii = 0; ii != nprm ; ++ii ) {
-                        // integrals based on limits (1-a)I2/a and aI2/(1-a), adjusted for none zero mean and F&W gaussian approx
-                        double scale1 = ( ii == 0 || ii == (nprm-1) ) ? 1.0 : ((ii % 2 ) ? 4.0 : 2.0) ; //section width width*sigma, Simpsons Rule
-                        double x2 = lrange2+ii*interval2;
-                        
-                        double cov(0.0);
-                        double denom1(0.0);
-                        
-                        for (int jj = 0; jj != nprm ; ++jj ) {
-                            double scale = ( jj == 0 || jj == (nprm-1) ) ? 1.0 : ((jj % 2 ) ? 4.0 : 2.0) ; //section width interval, Simpsons Rule
-                            scale *= scale1;
-                            double x1 = lrange1+clipper::ftype(jj)*interval1;
-                            double i1 = a1*x1-alpha*x2;
-                            double i2 = a1*x2-alpha*x1;
-                            //cov = ( D > 0.0001 ) ?  D*std::sqrt(std::abs(i1*i2))/(a12*(1.0-D*D)*std::sqrt(sigma1*sigma2)) : 0.0;
-							//cov = (i1*i2 > 0.0000 ) ? cov : 0.0;
-							//cov = 0.0;
-                            denom1 += (scale/9.0)*interval1*interval2*exp(-0.5*std::pow( (x1-I1),2.0)/(S1*S1) -0.5*std::pow( (x2-I2),2.0)/(S2*S2)
-                                                                         -x1/((1.0-D*D)*sigma1)
-																		  -x2/((1.0-D*D)*sigma2));
-                            //                                             +2.0*cov);
-                        }
-                        denom += denom1;
-                        //limits
-                        double upper = ( alpha > 0.00001 ) ? (1.0-alpha)*x2/alpha : 99999.0*x2;
-                        double lower = alpha*x2/(1.0-alpha);
-						if (upper < lrange1 || lower > urange1) continue;
-                        double lrange = std::max(lower,lrange1);
-                        double urange = std::min(upper,urange1);
-                        int nint = (urange - lrange)/interval1+1;
-                        if (nint <= 0 ) continue;
-						nint = ( nint < 5 ) ? 5 : (nint/2)*2+1;
-						double interval = (urange - lrange)/clipper::ftype(nint-1);
+				if (_reso.contains(ih.invresolsq() ) ) {
+					clipper::HKL hkl = ih.hkl();
+					jhkl[0] = hkl.h();
+					jhkl[1] = hkl.k();
+					jhkl[2] = hkl.l();
+					clipper::HKL twin;
+					jhkl2 = twinop*jhkl;
+					twin.h() = jhkl2[0];
+					twin.k() = jhkl2[1];
+					twin.l() = jhkl2[2];
+					twin.h() = jhkl2[0]/scalefac;
+					twin.k() = jhkl2[1]/scalefac;
+					twin.l() = jhkl2[2]/scalefac;
+					if (!isig[twin].missing()) {
+						double D = std::exp(-std::pow(clipper::Util::pi(),3.0)*std::pow(Dr,2.0)*hkl.invresolsq(hklinf.cell())); 
+						// Assume normal distribution of the coordinate errors Luzzatti (1952) Acta Cryst 5 802.
+						//NT++;
+						double eps1 = ih.hkl_class().epsilon();
+						double eps2 = spgr.hkl_class(twin).epsilon(); 
+						double I1 = isig[ih].I()/eps1;
+						double I2 = isig[twin].I()/eps2;
+						double S1 = isig[ih].sigI()/eps1;
+						double S2 = isig[twin].sigI()/eps2;
+						double sigma1 = norm.f(ih);
+						double sigma2 = norm.f(ih);
+						//double j1 = I1-S1*S1/(sigma1); // mean of J1 integral
+						//double j2 = I2-S2*S2/(sigma2); // mean of J2 integral
+						double j1 = I1-S1*S1/(sigma1*(1.0-D*D)); // mean of J1 integral
+						double j2 = I2-S2*S2/(sigma2*(1.0-D*D)); // mean of J2 integral
 						
-						double num1(0.0),num2(0.0);
-                        for (int jj = 0; jj != nint ; ++jj ) {
-                            double scale = ( jj == 0 || jj == (nint-1) ) ? 1.0 : ((jj % 2 ) ? 4.0 : 2.0) ; //section width interval, Simpsons Rule
-                            scale *= scale1;
-                            double x1 = lrange+clipper::ftype(jj)*interval;
-                            double i1 = (a1*x1-alpha*x2)/a12;
-                            double i2 = (a1*x2-alpha*x1)/a12;
-							double i1i2 = i1*i2;
-                            cov = ( D > 0.00001 && i1i2 > 0.00001) ? D*std::sqrt(i1i2)/((1.0-D*D)*std::sqrt(sigma1*sigma2)) : 0.0;
-							double v = -0.5*std::pow( (x1-I1),2.0)/(S1*S1) -0.5*std::pow( (x2-I2),2.0)/(S2*S2)
-							-x1/((1.0-D*D)*sigma1)
-							-x2/((1.0-D*D)*sigma2);
-							num1 += (scale/9.0)*interval*interval2*exp(v+2.0*cov);
-							num2 += (scale/9.0)*interval*interval2*exp(v);
-                        }
-						num += num1;
-						denom += num1 - num2;
-                    
+						double n = clipper::Util::twopi()*sigma1*(1.0-D*D);
+						//std::cout << "Norm: " << D << " " << sigma1 << " = " << n << std::endl;
+						
+						double num(0.0);
+						double denom(0.0);
+						
+						double lrange2 = std::max(0.0,j2 - width*clipper::ftype(nprm/2)*S2);
+						double urange2 = j2 + width*clipper::ftype(nprm/2)*S2;
+						double interval2 = (urange2-lrange2)/clipper::ftype(nprm-1);
+						double lrange1 = std::max(0.0,j1 - width*clipper::ftype(nprm/2)*S1);
+						double urange1 = j1 + width*clipper::ftype(nprm/2)*S1;
+						double interval1 = (urange1 - lrange1)/clipper::ftype(nprm-1);
+						
+						//denominator
+						for (int ii = 0; ii != nprm ; ++ii ) {
+							// integrals based on limits (1-a)I2/a and aI2/(1-a), adjusted for none zero mean and F&W gaussian approx
+							double scale1 = ( ii == 0 || ii == (nprm-1) ) ? 1.0 : ((ii % 2 ) ? 4.0 : 2.0) ; //section width width*sigma, Simpsons Rule
+							double x2 = lrange2+ii*interval2;
+							
+							double cov(0.0);
+							double denom1(0.0);
+							
+							for (int jj = 0; jj != nprm ; ++jj ) {
+								double scale = ( jj == 0 || jj == (nprm-1) ) ? 1.0 : ((jj % 2 ) ? 4.0 : 2.0) ; //section width interval, Simpsons Rule
+								scale *= scale1;
+								double x1 = lrange1+clipper::ftype(jj)*interval1;
+								double i1 = a1*x1-alpha*x2;
+								double i2 = a1*x2-alpha*x1;
+								//cov = ( D > 0.0001 ) ?  D*std::sqrt(std::abs(i1*i2))/(a12*(1.0-D*D)*std::sqrt(sigma1*sigma2)) : 0.0;
+								//cov = (i1*i2 > 0.0000 ) ? cov : 0.0;
+								//cov = 0.0;
+								denom1 += (scale/9.0)*interval1*interval2*exp(-0.5*std::pow( (x1-I1),2.0)/(S1*S1) -0.5*std::pow( (x2-I2),2.0)/(S2*S2)
+																			  -x1/((1.0-D*D)*sigma1)
+																			  -x2/((1.0-D*D)*sigma2));
+								//                                             +2.0*cov);
+							}
+							denom += denom1;
+							//limits
+							double upper = ( alpha > 0.00001 ) ? (1.0-alpha)*x2/alpha : 99999.0*x2;
+							double lower = alpha*x2/(1.0-alpha);
+							if (upper < lrange1 || lower > urange1) continue;
+							double lrange = std::max(lower,lrange1);
+							double urange = std::min(upper,urange1);
+							int nint = (urange - lrange)/interval1+1;
+							if (nint <= 0 ) continue;
+							nint = ( nint < 5 ) ? 5 : (nint/2)*2+1;
+							double interval = (urange - lrange)/clipper::ftype(nint-1);
+							
+							double num1(0.0),num2(0.0);
+							for (int jj = 0; jj != nint ; ++jj ) {
+								double scale = ( jj == 0 || jj == (nint-1) ) ? 1.0 : ((jj % 2 ) ? 4.0 : 2.0) ; //section width interval, Simpsons Rule
+								scale *= scale1;
+								double x1 = lrange+clipper::ftype(jj)*interval;
+								double i1 = (a1*x1-alpha*x2)/a12;
+								double i2 = (a1*x2-alpha*x1)/a12;
+								double i1i2 = i1*i2;
+								cov = ( D > 0.00001 && i1i2 > 0.00001) ? D*std::sqrt(i1i2)/((1.0-D*D)*std::sqrt(sigma1*sigma2)) : 0.0;
+								double v = -0.5*std::pow( (x1-I1),2.0)/(S1*S1) -0.5*std::pow( (x2-I2),2.0)/(S2*S2)
+								-x1/((1.0-D*D)*sigma1)
+								-x2/((1.0-D*D)*sigma2);
+								num1 += (scale/9.0)*interval*interval2*exp(v+2.0*cov);
+								num2 += (scale/9.0)*interval*interval2*exp(v);
+							}
+							num += num1;
+							denom += num1 - num2;
+							
+						}
+						double m = std::abs(num)/std::abs(denom);
+						llk += ( m > SMALL ) ? eps1*eps2*(-log(m)+log(a12)) : eps1*eps2*(10.0+log(a12));
+					}
 				}
-				double m = std::abs(num)/std::abs(denom);
-				llk += ( m > SMALL ) ? eps1*eps2*(-log(m)+log(a12)) : eps1*eps2*(10.0+log(a12));
 			}
 		}
-	}
         return clipper::ftype(llk);
     }
     
     
-    template <class T>  void MLBritton_test::calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::Resolution& reso, const clipper::ResolutionFn& norm, const::clipper::Coord_frac& ncs) {
+    template <class T>  void MLBritton_test::calc(const clipper::HKL_data< clipper::datatypes::I_sigI<T> >& isig, const clipper::Isymop& twinop, const clipper::ResolutionFn& norm, const::clipper::Symop& ncs) {
         
         typedef clipper::HKL_data_base::HKL_reference_index HRI;
         clipper::Spacegroup spgr = isig.hkl_info().spacegroup();
@@ -1007,55 +1090,57 @@ namespace ctruncate {
         clipper::Vec3<int> jhkl, jhkl2;
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
             if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
-                clipper::HKL hkl = ih.hkl();
-                jhkl[0] = hkl.h();
-                jhkl[1] = hkl.k();
-                jhkl[2] = hkl.l();
-                clipper::HKL twin;
-                jhkl2 = twinop*jhkl;
-                twin.h() = jhkl2[0];
-                twin.k() = jhkl2[1];
-                twin.l() = jhkl2[2];
-                twin.h() = jhkl2[0]/scalefac;
-                twin.k() = jhkl2[1]/scalefac;
-                twin.l() = jhkl2[2]/scalefac;
-                
-                if (!isig[twin].missing()) {
-                    if (!isig[twin].missing()) {
-                        //NT++;
-                        double eps1 = ih.hkl_class().epsilon();
-                        double eps2 = spgr.hkl_class(twin).epsilon();
-                        double I1 = isig[ih].I()/eps1;
-                        double I2 = isig[twin].I()/eps2;
-                        double S1 = isig[ih].sigI()/eps1;
-                        double S2 = isig[twin].sigI()/eps2;
-                        clipper::ftype j1 = I1-S1*S1/norm.f(ih); // mean of J1 integral
-                        clipper::ftype j2 = I2-S2*S2/norm.f(ih); // mean of J2 integral
-                        //alphas
-                        for (int j = 0; j != _nbins ; ++j) {
-                            clipper::ftype alpha = 0.5*double(j)/double(_nbins);
-                            clipper::ftype a12 = (1.0 - 2.0*alpha);
-                            clipper::ftype a1 = (1.0 - alpha);
-                            clipper::ftype tmp = 0.0; //store integral
-                            // sum around I2
-                            clipper::ftype lrange2 = std::max(0.0,j2 - width*clipper::ftype(nprm/2)*S2);
-                            clipper::ftype urange2 = j2 + width*clipper::ftype(nprm/2)*S2;
-                            clipper::ftype interval2 = (urange2-lrange2)/clipper::ftype(nprm-1);
-                            for (int ii = 0; ii != nprm ; ++ii ) {
-                                // integrals based on limits (1-a)I2/a and aI2/(1-a), adjusted for none zero mean and F&W gaussian approx
-                                clipper::ftype scale = ( ii == 0 || ii == (nprm-1) ) ? 1.0 : ((ii % 2 ) ? 4.0 : 2.0) ; //section width width*sigma, Simpsons Rule
-                                clipper::ftype x2 = lrange2+ii*interval2;                                    
-                                clipper::ftype upper = (1.0-alpha)*x2/alpha;
-                                clipper::ftype lower = alpha*x2/(1.0-alpha);
-                                clipper::ftype r2 = ( upper >= j1 ) ? 1.0 + erf((upper-j1)/(std::sqrt(2.0)*S1)) : erfc((j1-upper)/(std::sqrt(2.0)*S1));
-                                clipper::ftype r1 = ( lower >= j1 ) ? 1.0 + erf((lower-j1)/(std::sqrt(2.0)*S1)) : erfc((j1-lower)/(std::sqrt(2.0)*S1));
-								clipper::ftype r3 = ( 0.0 > j1 ) ? 1.0 + erf(-j1/(std::sqrt(2.0)*S1)) : erfc(j1/(std::sqrt(2.0)*S1));
-								clipper::ftype r4 = ( 0.0 > j2 ) ? 1.0 + erf(-j2/(std::sqrt(2.0)*S2)) : erfc(j2/(std::sqrt(2.0)*S2));
-                                tmp += (scale/3.0)*((r2 - r1)/(2.0-r3))*interval2*exp(-0.5*std::pow( (x2-j2),2.0)/(S2*S2) )/(std::sqrt(clipper::Util::twopi())*S2*0.5*(2.0-r4)); // need quadrature for integtral (numerator and denominator contain S2)
-                            }
-                            _pdf[j] += ( tmp > 0.0 ) ? eps1*eps2*(-log(tmp)+log(a12)) : 0.0;
-                        }
-                    }
+				if (_reso.contains(ih.invresolsq() ) ) {
+					clipper::HKL hkl = ih.hkl();
+					jhkl[0] = hkl.h();
+					jhkl[1] = hkl.k();
+					jhkl[2] = hkl.l();
+					clipper::HKL twin;
+					jhkl2 = twinop*jhkl;
+					twin.h() = jhkl2[0];
+					twin.k() = jhkl2[1];
+					twin.l() = jhkl2[2];
+					twin.h() = jhkl2[0]/scalefac;
+					twin.k() = jhkl2[1]/scalefac;
+					twin.l() = jhkl2[2]/scalefac;
+					
+					if (!isig[twin].missing()) {
+						if (!isig[twin].missing()) {
+							//NT++;
+							double eps1 = ih.hkl_class().epsilon();
+							double eps2 = spgr.hkl_class(twin).epsilon();
+							double I1 = isig[ih].I()/eps1;
+							double I2 = isig[twin].I()/eps2;
+							double S1 = isig[ih].sigI()/eps1;
+							double S2 = isig[twin].sigI()/eps2;
+							clipper::ftype j1 = I1-S1*S1/norm.f(ih); // mean of J1 integral
+							clipper::ftype j2 = I2-S2*S2/norm.f(ih); // mean of J2 integral
+							//alphas
+							for (int j = 0; j != _nbins ; ++j) {
+								clipper::ftype alpha = 0.5*double(j)/double(_nbins);
+								clipper::ftype a12 = (1.0 - 2.0*alpha);
+								clipper::ftype a1 = (1.0 - alpha);
+								clipper::ftype tmp = 0.0; //store integral
+								// sum around I2
+								clipper::ftype lrange2 = std::max(0.0,j2 - width*clipper::ftype(nprm/2)*S2);
+								clipper::ftype urange2 = j2 + width*clipper::ftype(nprm/2)*S2;
+								clipper::ftype interval2 = (urange2-lrange2)/clipper::ftype(nprm-1);
+								for (int ii = 0; ii != nprm ; ++ii ) {
+									// integrals based on limits (1-a)I2/a and aI2/(1-a), adjusted for none zero mean and F&W gaussian approx
+									clipper::ftype scale = ( ii == 0 || ii == (nprm-1) ) ? 1.0 : ((ii % 2 ) ? 4.0 : 2.0) ; //section width width*sigma, Simpsons Rule
+									clipper::ftype x2 = lrange2+ii*interval2;                                    
+									clipper::ftype upper = (1.0-alpha)*x2/alpha;
+									clipper::ftype lower = alpha*x2/(1.0-alpha);
+									clipper::ftype r2 = ( upper >= j1 ) ? 1.0 + erf((upper-j1)/(std::sqrt(2.0)*S1)) : erfc((j1-upper)/(std::sqrt(2.0)*S1));
+									clipper::ftype r1 = ( lower >= j1 ) ? 1.0 + erf((lower-j1)/(std::sqrt(2.0)*S1)) : erfc((j1-lower)/(std::sqrt(2.0)*S1));
+									clipper::ftype r3 = ( 0.0 > j1 ) ? 1.0 + erf(-j1/(std::sqrt(2.0)*S1)) : erfc(j1/(std::sqrt(2.0)*S1));
+									clipper::ftype r4 = ( 0.0 > j2 ) ? 1.0 + erf(-j2/(std::sqrt(2.0)*S2)) : erfc(j2/(std::sqrt(2.0)*S2));
+									tmp += (scale/3.0)*((r2 - r1)/(2.0-r3))*interval2*exp(-0.5*std::pow( (x2-j2),2.0)/(S2*S2) )/(std::sqrt(clipper::Util::twopi())*S2*0.5*(2.0-r4)); // need quadrature for integtral (numerator and denominator contain S2)
+								}
+								_pdf[j] += ( tmp > 0.0 ) ? eps1*eps2*(-log(tmp)+log(a12)) : 0.0;
+							}
+						}
+					}
                 }
             }
         }
@@ -1074,8 +1159,8 @@ namespace ctruncate {
         
         // coincidence of ncs rotation operator and twinop
         clipper::ftype product(0.0);
-        if (ncs.lengthsq(isig.hkl_info().cell()) > 0.1 ) {
-            clipper::Vec3<clipper::ftype> vect = ncs.coord_orth(isig.hkl_info().cell() );
+        if (clipper::Coord_frac(ncs.trn()).lengthsq(isig.hkl_info().cell()) > 0.1 ) {
+            clipper::Vec3<clipper::ftype> vect = ncs.rtop_orth(isig.hkl_info().cell() ).trn();
             clipper::Mat33<int> tmp = twinop.rot(); 
             clipper::Rotation rot(clipper::Mat33<clipper::ftype>(
                                                                  clipper::ftype(tmp(0,0) )/12.0,
@@ -1129,25 +1214,29 @@ namespace ctruncate {
 
     //-------instantiate templates----------------------------------------------
     
-    template clipper::ftype L_test::operator()<clipper::ftype32>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, clipper::Resolution);
-    template clipper::ftype L_test::operator()<clipper::ftype64>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, clipper::Resolution);
+    template clipper::ftype L_test::operator()<clipper::ftype32>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, clipper::Range<clipper::ftype>);
+    template clipper::ftype L_test::operator()<clipper::ftype64>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, clipper::Range<clipper::ftype>);
+	template clipper::ftype L_test::operator()<clipper::ftype32>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, std::vector<clipper::Symop>&, clipper::Range<clipper::ftype>);
+    template clipper::ftype L_test::operator()<clipper::ftype64>(clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, std::vector<clipper::Symop>&, clipper::Range<clipper::ftype>);
     //template class L_test<clipper::ftype32>;
     //template class L_test<clipper::ftype64>;
     
-    template const clipper::ftype H_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Resolution);
-    template const clipper::ftype H_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Resolution);
+    template const clipper::ftype H_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>);
+    template const clipper::ftype H_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>);
     //template class H_test<clipper::ftype32>;
     //template class H_test<clipper::ftype64>;
     
     //template class Britton_test<clipper::ftype32>;
     //template class Britton_test<clipper::ftype64>;
-    template const clipper::ftype Britton_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Resolution);
-    template const clipper::ftype Britton_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Resolution);
+    template const clipper::ftype Britton_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>);
+    template const clipper::ftype Britton_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>);
 
     //template class MLBritton_test<clipper::ftype32>;
     //template class MLBritton_test<clipper::ftype64>;
-    template const clipper::ftype MLBritton_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&,clipper::Coord_frac, clipper::Resolution);
-    template const clipper::ftype MLBritton_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Coord_frac,clipper::Resolution);
+    template const clipper::ftype MLBritton_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Symop, clipper::Range<clipper::ftype>);
+    template const clipper::ftype MLBritton_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Symop, clipper::Range<clipper::ftype>);
+	template const clipper::ftype MLBritton_test::operator()<clipper::ftype32>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype32> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>&, clipper::Symop);
+	template const clipper::ftype MLBritton_test::operator()<clipper::ftype64>(const clipper::HKL_data<clipper::datatypes::I_sigI<clipper::ftype64> >&, const clipper::Isymop&, clipper::Range<clipper::ftype>&, clipper::Symop);
 
 }
 

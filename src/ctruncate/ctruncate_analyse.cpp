@@ -776,7 +776,7 @@ namespace ctruncate {
 		printf("$$\n\n");
 	}
 	
-	template <class T> const std::vector<clipper::Coord_frac>& tNCS<T>::operator() (clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution r)
+	template <class T> const std::vector<clipper::Symop>& tNCS<T>::operator() (clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution r)
 	{
 		intensity = &I;
 		reso = r;
@@ -841,7 +841,8 @@ namespace ctruncate {
 			const T bval = 3.56;
 			pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;
 			if (pval < 1.0) {
-				peaks.push_back(c0);
+				//clipper::Rtop<clipper::ftype> tmp;
+				peaks.push_back(clipper::Symop(clipper::RTop_frac(clipper::Mat33<clipper::ftype>::identity(), c0) ) );
 				peak_prob.push_back(pval);
 				peak_height.push_back(ratio);
 			}
@@ -854,11 +855,12 @@ namespace ctruncate {
 	template <class T> void tNCS<T>::summary() {
 		printf("\n\nTRANSLATIONAL NCS:\n");
 		if ( peaks.size() && peak_prob[0] < 1.0 ) { 
-			clipper::Coord_frac c0 = peaks[0];
+			clipper::Vec3<clipper::ftype> c0 = peaks[0].trn();
 			printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %5.2f%% \n that this is by chance (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],peak_prob[0],reso.limit() );
 			printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
-			for (int i = 0; i != peaks.size() ; ++i )
-				printf("Peak %d Ratio = %5.2f with Peak Vector = (%6.3f, %6.3f, %6.3f)\n",i+1,peak_height[i],peaks[i][0],peaks[i][1],peaks[i][2]);
+			for (int i = 0; i != peaks.size() ; ++i ) {
+				printf("Peak %d Ratio = %5.2f with Peak Vector = (%6.3f, %6.3f, %6.3f)\n",i+1,peak_height[i],(peaks[i].trn() )[0],(peaks[i].trn() )[1],(peaks[i].trn() )[2]);
+			}
 		}
 		else {
 			printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso.limit() );

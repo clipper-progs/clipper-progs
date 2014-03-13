@@ -53,8 +53,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.13.13";
-    clipper::String prog_date = "$Date: 2014/02/27";
+    clipper::String prog_vers = "1.14.0";
+    clipper::String prog_date = "$Date: 2014/03/13";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -92,7 +92,6 @@ int main(int argc, char **argv)
     MODE prior = AUTO;
 	
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
-    clipper::Resolution reso_Twin;
     clipper::Resolution reso_trunc;
     
     clipper::Resolution reso_u1, reso_u2, reso_u3;
@@ -513,116 +512,126 @@ int main(int argc, char **argv)
 
     // check for pseudo translation (taken from cpatterson)
     ctruncate::tNCS<float> tncs;
-    const std::vector<clipper::Coord_frac>& cf = tncs(isig, reso_Patt );
+    const std::vector<clipper::Symop>& cf = tncs(isig, reso_Patt );
+
     prog.summary_beg();
     tncs.summary();
     prog.summary_end();
     printf("\n");
-    
+	
     // anisotropy estimation
     clipper::U_aniso_orth uao;
-    clipper::U_aniso_orth uaoc;
+    clipper::U_aniso_orth uaoc(0,0,0,0,0,0);
     double Itotal = 0.0;
-    
-    prog.summary_beg();
-    printf("\nANISOTROPY ANALYSIS (using intensities):\n");
-    
-    
-    clipper::HKL_info hkla(spgr, cell1, clipper::Resolution(resopt),true);
-    HKL_data<data32::I_sigI> ianiso(hkla);   // anisotropy corrected I and sigma
-    
-    for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-        if (reso_range.contains(ih.invresolsq() ) ) {
-        float I = isig[ih.hkl()].I();
-        float sigI = isig[ih.hkl()].sigI();
-        if ( I > 0.0 ) Itotal += I;
-        ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-        }
-    }
-    try { 
-        AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
-        uao = llscl.u_aniso_orth(Scaling::I);
-        uaoc = llscl.u_aniso_orth(Scaling::F);
-    } catch (clipper::Message_fatal) {
-        CCP4::ccperror(1, "Anisotropy correction failed.");
-    }
-    
-    //uao = llscl.u_aniso_orth(Scaling::I);
-    
-    // Eigenvalue calculation
-    AnisoDirection<float> direction(uao);
-    
-    std::vector<float> v = direction.eigenValues();
-    float max = direction.max();
-    
-    printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
-    printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
-    //if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
-    float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
-    //invopt *= ratio;
-    //resopt = 1.0/sqrt(invopt);
-    printf("Resolution limit in weakest direction = %7.3f A\n",1.0/std::sqrt(invopt*ratio));
-    if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
-    prog.summary_end();
-    printf("\n");
-    
-    printf("\nAnisotropic U (orthogonal coords):\n\n");
-    printf("| %8.4f %8.4f %8.4f |\n", uao(0,0) ,  uao(0,1) ,  uao(0,2)  );
-    printf("| %8.4f %8.4f %8.4f |\n", uao(1,0) ,  uao(1,1) ,  uao(1,2)  );
-    printf("| %8.4f %8.4f %8.4f |\n", uao(2,0) ,  uao(2,1) ,  uao(2,2)  );
-    
-    clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
-    
-    printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
-    
-    printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
-    printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
-    printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
-    
-    printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
-    
-    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
-    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
-    printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
-    
-    // falloff calculation (Yorgo Modis)
-    YorgoModis<data32::I_sigI> ym(resopt,60,uao);
-    ym(isig);
-    ym.plot();
-    
-    //want to use anisotropy correction and resolution truncation for twinning tests
-    //clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
+	bool anisobysymm(false);
+	bool anisodemo(false);
     {
-		//reset ianiso to full range
-		for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-				float I = isig[ih.hkl()].I();
-				float sigI = isig[ih.hkl()].sigI();
-				ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+		prog.summary_beg();
+		printf("\nANISOTROPY ANALYSIS (using intensities):\n");
+		
+		
+		clipper::HKL_info hkla(spgr, cell1, clipper::Resolution(resopt),true);
+		HKL_data<data32::I_sigI> ianiso(hkla);   // anisotropy corrected I and sigma
+		
+
+		clipper::U_aniso_orth uao_sum(1,3,5,7,11,13);
+		for (int i = 1; i != spgr.num_symops() ; ++i ) {
+			clipper::U_aniso_orth uao(1,3,5,7,11,13);
+			clipper::U_aniso_orth tmp = uao.transform(spgr.symop(i).rtop_orth(cell1) );
+			uao_sum = uao_sum + tmp;
+		}
+		
+		if (std::fabs(uao_sum.mat00() - uao_sum.mat11() ) > 0.5 || std::fabs(uao_sum.mat00() - uao_sum.mat22()) > 0.5 ) {
+			anisobysymm = true;
+			for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+				if (reso_range.contains(ih.invresolsq() ) ) {
+					float I = isig[ih.hkl()].I();
+					float sigI = isig[ih.hkl()].sigI();
+					if ( I > 0.0 ) Itotal += I;
+					ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+				}
+			}
+			try { 
+				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
+				uao = llscl.u_aniso_orth(Scaling::I);
+				uaoc = llscl.u_aniso_orth(Scaling::F);
+			} catch (clipper::Message_fatal) {
+				CCP4::ccperror(1, "Anisotropy anlysis failed.");
 			}
 			
+			//uao = llscl.u_aniso_orth(Scaling::I);
+			
+			// Eigenvalue calculation
+			AnisoDirection<float> direction(uao);
+			
+			std::vector<float> v = direction.eigenValues();
+			float max = direction.max();
+			
+			printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
+			printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
+			//if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
+			float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
+			//invopt *= ratio;
+			//resopt = 1.0/sqrt(invopt);
+			printf("Resolution limit in weakest direction = %7.3f A\n",1.0/std::sqrt(invopt*ratio));
+			if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
+			prog.summary_end();
+			printf("\n");
+			
+			printf("\nAnisotropic U (orthogonal coords):\n\n");
+			printf("| %8.4f %8.4f %8.4f |\n", uao(0,0) ,  uao(0,1) ,  uao(0,2)  );
+			printf("| %8.4f %8.4f %8.4f |\n", uao(1,0) ,  uao(1,1) ,  uao(1,2)  );
+			printf("| %8.4f %8.4f %8.4f |\n", uao(2,0) ,  uao(2,1) ,  uao(2,2)  );
+			
+			clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
+			
+			printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
+			
+			printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
+			printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
+			printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
+			
+			printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
+			
+			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
+			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
+			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
+			// demonstratable anisotropy
+			{
+				clipper::ftype v1(v[0]/max), v2(v[1]/max), v3(v[2]/max);
+				if (std::abs(v1-v2) > 0.01 || std::abs(v1-v3) > 0.01) anisodemo = true;
+			}
+		} else { 
+			printf("\nNo anisotropy by symmetry. \n");
+		}
+		// falloff calculation (Yorgo Modis)
+		YorgoModis<data32::I_sigI> ym(resopt,60,uao);
+		ym(isig);
+		ym.plot();		
+	}
+
+	//want to use anisotropy correction and resolution truncation for twinning tests
+    //clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
+	double FFtotal = 0.0;
+	HKL_data<data32::I_sigI> ianiso(hklinf);
+	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+		float I = isig[ih.hkl()].I();
+		float sigI = isig[ih.hkl()].sigI();
+		ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+	}
+	
+    if (anisobysymm && anisodemo) {
         clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
         uaoc = uaoc+biso;
         clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uaoc);
         ianiso.compute(ianiso, compute_s);
         
-        double FFtotal = 0.0;
-        //printf("\nANISOTROPY CORRECTION (using intensities):\n");
-        
-        //Iscale_aniso<float> sfscl( 3.0 ); 
-        //sfscl( ianiso);
-        
-        //printf("\nAnisotropic scaling (orthogonal coords):\n\n");
-        
-        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(0,0), sfscl.u_aniso_orth(Scaling::I)(0,1), sfscl.u_aniso_orth(Scaling::I)(0,2) );
-        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(1,0), sfscl.u_aniso_orth(Scaling::I)(1,1), sfscl.u_aniso_orth(Scaling::I)(1,2) );
-        //printf("|%8.4f %8.4f %8.4f |\n", sfscl.u_aniso_orth(Scaling::I)(2,0), sfscl.u_aniso_orth(Scaling::I)(2,1), sfscl.u_aniso_orth(Scaling::I)(2,2) );
-        
-        //printf("\n");
-        
         for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {    
-            if ( !ianiso[ih].missing() ) {
-                if (ianiso[ih].I() > 0.0 ) FFtotal += ianiso[ih].I();
-            }
+			if (reso_range.contains(ih.invresolsq() ) ) {
+				if ( !ianiso[ih].missing() ) {
+					if (ianiso[ih].I() > 0.0 ) FFtotal += ianiso[ih].I();
+				}
+			}                                                         
         }                                                         
         
         double scalefac = Itotal/FFtotal;
@@ -634,138 +643,131 @@ int main(int argc, char **argv)
             }
         }
     }
-    
-    // truncate anisotropically corrected data at resolution limit in weakest direction
-    for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
-        if (ih.invresolsq() > invopt) ianiso[ih].set_null();  
-    }
-    
-    printf("\nTWINNING ANALYSIS:\n\n");
-    float lval(0.0);
-    //reduced resolution range for twinning tests
-    reso_Twin = clipper::Resolution(resopt );
-    //user override of defaults
-    if (!reso_u2.is_null() ) {
-        reso_Twin = clipper::Resolution( clipper::Util::max( reso_Twin.limit(), reso_u2.limit() ) );
-    }
-    HKL_info hklt(spgr, cell1, reso_Twin, true);
-    HKL_data<data32::I_sigI> itwin(hklt);
-    for ( HRI ih = itwin.first() ; !ih.last() ; ih.next() ) {
-        itwin[ih] = ianiso[ih.hkl()];
-    }
-    
-    printf("\nData has been truncated at %6.2f A resolution\n",reso_Twin.limit());
-    printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
-    
-    
-    
-    TwinSymops ts1(cell1,spgr);
-    
-    L_test ltest;
-    lval=ltest(itwin);
-    ltest.summary();
-    ltest.loggraph();
-    
-	Moments<data32::I_sigI> m(isig,reso_range);
-	m.loggraph();
 	
-	Moments<data32::I_sigI> mc(ianiso,reso_range);
-	printf("\nMean acentric moments I from input data:\n\n");
-	printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_second(), m.theo_untwinned_acentric_second(), m.theo_perfect_acentric_second() );
-	printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_third(), m.theo_untwinned_acentric_third(), m.theo_perfect_acentric_third() );
-	printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_fourth(), m.theo_untwinned_acentric_fourth(), m.theo_perfect_acentric_fourth());
-	
-	printf("\n\nMean acentric moments I from anisotropically corrected data:\n\n");
-	printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_second(), mc.theo_untwinned_acentric_second(), mc.theo_perfect_acentric_second() );
-	printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_third(), mc.theo_untwinned_acentric_third(), mc.theo_perfect_acentric_third() );
-	printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_fourth(), mc.theo_untwinned_acentric_fourth(), mc.theo_perfect_acentric_fourth());	
-
-	std::cout << std::endl << std::endl;
-	
-    std::vector<clipper::ftype> hval(ts1.size() );
-    std::vector<clipper::ftype> bval(ts1.size() );
-    std::vector<clipper::ftype> mval(ts1.size() );
-    std::vector<clipper::ftype> mrval(ts1.size() );
-    
-    std::vector<H_test> htests(ts1.size() );
-    for (int i = 0; i != ts1.size() ; ++i ) {
-        hval[i]=htests[i](itwin,ts1[i]);
-        //htests[i].summary();
-        htests[i].loggraph();
+	float lval(0.0);
+    {
+		printf("\nTWINNING ANALYSIS:\n\n");
+		
+		clipper::Range<clipper::ftype> range_Twin(reso_range.min(),
+												  (!reso_u2.is_null() ) ? 
+												  std::min(reso_range.max(),1.0/std::pow(reso_u2.limit(),2) ) :
+												  reso_range.max() );
+		
+		printf("\nData has been truncated at %6.2f - %6.2f A resolution\n",1.0/std::sqrt(range_Twin.min()), 1.0/std::sqrt(range_Twin.max()));
+		printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
+		
+		
+		
+		TwinSymops ts1(cell1,spgr);
+		
+		L_test ltest;
+		lval=ltest(ianiso,const_cast<std::vector<clipper::Symop> & >(cf), range_Twin);
+		ltest.summary();
+		ltest.loggraph();
+		
+		Moments<data32::I_sigI> m(isig,range_Twin);
+		m.loggraph();
+		
+		printf("\nMean acentric moments I from input data:\n\n");
+		printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_second(), m.theo_untwinned_acentric_second(), m.theo_perfect_acentric_second() );
+		printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_third(), m.theo_untwinned_acentric_third(), m.theo_perfect_acentric_third() );
+		printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_fourth(), m.theo_untwinned_acentric_fourth(), m.theo_perfect_acentric_fourth());
+		float m_fraction = m.fraction();
+		
+		if (anisobysymm && anisodemo) {
+			Moments<data32::I_sigI> mc(ianiso,range_Twin);
+			printf("\n\nMean acentric moments I from anisotropically corrected data:\n\n");
+			printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_second(), mc.theo_untwinned_acentric_second(), mc.theo_perfect_acentric_second() );
+			printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_third(), mc.theo_untwinned_acentric_third(), mc.theo_perfect_acentric_third() );
+			printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_fourth(), mc.theo_untwinned_acentric_fourth(), mc.theo_perfect_acentric_fourth());	
+			m_fraction = mc.fraction();
+		}
+		std::cout << std::endl << std::endl;
+		
+		std::vector<clipper::ftype> hval(ts1.size() );
+		std::vector<clipper::ftype> bval(ts1.size() );
+		std::vector<clipper::ftype> mval(ts1.size() );
+		std::vector<clipper::ftype> mrval(ts1.size() );
+		
+		std::vector<H_test> htests(ts1.size() );
+		for (int i = 0; i != ts1.size() ; ++i ) {
+			hval[i]=htests[i](ianiso,ts1[i],range_Twin);
+			//htests[i].summary();
+			htests[i].loggraph();
+		}
+		
+		std::vector<Britton_test> btests(ts1.size() );
+		for (int i = 0; i != ts1.size() ; ++i ) {
+			bval[i]=btests[i](ianiso,ts1[i],range_Twin);
+			//btests[i].summary();
+			btests[i].loggraph();
+		}
+		
+		std::vector<MLBritton_test> mdtests(ts1.size() );
+		for (int i = 0; i != ts1.size() ; ++i ) {
+			clipper::ftype product(0.0);
+			int jp;
+			if ( tncs.hasNCS() ) {
+				for (int j=0; j != tncs.numOps() ; ++j) {
+					clipper::Vec3<clipper::ftype> vect = tncs[i].rtop_orth(cell1).trn();
+					clipper::Mat33<int> tmp = ts1[i].rot(); 
+					clipper::Rotation rot(clipper::Mat33<clipper::ftype>(
+																		 clipper::ftype(tmp(0,0) )/12.0,
+																		 clipper::ftype(tmp(0,1) )/12.0,
+																		 clipper::ftype(tmp(0,2) )/12.0,
+																		 clipper::ftype(tmp(1,0) )/12.0,
+																		 clipper::ftype(tmp(1,1) )/12.0,
+																		 clipper::ftype(tmp(1,2) )/12.0,
+																		 clipper::ftype(tmp(2,0) )/12.0,
+																		 clipper::ftype(tmp(2,1) )/12.0,
+																		 clipper::ftype(tmp(2,2) )/12.0));
+					clipper::Vec3<clipper::ftype> vecr(rot.x(),rot.y(),rot.z() );
+					clipper::ftype p = vecr.unit()*vect.unit();
+					if (p > product) {
+						product = p;
+						jp = j;
+					}
+				}
+			}
+			if (product > 0.95 ) mval[i]=mdtests[i](ianiso,ts1[i],cf[jp],range_Twin);
+			else mval[i]=mdtests[i](ianiso,ts1[i],range_Twin);
+			mrval[i]=mdtests[i].deltaR();
+			//mdtests[i].summary();
+			//mdtests[i].loggraph();
+		}
+		
+		std::cout << "Twin fraction estimates excluding operators" << std::endl;
+		std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
+		std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << m_fraction << std::endl << std::endl;
+		
+		std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;
+		if ( ts1.size() > 0 ) {
+			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+			std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
+			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+			for (int i = 0; i != ts1.size() ; ++i ) {
+				std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= lval && lval < 0.440) ? " Yes " : " No  " ) 
+				<< " |  " << std::setw(4) << std::setprecision(2) << hval[i] << "  |  " << bval[i] << "  |  " << mval[i] << " (";
+				if (mrval[i] == 100.0 ) std::cout << " N/A ";
+				else std::cout << std::setw(5) << mrval[i];
+				std::cout << ") |" << std::endl;
+			}
+			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+		} else {
+			std::cout << "  No operators found" << std::endl << std::endl;
+		}
+		
+		prog.summary_beg();
+		if (ts1.size() == 0 ) twin_summary(0.0,lval);
+		else twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
+		prog.summary_end(); 
+		printf("\n");
+		//printf("Starting parity group analysis:\n");
+		
+		//Parity group analysis
+		
+		ctruncate::parity(ianiso, invopt, nbins);	
     }
-    
-    std::vector<Britton_test> btests(ts1.size() );
-    for (int i = 0; i != ts1.size() ; ++i ) {
-        bval[i]=btests[i](itwin,ts1[i]);
-        //btests[i].summary();
-        btests[i].loggraph();
-    }
-    
-    std::vector<MLBritton_test> mdtests(ts1.size() );
-    for (int i = 0; i != ts1.size() ; ++i ) {
-        clipper::ftype product(0.0);
-        int jp;
-        if ( tncs.hasNCS() ) {
-            for (int j=0; j != tncs.numOps() ; ++j) {
-                clipper::Vec3<clipper::ftype> vect = tncs[i].coord_orth(cell1);
-                clipper::Mat33<int> tmp = ts1[i].rot(); 
-                clipper::Rotation rot(clipper::Mat33<clipper::ftype>(
-                                      clipper::ftype(tmp(0,0) )/12.0,
-                                      clipper::ftype(tmp(0,1) )/12.0,
-                                      clipper::ftype(tmp(0,2) )/12.0,
-                                      clipper::ftype(tmp(1,0) )/12.0,
-                                      clipper::ftype(tmp(1,1) )/12.0,
-                                      clipper::ftype(tmp(1,2) )/12.0,
-                                      clipper::ftype(tmp(2,0) )/12.0,
-                                      clipper::ftype(tmp(2,1) )/12.0,
-                                      clipper::ftype(tmp(2,2) )/12.0));
-                clipper::Vec3<clipper::ftype> vecr(rot.x(),rot.y(),rot.z() );
-                clipper::ftype p = vecr.unit()*vect.unit();
-                if (p > product) {
-                    product = p;
-                    jp = j;
-                }
-            }
-        }
-        if (product > 0.95 ) mval[i]=mdtests[i](itwin,ts1[i],tncs[jp]);
-        else mval[i]=mdtests[i](itwin,ts1[i]);
-        mrval[i]=mdtests[i].deltaR();
-        //mdtests[i].summary();
-        //mdtests[i].loggraph();
-    }
-    
-	std::cout << "Twin fraction estimates excluding operators" << std::endl;
-	std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
-	std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << mc.fraction() << std::endl << std::endl;
-	
-	std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;
-    if ( ts1.size() > 0 ) {
-	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-	std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
-	std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-    for (int i = 0; i != ts1.size() ; ++i ) {
-        std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= lval && lval < 0.440) ? " Yes " : " No  " ) 
-        << " |  " << std::setw(4) << std::setprecision(2) << hval[i] << "  |  " << bval[i] << "  |  " << mval[i] << " (";
-        if (mrval[i] == 100.0 ) std::cout << " N/A ";
-        else std::cout << std::setw(5) << mrval[i];
-        std::cout << ") |" << std::endl;
-    }
-    std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-    } else {
-		std::cout << "  No operators found" << std::endl << std::endl;
-	}
-
-    prog.summary_beg();
-    if (ts1.size() == 0 ) twin_summary(0.0,lval);
-    else twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
-    prog.summary_end(); 
-    printf("\n");
-    //printf("Starting parity group analysis:\n");
-    
-    //Parity group analysis
-    
-    ctruncate::parity(itwin, invopt, nbins);	
-    
     // Ice rings
     ctruncate::Rings icerings;
     icerings.DefaultIceRings();
@@ -1024,7 +1026,7 @@ int main(int argc, char **argv)
                 //printf("| %8.4f %8.4f %8.4f |\n", uao2(1,0) ,  uao2(1,1) ,  uao2(1,2)  );
                 //printf("| %8.4f %8.4f %8.4f |\n", uao2(2,0) ,  uao2(2,1) ,  uao2(2,2)  );
             }*/
-            {
+            if (anisobysymm && anisodemo) {
                 clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
                 xsig.compute(xsig, compute_s);
                 //printf("\nAnisotropic U (orthogonal coords):\n\n");

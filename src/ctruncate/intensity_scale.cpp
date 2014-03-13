@@ -722,20 +722,18 @@ namespace ctruncate {
 		clipper::HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> > fo1( hkl1 );
 		clipper::HKL_data<clipper::datatypes::F_phi<T> >  fc1( hkl1 );
-        clipper::ftype n=0.0;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			clipper::datatypes::F_sigF<T> f = f_target[ih.hkl()];
 			if ( f.f() >= this->nsig_ * f.sigf() ) {
 				fo1[ih] = f;
 				fc1[ih] = f_ref[ih.hkl()];
-                n += 1.0;
 			}
 			}
 		}
 		// do the aniso scaling
 		clipper::BasisFn_aniso_gaussian bfn;
-        ctruncate::RestraintFn_sphericalU restU(10.0,n);
+        ctruncate::RestraintFn_sphericalU restU(10.0);
         ::TargetFn_scaleLogLikeF1F2<clipper::datatypes::F_phi<T>,clipper::datatypes::F_sigF<T> >
 		tfn( fc1, fo1 );
 		ctruncate::ResolutionFn_nonlinear_rest rfn( hkl1, bfn, tfn, param, mask, restU );
@@ -802,12 +800,11 @@ namespace ctruncate {
 			if ( f.f() >= this->nsig_ * f.sigf() ) {
 				fo1[ih] = f;
 				fc1[ih] = f_ref[ih.hkl()];
-                n += 1.0;
 			}
 			}
 		}
 		// do the aniso scaling
-        ctruncate::RestraintFn_sphericalU restU(10.0, n );
+        ctruncate::RestraintFn_sphericalU restU(10.0);
 		clipper::BasisFn_aniso_gaussian bfn;
         ::TargetFn_scaleLogLikeF1F2<clipper::datatypes::F_phi<T>,clipper::datatypes::F_sigF<T> >
 		tfn( fc1, fo1 );
@@ -866,16 +863,15 @@ namespace ctruncate {
 			if ( I.I() >= this->nsig_ * I.sigI() ) {
 				Io1[ih] = I;
 				Ic1[ih] = I_ref[ih.hkl()];
-                n+=1.0;
 			}
 			}
 		}
 		// do the aniso scaling
         clipper::BasisFn_aniso_gaussian bfn;
-        ctruncate::RestraintFn_sphericalU restU(10.0, n );
+        ctruncate::RestraintFn_sphericalU restU(10.0);
         ::TargetFn_scaleLogLikeI1I2<clipper::datatypes::I_sigI<T>,clipper::datatypes::I_sigI<T> >
         tfn( Ic1, Io1 );
-        clipper::ResolutionFn_nonlinear rfn( hkl1, bfn, tfn, param, 0.0, false  );
+        ctruncate::ResolutionFn_nonlinear_rest rfn( hkl1, bfn, tfn, param, mask,restU );
         
         this->u_i = bfn.u_aniso_orth( rfn.params() );
         this->u_f = 0.5*this->u_i;
@@ -926,19 +922,17 @@ namespace ctruncate {
 		clipper::HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> > fo1( hkl1 );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> >  fc1( hkl1 );
-        clipper::ftype n=0.0f;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			clipper::datatypes::F_sigF<T> f = f_target[ih.hkl()];
 			if ( f.f() >= this->nsig_ * f.sigf() ) {
 				fo1[ih] = f;
 				fc1[ih] = f_ref[ih.hkl()];
-                n += 1.0f;
 			}
 			}
 		}
 		// do the aniso scaling
-        ctruncate::RestraintFn_sphericalU restU(10.0, n );
+        ctruncate::RestraintFn_sphericalU restU(10.0);
 		clipper::BasisFn_aniso_gaussian bfn;
 		::TargetFn_scaleLogLikeF1F2<clipper::datatypes::F_sigF<T>,clipper::datatypes::F_sigF<T> >
 		tfn( fc1, fo1 );
@@ -1015,13 +1009,11 @@ namespace ctruncate {
 		clipper::Spacegroup spgrp1( clipper::Spacegroup::P1 );
 		clipper::HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
 		clipper::HKL_data<D> fo1( hkl1 ), fs1( hkl1 ), fc1( hkl1 );
-        clipper::ftype n=0.0;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if (resfilter.contains(ih.invresolsq() ) ) {
 			D f = fo[ih.hkl()];
 			if ( this->obs(f) >= this->nsig_ * this->sigobs(f) ) {
                 fo1[ih] = f;
-                n += 1.0f;
             }
 			}
 		}
@@ -1037,7 +1029,7 @@ namespace ctruncate {
 		std::vector<bool> mask( 7, false );
 		clipper::BasisFn_aniso_gaussian bfn;
 		clipper::ftype dp;
-        R2 restU(10.0, n );
+        R2 restU(10.0);
 		for ( int c = 0; c != 2; ++c ) {
 			// remove current anistropy estimate
 			clipper::datatypes::Compute_scale_u_aniso<D> compute_s(1.0,-(this->u_f) );
@@ -1092,20 +1084,29 @@ namespace ctruncate {
     
     //--------Restraints ------------------
     
-    const RestraintFn_base::Aderiv& RestraintFn_sphericalU::aderiv(const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const
+    const RestraintFn_base::Aderiv& RestraintFn_sphericalU::aderiv_coord( const clipper::Coord_reci_orth& xs, const std::vector<clipper::ftype>&  params) const
     {
         //currently orthogonal approximation
         const int& np = num_params();
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
-        clipper::ftype Adet2 = (params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6];
+        clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
         clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
         
-        clipper::ftype d = std::fabs(params[1]-Uiso)+std::fabs(params[2]-Uiso)+std::fabs(params[3]-Uiso)+2.0*(params[4]+params[5]+params[6]);
-        clipper::ftype d2 = std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
-            +std::fabs(params[2]-Uiso)*std::fabs(params[2]-Uiso)
-            +std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
-            +2.0*(params[4]*params[4]+params[5]*params[5]+params[6]*params[6]);
+		clipper::ftype c[np];
+		c[1] = xs[0]*xs[0];
+		c[2] = xs[1]*xs[1];
+		c[3] = xs[2]*xs[2];
+		c[4] = xs[0]*xs[1];
+		c[5] = xs[0]*xs[2];
+		c[6] = xs[1]*xs[2];	
+		
+        clipper::ftype d = c[1]*std::fabs(params[1]-Uiso)+c[2]*std::fabs(params[2]-Uiso)+c[3]
+		                   *std::fabs(params[3]-Uiso)+2.0*(c[4]*params[4]+c[5]*params[5]+c[6]*params[6]);
+        clipper::ftype d2 = c[1]*std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
+		+c[2]*std::fabs(params[2]-Uiso)*std::fabs(params[2]-Uiso)
+		+c[3]*std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
+		+2.0*(c[4]*params[4]*params[4]+c[5]*params[5]*params[5]+c[6]*params[6]*params[6]);
         
         result().f = (norm2 > 0.00001) ? 
             scale*d2 + 0.5*std::log(norm2) :
@@ -1113,9 +1114,9 @@ namespace ctruncate {
         
         //std::cout << " f= " << result().f << std::endl;
         for (int i = 1; i != 4 ; ++i) result().df[i] = 
-            scale*2.0*(params[i]-Uiso);
+            c[i]*scale*2.0*(params[i]-Uiso);
         for (int i = 4; i != np ; ++i) result().df[i] =
-            scale*2.0*params[i];
+            c[i]*scale*2.0*params[i];
     
         //for (int i = 1; i != np ; ++i) std::cout << "  df= " << result().df[i] << std::endl;
             
@@ -1123,9 +1124,9 @@ namespace ctruncate {
             for (int j = 1; j != np ; ++ j )
                 result().df2(i,j) = 0.0;
         for (int i = 1; i != 4 ; ++ i ) result().df2(i,i) =
-            2.0*scale;
+            c[i]*2.0*scale;
         for (int i = 4; i != np ; ++ i ) result().df2(i,i) =
-            2.0*scale;
+            c[i]*2.0*scale;
         /*
         for (int i = 1; i != 4 ; ++i) {
             for (int j = 1; j != 4 ; ++j ) result().df2(i,j) +=
@@ -1140,32 +1141,34 @@ namespace ctruncate {
                 0.0;
         }
         */
-        result().f *= nobs_;
-        for (int i = 1; i != np ; ++i) result().df[i] *= nobs_;
-        for (int i = 1; i != np ; ++i) 
-            for (int j = 1; j != np ; ++j ) result().df2(i,j) *= nobs_;
         //for (int i = 1; i != np ; ++i)
         //    for (int j = 1; j != np ; ++j) std::cout << "  df2= " << result().df2(i,j) << std::endl;
         
         return result();
     }
 
-    clipper::ftype RestraintFn_sphericalU::f_s( const std::vector<clipper::ftype>& params ) const
+    clipper::ftype RestraintFn_sphericalU::f_coord( const clipper::Coord_reci_orth& xs, const std::vector<clipper::ftype>& params ) const
     {
         const int& np = num_params();
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
-        clipper::ftype Adet2 = (params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6];
+        clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
         clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
 
+		clipper::ftype c[np];
+		c[1] = xs[0]*xs[0];
+		c[2] = xs[1]*xs[1];
+		c[3] = xs[2]*xs[2];
+		c[4] = xs[0]*xs[1];
+		c[5] = xs[0]*xs[2];
+		c[6] = xs[1]*xs[2];		
         
-        clipper::ftype d2 = std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
-            +std::fabs(params[2]-Uiso)*std::fabs(params[2]-Uiso)
-            +std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
-            +2.0*(params[4]*params[4]+params[5]*params[5]+params[6]*params[6]);
+        clipper::ftype d2 = c[1]*std::fabs(params[1]-Uiso)*std::fabs(params[1]-Uiso)
+            +c[2]*std::fabs(params[2]-Uiso)*std::fabs(params[2]-Uiso)
+            +c[3]*std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
+            +2.0*(c[4]*params[4]*params[4]+c[5]*params[5]*params[5]+c[6]*params[6]*params[6]);
         
         clipper::ftype f = (norm2 > 0.00001) ? scale*d2 + 0.5*std::log(norm2) : scale*d2;
-        f *= nobs_;
         //std::cout << "f_s " << f << std::endl;
         
         return f;
@@ -1199,12 +1202,12 @@ namespace ctruncate {
         params_.resize( nparams );
         
         // loop for 20 cycles refining the params
-        for ( int n = 0; n != 200; ++n ) {
+        for ( int n = 0; n != 20; ++n ) {
             params_old = params_;
             
             // calc target fn and derivs
             calc_derivs( params_, r0, drdp, drdp2 );
-            
+
 			// apply mask
             for (int i = 0; i != nparams ; ++i ) {
 				if(mask[i]) drdp[i]=0.0;
@@ -1274,7 +1277,7 @@ namespace ctruncate {
             
             clipper::ftype sig = (r0 > 1.0) ? r0 : 1.0;
             sig *= 10000.0*std::numeric_limits<clipper::ftype>::epsilon();
-            if ( std::fabs( r1 - r0 ) < sig ) break;
+            if ( std::fabs( r1 - r0 ) < sig || std::abs(g) < sig ) break;
         }
     }
 	
@@ -1307,28 +1310,37 @@ namespace ctruncate {
         std::vector<clipper::ftype> shiftn( nparams ), shiftg( nparams );
         std::vector<clipper::ftype> params_old( nparams );
         params_.resize( nparams );
-        
+  
         // loop for 20 cycles refining the params
-        for ( int n = 0; n != 200; ++n ) {
+        for ( int n = 0; n != 20; ++n ) {
             params_old = params_;
             
             // calc target fn and derivs
             calc_derivs( params_, r0, drdp, drdp2 );
-            
+			
             // include the effect of the restraints on the parameters
-            const RestraintFn_base::Aderiv& aderiv = restfn_->aderiv(cell_,params_);
-            
-            r0 += aderiv.f;
-            for (int i = 0; i != nparams ; ++i ) {
-                drdp[i] += aderiv.df[i];
+			for ( clipper::HKL_info::HKL_reference_index ih = hkl_info.first(); !ih.last(); ih.next() ) {
+				const RestraintFn_base::Aderiv& aderiv = restfn_->aderiv(ih.hkl(),cell_,params_);
+				clipper::HKL_class cls( ih.hkl_class() );
+				clipper::ftype w = 2/cls.epsilonc();
+				
+				r0 += w*aderiv.f;
+				for (int i = 0; i != nparams ; ++i ) {
+					drdp[i] += w*aderiv.df[i];
+					for (int j = 0; j != nparams ; ++j ) {
+						drdp2(i,j) += w*aderiv.df2(i,j);
+					}
+				}
+			}
+			
+			for (int i = 0; i != nparams ; ++i ) {
 				if(mask[i]) drdp[i]=0.0;
-                for (int j = 0; j != nparams ; ++j ) {
-                    drdp2(i,j) += aderiv.df2(i,j);
+				for (int j = 0; j != nparams ; ++j ) {
 					if(mask[i] || mask[j]) drdp2(i,j)=0.0;
 					if (mask[i] && mask[j] ) drdp2(i,j) = 1.0;
-                }
-            }
-            
+				}
+			}
+
             // solve for Newton-Raphson shift
             shiftn = drdp2.solve( drdp );
             
@@ -1374,9 +1386,9 @@ namespace ctruncate {
                     clipper::HKL_class cls = ih.hkl_class();
                     w = 2.0 / cls.epsilonc();
                     r1 += w * targetfn.rderiv( ih, f( ih ) ).r;
+					r1 += w * restfn_->f(ih.hkl(), cell_,params_);
                 }
-                r1 += restfn_->f(cell_,params_);
-                //std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
+				//std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
                 if ( clipper::Util::is_nan(r1) ) {
                     scale *= 0.5;
                 } else {
@@ -1389,7 +1401,7 @@ namespace ctruncate {
             
             clipper::ftype sig = (r0 > 1.0) ? r0 : 1.0;
             sig *= 10000.0*std::numeric_limits<clipper::ftype>::epsilon();
-            if ( std::fabs( r1 - r0 ) < sig ) break;
+            if ( std::fabs( r1 - r0 ) < sig || std::abs(g) < sig ) break;
         }
     }
 
@@ -1946,14 +1958,12 @@ namespace ctruncate {
 		clipper::HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> > fo1( hkl1 );
 		clipper::HKL_data<clipper::datatypes::F_phi<T> >  fc1( hkl1 );
-        clipper::ftype n=0.0;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if ( resfilter.contains(ih.invresolsq() ) ) {
 			clipper::datatypes::F_sigF<T> f = f_target[ih.hkl()];
 			if ( f.f() >= this->nsig_ * f.sigf() ) {
 				fo1[ih] = f;
 				fc1[ih] = f_ref[ih.hkl()];
-                n += 1.0;
 			}
 			}
 		}
@@ -2105,14 +2115,12 @@ namespace ctruncate {
 		clipper::HKL_info hkl1( spgrp1, hkls.cell(), hkls.resolution(), true );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> > fo1( hkl1 );
 		clipper::HKL_data<clipper::datatypes::F_sigF<T> >  fc1( hkl1 );
-        clipper::ftype n=0.0f;
 		for ( HRI ih = hkl1.first(); !ih.last(); ih.next() ) {
 			if ( resfilter.contains(ih.invresolsq() ) ) {
 			clipper::datatypes::F_sigF<T> f = f_target[ih.hkl()];
 			if ( f.f() >= this->nsig_ * f.sigf() ) {
 				fo1[ih] = f;
 				fc1[ih] = f_ref[ih.hkl()];
-                n += 1.0f;
 			}
 			}
 		}

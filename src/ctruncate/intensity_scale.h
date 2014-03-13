@@ -63,9 +63,9 @@ namespace ctruncate {
         //! constructor with number of parameters
         RestraintFn_base( const int np) : np_(np), aderiv_(np) {}
         //! the value of the global restraint function
-        virtual clipper::ftype f( const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const { return aderiv( cell, params ).f; }
+        virtual clipper::ftype f( const clipper::HKL& hkl, const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const = 0;
         //! compute the adustment due to the restraint
-        virtual const Aderiv& aderiv(const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const = 0;
+        virtual const Aderiv& aderiv(const clipper::HKL& hkl, const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const = 0;
         //! provide result for derived classes
         Aderiv& result() const { return aderiv_; }
         //! return number of parameters
@@ -91,17 +91,19 @@ namespace ctruncate {
     {
     public:
         //! constructor taking weight for restraint
-        RestraintFn_sphericalU(clipper::ftype f=10.0, clipper::ftype n=1.0) : sigma_(f), nobs_(n), RestraintFn_base(7) { }
+        RestraintFn_sphericalU( clipper::ftype f=10.0, clipper::ftype n=1.0) : sigma_(f), scale_(n), RestraintFn_base(7) { }
         //! the value of the global restraint function
-        clipper::ftype f( const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const { return f_s(params); }
+        clipper::ftype f( const clipper::HKL& hkl, const clipper::Cell& cell, const std::vector<clipper::ftype>& params ) const { return f_coord(hkl.coord_reci_orth(cell), params); }
         //! compute value of restaint without doing full aderiv
-        clipper::ftype f_s( const std::vector<clipper::ftype>& params ) const;
+        clipper::ftype f_coord( const clipper::Coord_reci_orth& xs, const std::vector<clipper::ftype>& params ) const;
         //! return adjustments to derivatives and hessian
-        const Aderiv& aderiv(const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const;
+        const Aderiv& aderiv(const clipper::HKL& hkl, const clipper::Cell& cell, const std::vector<clipper::ftype>&  params) const { return aderiv_coord(hkl.coord_reci_orth(cell), params); }
+		//! return adjustments to derivatives and hessian
+        const Aderiv& aderiv_coord( const clipper::Coord_reci_orth& xs, const std::vector<clipper::ftype>&  params) const;
         
     private:
         clipper::ftype sigma_; //!< scale factor for restraint
-        clipper::ftype nobs_;  //!< number of observations to scale sigma
+        clipper::ftype scale_;  //!< number of observations to scale sigma
 		
     };
     
