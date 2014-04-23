@@ -203,13 +203,19 @@ namespace ctruncate {
     public:
         //enum TYPE { F, I };
         //! empty constructor
-        AnisoCorr() {}
+        AnisoCorr() : _is_protein(false), _is_nucl(false) {}
+		//! set reso range
+		explicit AnisoCorr(clipper::Range<clipper::ftype>& reso) : _is_protein(false), _is_nucl(false), _range(reso) {}
+		//! set reso range
+		explicit AnisoCorr(bool protein, bool rna) : _is_protein(protein), _is_nucl(rna) {}
         //! constructor using observation, I_sigI or F_sigF
-        AnisoCorr(clipper::HKL_data<DATA>& observed, bool protein=true, bool rna=false) : _observed(&observed), _is_protein(protein), _is_nucl(rna) { calc(observed, protein, rna); }
+        AnisoCorr(clipper::HKL_data<DATA>& observed, bool protein=false, bool rna=false, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>() ) 
+		: _observed(&observed), _is_protein(protein), _is_nucl(rna), _range(reso) { calc(observed); }
         //! destructor
         ~AnisoCorr() { }
         //! perform calculation returing the U_aniso_orth
-        const clipper::U_aniso_orth& operator()(clipper::HKL_data<DATA>& observed, bool protein=true, bool rna=false);
+        const clipper::U_aniso_orth& operator()(clipper::HKL_data<DATA>& observed, bool protein=true, bool rna=false, 
+												clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>());
         //! return the U_aniso_orth
         const clipper::U_aniso_orth& u_aniso_orth( Scaling::TYPE t ) const;
         //! return the scale factor
@@ -223,12 +229,13 @@ namespace ctruncate {
         const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
         
         //! calculate anisotropy correction, eigenvalues and directional vector
-        void calc(clipper::HKL_data<DATA>& observed, bool protein, bool rna);
+        void calc(clipper::HKL_data<DATA>& observed);
                   
     private:   
         clipper::HKL_data<DATA>* _observed; //!< pointer for observed data
         bool _is_protein;                //!< cell contains protein
         bool _is_nucl;                    //!< cell contains rna/dna
+		clipper::Range<clipper::ftype> _range; //!< active reso range
         SCALER _iscale;                        //!< scaling object
         //clipper::U_aniso_orth _U_f;      //!< computed correction structure factors
         //clipper::U_aniso_orth _U_i;      //!< computed correction intensity
@@ -312,5 +319,36 @@ private:
 		clipper::ftype _cc; //!< average CC
 	};
 	
+	//----Rings analysis----------------------------------------------
+	//! Analyse for rings
+	class IceRings_analyse
+	{
+	public:
+		//! contructor
+		IceRings_analyse(int nbins=60) : _nbins(nbins), _mean(nbins,0.0), _comp(nbins,0.0), _expected(nbins,0.0), _iceTolerance(4.0) { }
+		//! check for presence of  rings
+		template <class T> bool operator()(clipper::HKL_data<T>& data, ctruncate::Rings& rings);
+		//!output summary
+		std::string format();
+		
+	private:
+		template <class T> clipper::ftype obs(clipper::HKL_data<T>& f );
+		template <class T> clipper::ftype sigobs(clipper::HKL_data<T>& f );
+		
+		int _nbins;                                //!< number of bins
+		std::vector<clipper::ftype > _comp;        //!< completeness
+		std::vector<clipper::ftype > _mean;        //!< mean in resolution bin
+		std::vector<clipper::ftype > _expected;    //!< mean in resolution bin
+		ctruncate::Rings _ideal_rings;              //!< expected values in rings
+		
+		clipper::HKL_data_base *_data;              //!< pointer to data
+		ctruncate::Rings* _rings;                  //!< pointer to rings data
+		
+		clipper::ftype _iceTolerance;              //!< tolerance for Z-score
+	};
+		
+	
+	
 }
+
 #endif

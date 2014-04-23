@@ -191,20 +191,23 @@ template<class T1, class T2> clipper::TargetFn_base::Rderiv TargetFn_scaleLogLik
     result.r = result.dr = result.dr2 = 0.0;
     const T1& ft1 = (*hkl_data1)[ih];  //reference which is scaled to observed
     const T2& ft2 = (*hkl_data2)[ih];  //observed
-    if ( !ft1.missing() && !ft2.missing() )
-        if ( ft1.I() > 1.0e-6 && ft2.I() > 1.0e-6 ) {
-            const clipper::ftype eps = ih.hkl_class().epsilonc();
+    if ( !ft1.missing() && !ft2.missing() ) {
+		const clipper::ftype f1 = ft1.I();
+        if ( f1*fh > 1.0e-6 && ft2.I() > 1.0e-6 ) {
+            const clipper::ftype eps = ih.hkl_class().epsilon();
             const clipper::ftype centfac = ih.hkl_class().centric() ? 0.5 : 1.0;
-            const clipper::ftype f1 = ft1.I();
             const clipper::ftype f2 = ft2.I();
-            const clipper::ftype s = std::fabs(ft2.sigI());
-            //const clipper::ftype s = 0.0;
-            const clipper::ftype ref = eps*fh*f1 + s;
+			// s is transform of sigmaF
+			//const clipper::ftype s = 0.0; // no error
+            //const clipper::ftype s = std::pow(clipper::ftype(ft2.sigI()),clipper::ftype(2.0))/(2.0*ft2.I());  // standard error propagation
+			const clipper::ftype ff = 0.25*(2.0*ft2.I()+std::sqrt(4.0*ft2.I()*ft2.I()+8.0*ft2.sigI()*ft2.sigI() ) );
+			const clipper::ftype s = 1.0/(1.0/ff+2.0*(3.0*ff-ft2.I() )/ft2.sigI() ); // Sivia et al.  flat prior estimation
+			const clipper::ftype ref =  eps*fh*f1 + s ;
             const clipper::ftype rel_ref = ref/(eps*f1);
             result.r   = centfac*(std::log(ref)+f2/ref);  // likelihood value
-            result.dr  = centfac/rel_ref*(1.0-f2/ref); // first derivative wrt Sigma
-            result.dr2 = centfac/(rel_ref*rel_ref)*(2.0*f2/ref-1.0); // second derivative wrt Sigma
-        }
+            result.dr  = (centfac/rel_ref)*(1.0-f2/ref); // first derivative wrt Sigma
+            result.dr2 = (centfac/(rel_ref*rel_ref))*(2.0*f2/ref-1.0); // second derivative wrt Sigma
+        } }
     return result;
 }
 
@@ -215,11 +218,11 @@ template<class T1, class T2> clipper::TargetFn_base::Rderiv TargetFn_scaleLogLik
     result.r = result.dr = result.dr2 = 0.0;
     const T1& ft1 = (*hkl_data1)[ih];  //reference which is scaled to observed
     const T2& ft2 = (*hkl_data2)[ih];  //observed
-    if ( !ft1.missing() && !ft2.missing() )
-        if ( ft1.f() > 1.0e-6 && ft2.f() > 1.0e-6 ) {
-            const clipper::ftype eps = ih.hkl_class().epsilonc();
+    if ( !ft1.missing() && !ft2.missing() ) {
+		const clipper::ftype f1 = ft1.f();
+        if ( f1*f1*fh > 1.0e-6 && ft2.f() > 1.0e-6 ) {
+            const clipper::ftype eps = ih.hkl_class().epsilonc()/2.0;
             const clipper::ftype centfac = ih.hkl_class().centric() ? 0.5 : 1.0;
-            const clipper::ftype f1 = ft1.f();
             const clipper::ftype f2 = ft2.f();
             const clipper::ftype s = std::pow(clipper::ftype(ft2.sigf()),clipper::ftype(2.0));
             const clipper::ftype ref = eps*fh*f1*f1 + s;
@@ -227,7 +230,7 @@ template<class T1, class T2> clipper::TargetFn_base::Rderiv TargetFn_scaleLogLik
             result.r   = centfac*(std::log(ref)+f2*f2/ref);  // likelihood value
             result.dr  = centfac/rel_ref*(1.0-f2*f2/ref); // first derivative wrt Sigma
             result.dr2 = centfac/(rel_ref*rel_ref)*(2.0*f2*f2/ref-1.0); // second derivative wrt Sigma
-        }
+        } }
     return result;
 }
 

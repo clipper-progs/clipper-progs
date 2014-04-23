@@ -1,3 +1,18 @@
+1.15.1 (23/4/14)
+- remove constant normalisation from restaints in LogLikeAniso
+
+1.15.0 (23/4/14)
+- ML estimation of mean, using spline fit and BEST curve
+
+1.14.3 (22/4/14)
+- use Sivia flat prior target for sigF in ML norm calc
+
+1.14.2 (18/3/14)
+- use meanI in anisotropy correction calculation rather than Ibest
+
+1.14.1 (17/3/14)
+- use sigma cutoff in Patterson map peak search
+
 1.14.0
 - skip anisotropy if symmetry forbids it
 - use per reflection restraint in anisotropy analysis

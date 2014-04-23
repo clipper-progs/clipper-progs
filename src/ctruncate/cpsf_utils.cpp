@@ -23,34 +23,6 @@ PeakSearch::Neighbours::Neighbours( const clipper::Xmap_base &map, const float m
 }
 
 // operate peak search, returning a vector of indices.
-std::vector<int> PeakSearch::operator() ( const clipper::Xmap<float>& map ) {
-	clipper::Coord_grid c, x;
-	std::vector<int> peaklist;
-	xmap = const_cast<clipper::Xmap<float> *>( &map );
-	
-	// loop over skeleton neighbours structure
-	Neighbours neigh( map );
-	clipper::Coord_grid g0, g1;
-	clipper::Xmap<float>::Map_reference_coord i0;
-	for ( clipper::Xmap<float>::Map_reference_index index = map.first() ; !index.last() ; index.next() ) {
-		float value = map[index];
-		bool peak = true;
-		g0 = index.coord();
-		for (int i = 0; i < neigh.size(); i++ ) {
-			g1 = g0 + neigh[i];
-			i0 = clipper::Xmap_base::Map_reference_coord( map, g1 );
-			if ( map[i0] > value ) {
-				peak = false;
-				break;
-			}
-		}
-		if ( peak ) peaklist.push_back( index.index() );
-	}
-	
-	// std::cout << "finished search with " << peaklist.size() << " peaks" << std::endl;
-	clipper::Map_index_sort::sort_decreasing( map, peaklist );
-	return peaklist;
-}
 
 
 std::vector<bool> IsPolar::operator() ( clipper::Spacegroup& spgr) {
@@ -147,3 +119,6 @@ bool harker::is_harker( clipper::Coord_frac &coord, float tol) {
 	return val;
 }
 
+
+//template const std::vector<int>& PeakSearch::operator() ( const clipper::Xmap<float>& map, float sig );
+//template const std::vector<int>& PeakSearch::operator() ( const clipper::Xmap<double>& map, float sig );

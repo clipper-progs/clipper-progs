@@ -78,8 +78,24 @@ namespace ctruncate {
 		// Clear intensity sums
 		void ClearSums();
 		// Add in IsigI, use clipper version for now rather than pointless version
-		void AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq,const double& multiplicity=1.0);
-		
+		template <class T> void AddObs(const clipper::datatypes::I_sigI<T>& I_sigI, const double& invresolsq,const double& multiplicity=1.0) {
+			if (!I_sigI.missing() ) {
+				sum_I += multiplicity*I_sigI.I();
+				sum_sigI += multiplicity*I_sigI.sigI();
+				sum_sSqr += multiplicity*invresolsq;
+				nI+=multiplicity;
+			}
+			nO += multiplicity;
+		}		
+		template <class T> void AddObs(const clipper::datatypes::F_sigF<T>& I_sigI, const double& invresolsq,const double& multiplicity=1.0) {
+			if (!I_sigI.missing() ) {
+				sum_I += multiplicity*I_sigI.f();
+				sum_sigI += multiplicity*I_sigI.sigf();
+				sum_sSqr += multiplicity*invresolsq;
+				nI+=multiplicity;
+			}
+			nO += multiplicity;
+		}
 		void SetReject() {reject=true;}
 		void SetReject(const bool& Rej) {reject=Rej;}
 		
@@ -88,6 +104,7 @@ namespace ctruncate {
 		double MeanSigI() const;
 		double MeanSSqr() const;
 		double N() const {return nI;}
+		double Comp() const;
 		
 		// Reject flag, true means reject reflection in this range
 		bool Reject() const {return reject;}
@@ -99,6 +116,7 @@ namespace ctruncate {
 		double sum_sigI;
 		double sum_sSqr;
 		double nI;
+		double nO;
 		bool reject;
 	};
 	//--------------------------------------------------------------
@@ -130,7 +148,14 @@ namespace ctruncate {
 		// Clear intensity sums
 		void ClearSums();
 		// Add in IsigI
-		void AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq, const double& multiplicity=1.0);
+		template <class T> void AddObs(const int& Iring, const clipper::datatypes::I_sigI<T>& I_sigI, const double& invresolsq, const double& multiplicity=1.0) {
+			CheckRing(Iring);
+			rings[Iring].AddObs(I_sigI, invresolsq, multiplicity );
+		}
+		template <class T> void AddObs(const int& Iring, const clipper::datatypes::F_sigF<T>& I_sigI, const double& invresolsq, const double& multiplicity=1.0) {
+			CheckRing(Iring);
+			rings[Iring].AddObs(I_sigI, invresolsq, multiplicity );
+		}
 		
 		void SetReject(const int& Iring);
 		void SetReject(const int& Iring, const bool& Rej);
@@ -142,6 +167,7 @@ namespace ctruncate {
 		// Reject flag, true means reject reflection in this range
 		bool Reject(const int& Iring) const; 
 		double N(const int& Iring) const;
+		double Comp(const int& Iring) const;
 		
 	private:
 		int nrings;

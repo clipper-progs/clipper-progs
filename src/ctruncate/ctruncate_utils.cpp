@@ -218,12 +218,19 @@ namespace ctruncate
 		}
 	}
 	//--------------------------------------------------------------
-	void Rings::AddObs(const int& Iring, const clipper::datatypes::I_sigI<float>& I_sigI,
+	/*template <class T> void Rings::AddObs(const int& Iring, const clipper::datatypes::I_sigI<T>& I_sigI,
 					   const double& invresolsq, const double& multiplicity)
 	{
 		CheckRing(Iring);
 		rings[Iring].AddObs(I_sigI, invresolsq, multiplicity );
-	}
+	} */
+	//--------------------------------------------------------------
+	/*template <class T> void Rings::AddObs(const int& Iring, const clipper::datatypes::F_sigF<T>& I_sigI,
+					   const double& invresolsq, const double& multiplicity)
+	{
+		CheckRing(Iring);
+		rings[Iring].AddObs(I_sigI, invresolsq, multiplicity );
+	}*/
 	//--------------------------------------------------------------
 	void Rings::SetReject(const int& Iring)
 	{
@@ -267,6 +274,13 @@ namespace ctruncate
 		return rings[Iring].N();
 	}
 	//--------------------------------------------------------------
+	double Rings::Comp(const int& Iring) const
+	{
+		CheckRing(Iring);
+		return rings[Iring].Comp();
+	}
+	
+	//--------------------------------------------------------------
 	//--------------------------------------------------------------
 	IceRing::IceRing(const double& Resolution, const double& width)
 	{
@@ -289,16 +303,31 @@ namespace ctruncate
 		sum_sigI = 0.0;
 		sum_sSqr = 0.0;
 		nI = 0;
+		nO = 0;
 		reject = false;
 	}
 	//--------------------------------------------------------------
-	void IceRing::AddObs(const clipper::datatypes::I_sigI<float>& I_sigI, const double& invresolsq, const double& multiplicity)
+	/*template <class T> void IceRing::AddObs(const clipper::datatypes::I_sigI<T>& I_sigI, const double& invresolsq, const double& multiplicity)
 	{
-		sum_I += multiplicity*I_sigI.I();
-		sum_sigI += multiplicity*I_sigI.sigI();
-		sum_sSqr += multiplicity*invresolsq;
-		nI+=multiplicity;
-	}
+		if (!I_sigI.missing() ) {
+			sum_I += multiplicity*I_sigI.I();
+			sum_sigI += multiplicity*I_sigI.sigI();
+			sum_sSqr += multiplicity*invresolsq;
+			nI+=multiplicity;
+		}
+		nO += multiplicity;
+	} */
+	//--------------------------------------------------------------
+	/*template <class T> void IceRing::AddObs(const clipper::datatypes::F_sigF<T>& I_sigI, const double& invresolsq, const double& multiplicity)
+	{
+		if (!I_sigI.missing() ) {
+			sum_I += multiplicity*I_sigI.f();
+			sum_sigI += multiplicity*I_sigI.sigf();
+			sum_sSqr += multiplicity*invresolsq;
+			nI+=multiplicity;
+		}
+		nO += multiplicity;
+	}	 */
 	//--------------------------------------------------------------
 	double IceRing::MeanI() const
 	{
@@ -323,6 +352,15 @@ namespace ctruncate
 		else
 		{return 0.0;}
 	}
-
+	//--------------------------------------------------------------
+	double IceRing::Comp() const
+	{
+		if ( nO > 0)
+		{return nI/nO;}
+		else
+		{return 0.0;}
+	}
+	//--------------------------------------------------------------
+	
 }
 

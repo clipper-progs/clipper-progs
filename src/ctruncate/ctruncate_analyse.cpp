@@ -17,6 +17,8 @@
 #include "best_rna.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
 
 #define ASSERT assert
 #include <assert.h>
@@ -809,34 +811,38 @@ namespace ctruncate {
 		clipper::Xmap<float> patterson( pspgr, cell, grid );
 		patterson.fft_from( fphi );
 		
-		float zfrac=0.1;
+		/*float zfrac=0.1;
 		
 		std::vector<float> vals;
+		vals.reserve(patterson.grid_asu().size() );
 		for ( clipper::Xmap<float>::Map_reference_index index = patterson.first() ; !index.last() ; index.next() ) {
 			vals.push_back(patterson[index]); }
 		std::sort( vals.begin(), vals.end() );
-		T rho0  = ( vals[ int(zfrac*T(vals.size())) ] );
+		T rho0  = ( vals[ int(zfrac*T(vals.size())) ] ); */
 		
 		// use Charles's stuff to find peaks
 		PeakSearch pksch;                      // peak search object
-		PeakInterp pkinterp;                   // peak interpolation methods
+		//PeakInterp pkinterp;                   // peak interpolation methods
 		
 		int npeak = 5;
 		
-		std::vector<int> ppks = pksch( patterson );
+		const std::vector<int>& ppks = pksch( patterson );
+				
+		if (ppks.size() == 0 || ppks.size() == 1 ) return peaks;
 		
+		clipper::ftype rho0 = pksch.zero();
 		T top_peak = patterson.get_data( ppks[0] ) - rho0;
 		int i = 0;
 		T pval(0.0);
 		
-		do {
-			T next_peak = patterson.get_data( ppks[++i] ) - rho0;
+		for (int i = 1 ; i != ppks.size() ; ++i ) {
+			T next_peak = patterson.get_data( ppks[i] ) - rho0;
 			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid);
 			T ratio = next_peak/top_peak;
 			T dist2 = std::sqrt(c0.lengthsq(cell) );
 			// look for peaks > 20% of origin peak and at least 14A distant from origin
 			// precentage estimate is Zwartz CCP4 Newsletter 42
-                        if (dist2 > 14.0 ) {
+			if (dist2 > 14.0 ) {
 			const T aval = 0.0679;
 			const T bval = 3.56;
 			pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;
@@ -847,7 +853,7 @@ namespace ctruncate {
 				peak_height.push_back(ratio);
 			}
 		        }	
-		} while ( pval < 1.0 );
+		} 
 	
 		return peaks;
 	}
@@ -1032,43 +1038,54 @@ namespace ctruncate {
 
     //---------Calculate anisotropy-------------------------------------
 
-
-    template <class SCALER, class DATA, class T> void AnisoCorr<SCALER,DATA,T>::calc(clipper::HKL_data<DATA>& isig, bool protein, bool rna)
+	
+    template <class SCALER, class DATA, class T> void AnisoCorr<SCALER,DATA,T>::calc(clipper::HKL_data<DATA>& isig)
     {
-        const clipper::HKL_info& hklinf = isig.hkl_info();
-        clipper::Cell cell(hklinf.cell());
-        clipper::Spacegroup spgr(hklinf.spacegroup());
-		clipper::HKL_data<DATA> Ibest(hklinf);
-		
-        //generate reference scattering curve (initially protein only)
-		if (protein) {
-        Scattering scat;
-        clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
-        
-		for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
-            T reso = ih.invresolsq();
-            Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
-		} // scale against BEST
-        } else {
-			Scattering scat(Scattering::NUCLEIC);
-			clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
-			
-			for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
-				T reso = ih.invresolsq();
-				Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST_rna(reso), 1.0f);
-			} // scale against BEST
-			
+		const clipper::HKL_info& hklinf = isig.hkl_info();
+		if (_range.range() < 0.0 ) {
+			_range = isig.hkl_info().invresolsq_range();
 		}
-        _iscale( Ibest, isig );
-
+		
+		if ( _is_protein || _is_nucl ) {
+			clipper::Cell cell(hklinf.cell());
+			clipper::Spacegroup spgr(hklinf.spacegroup());
+			clipper::HKL_data<DATA> Ibest(hklinf);
+			
+			//generate reference scattering curve (initially protein only)
+			if (_is_protein) {
+				Scattering scat;
+				clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
+				
+				for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
+					T reso = ih.invresolsq();
+					Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
+				} // scale against BEST
+			} else {
+				Scattering scat(Scattering::NUCLEIC);
+				clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
+				
+				for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
+					T reso = ih.invresolsq();
+					Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST_rna(reso), 1.0f);
+				} // scale against BEST
+				
+			}
+			_iscale( Ibest, isig );
+		} else {
+			_iscale( isig, _range, 12);
+		}
+		
         return ;
     }
     
     //! calculate anisotropy correction
     template <class SCALER, class DATA, class T> 
-    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::operator()(clipper::HKL_data<DATA>& observed, bool protein, bool rna )
+    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::operator()(clipper::HKL_data<DATA>& observed, bool protein, bool rna, clipper::Range<clipper::ftype> reso )
     {
-        calc(observed,protein,rna);
+		_is_protein = protein;
+		_is_nucl = rna;
+		_range = reso;
+        calc(observed);
         return _iscale.u_aniso_orth(Scaling::F);
     }
     
@@ -1419,6 +1436,212 @@ namespace ctruncate {
 		printf("$$\n\n");
 	}
 	
+	//----Rings analysis----------------------------------------------
+	template <class T> bool IceRings_analyse::operator()(clipper::HKL_data<T>& data, ctruncate::Rings& rings)
+	{
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		int nr = rings.Nrings();
+		
+		
+		_ideal_rings = rings;
+		_data = &data;
+		_rings = &rings;
+		
+		clipper::ftype maxres = data.hkl_info().resolution().invresolsq_limit();
+		
+		rings.ClearSums();
+		for (int i = 0; i != nr; ++i) rings.SetReject(i, true);
+		_ideal_rings.ClearSums();
+		
+		clipper::HKL_data<T> xsig(data.hkl_info() );
+		// dataset with all ice rings removed
+		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+			xsig[ih] = clipper::data32::I_sigI( (data[ih].I()), data[ih].sigI() );
+			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( rings.InRing(reso) != -1 ) 
+				if ( rings.Reject( rings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}
+		
+		int nreflns=500;
+		//int Ncentric = 0;
+		int Nreflections = 0;
+        {
+			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+				clipper::ftype reso = ih.invresolsq();
+				if ( !xsig[ih].missing() ) ++Nreflections;
+			}
+			if ( _nbins == 0 && nreflns != 0 ) {
+				_nbins = std::max( Nreflections/nreflns , 1);
+			} else if ( nreflns == 0 && _nbins != 0 ) {
+				//nprm = nbins;
+			} else {
+				_nbins = std::max( Nreflections/nreflns , _nbins);
+				/*
+				 double np1(nbins+0.499);
+				 double np2(nuse/nrefln);
+				 double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+				 _nbins = std::max( int(np), 1 );
+				 */
+			}
+        }
+		
+		std::vector<float> summeas(_nbins,0.0), sumov(_nbins,0.0), sumI(_nbins,0.0);
+		
+		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
+			clipper::ftype reso = ih.invresolsq();
+			clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+			int ring=rings.InRing(reso);
+			if ( ring == -1 ) {
+				int bin = int( double(_nbins) * reso / maxres - 0.001);
+				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+				if ( bin < _nbins && bin >= 0 ) {
+					sumov[bin] += mult;
+					if ( !data[ih].missing() ) {
+						summeas[bin] += mult;
+						sumI[bin] += mult*data[ih].I();
+					}
+				}
+			} else {
+				if (!ih.hkl_class().centric() )
+				if ( ring <  rings.Nrings() && ring >= 0 ) {
+					rings.AddObs(ring,data[ih],reso,mult);
+				}
+			}
+		}
+		
+		for (int i=0 ; i != _nbins ; ++i ) _mean[i] = sumI[i]/summeas[i];
+		
+		//smoothing
+		{
+			float tmp1, tmp2, tmp3, tmp4;
+			tmp1 = sumov[0];
+			tmp2 = summeas[0];
+			for (int ii = 0 ; ii != _nbins ; ++ii) {
+				if (ii == 0 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
+				} else if ( ii == _nbins-1 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
+				} else {
+					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
+				}
+				tmp1 = sumov[ii];
+				tmp2 = summeas[ii];
+				sumov[ii] = tmp3;
+				summeas[ii] = tmp4;
+			}
+		}
+		
+		for (int i=0 ; i != _nbins ; ++ i) _comp[i] = summeas[i]/sumov[i];
+		for (int i=0 ; i != _nbins ; ++ i) summeas[i] = 0.0;
+		for (int i=0 ; i != _nbins ; ++ i) sumov[i] = 0.0;
+		
+		// scale against BEST
+		/*clipper::HKL_data<clipper::data32::I_sigI> ibest(data.hkl_info() );
+		ctruncate::Scattering scat;
+		clipper::ftype totalscatter = data.hkl_info().spacegroup().num_symops()*scat(data.hkl_info().cell(), data.hkl_info().spacegroup());
+		
+		for ( clipper::HKL_data_base::HKL_reference_index ih = ibest.first(); !ih.last(); ih.next() ) {
+			clipper::ftype reso = ih.invresolsq();
+			ibest[ih] = clipper::data32::I_sigI(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
+		}
+		
+		std::vector<clipper::ftype> param_gauss( 2, 0.0 );
+		// scale Ibest to experimental using isothermal 
+		clipper::BasisFn_log_gaussian gauss;
+		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( ibest, xsig);
+		clipper::ResolutionFn rfn_gauss( data.hkl_info(), gauss, tfn_gauss, param_gauss );
+		param_gauss = rfn_gauss.params();
+		
+		for ( HRI ih = ibest.first(); !ih.last(); ih.next() )
+			if ( !ibest[ih].missing() )
+				ibest[ih].scale( exp( 0.5*gauss.f(ih.hkl(),data.hkl_info().cell(),rfn_gauss.params()) ) );
+		*/
+		std::vector<double> params_ice( _nbins, 1.0 );
+		clipper::BasisFn_spline basis_ice( xsig, _nbins, 2.0 );
+		TargetFn_meanInth<T> target_ice( xsig, 1 );
+		clipper::ResolutionFn mean( xsig.hkl_info(), basis_ice, target_ice, params_ice );
+		
+		
+		// repeat with ibest
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			clipper::ftype reso = ih.invresolsq();
+			clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+			int ring=_ideal_rings.InRing(reso);
+			if ( ring == -1 ) {
+				int bin = int( double(_nbins) * reso / maxres - 0.001);
+				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+				if ( bin < _nbins && bin >= 0 ) {
+					if ( !xsig[ih].missing() ) {
+						sumov[bin] += mult;
+						summeas[bin] += mult*mean.f(ih);
+					}
+				}
+			} else {
+				if (!ih.hkl_class().centric() )
+				if ( ring <  rings.Nrings() && ring >= 0 ) {
+					T tmp = T(ih.hkl_class().epsilon()*mean.f(ih),0.0);
+					_ideal_rings.AddObs(ring,tmp,reso,mult);
+				}
+			}
+		}
+		
+		for (int i=0 ; i != _nbins ; ++ i) _expected[i] = summeas[i]/sumov[i];
+		
+		for (int i = 0; i != rings.Nrings(); ++i) {
+			bool reject = false;
+			float reso = rings.MeanSSqr(i);
+			if ( reso <= maxres && rings.MeanSigI(i) > 0.0f ) {
+				//float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+				if (std::abs(rings.MeanI(i)-_ideal_rings.MeanI(i))/rings.MeanSigI(i) > _iceTolerance) reject = true;
+			}
+			rings.SetReject(i, reject);
+		}
+		
+		
+		bool icer = false;
+        for ( int i = 0; i != nr; ++i) if (rings.Reject(i) ) icer = true;
+		
+		return icer;
+		
+	}
+	
+	std::string IceRings_analyse::format() {
+		
+		clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
+		
+		std::stringstream ss;
+		
+		if ( _rings->MeanSSqr(0) <= maxres && _rings->MeanSigI(0) > 0.0f ) {
+			ss << "Ice Ring Summary:\n";
+			ss << " reso     mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n";
+			for ( int i = 0; i != _rings->Nrings(); ++i) {
+				float reso = _rings->MeanSSqr(i);
+				if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
+					int bin = int( double(_nbins) * reso / maxres - 0.001);
+					float imean = _rings->MeanI(i);
+					float sigImean = _rings->MeanSigI(i);
+					//float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+					ss << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << " " 
+					<< std::setw(10) << imean << " " 
+					<< std::setw(10) << sigImean << " " 
+					<< std::setw(11) << _ideal_rings.MeanI(i) << " "
+					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
+					<< std::setw(8) << _rings->Comp(i) << " " 
+					<< std::setw(8) << _comp[bin] << std::endl;
+					//printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,_ideal_rings.MeanI(i),
+					//	   (imean-_ideal_rings.MeanI(i))/sigImean,_rings->Comp(i),_comp[bin] );
+				}
+			}
+		}
+		return ss.str();
+	}
+	
+	
     //---------Instantiate templates------------------------------------
 	template class AnisoPlot<clipper::ftype32>;
 	template class AnisoPlot<clipper::ftype64>;
@@ -1449,4 +1672,6 @@ namespace ctruncate {
 	
 	template class ResoCorrel<clipper::datatypes::I_sigI<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32> >;
 	template class ResoCorrel<clipper::datatypes::F_sigF<clipper::ftype32>,clipper::datatypes::F_sigF<clipper::ftype32> >;
+	
+	template bool IceRings_analyse::operator()<clipper::data32::I_sigI>(clipper::HKL_data<clipper::data32::I_sigI>&,ctruncate::Rings&);
 	}

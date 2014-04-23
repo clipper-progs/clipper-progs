@@ -39,6 +39,7 @@
 #include "ctruncate_analyse.h"
 #include "ctruncate_matthews.h"
 #include "ctruncate_wilson.h"
+#include "best.h"
 
 #include "mmdb/mmdb_tables.h"
 
@@ -53,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.14.0";
-    clipper::String prog_date = "$Date: 2014/03/13";
+    clipper::String prog_vers = "1.15.1";
+    clipper::String prog_date = "$Date: 2014/04/23";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -190,7 +191,7 @@ int main(int argc, char **argv)
     
 	if ( prior_select == "wilson" ) prior = WILSON;
 	else if ( prior_select == "flat" ) prior = FLAT;
-		
+	
     if (mtzinarg == 0) CCP4::ccperror(1, "No input mtz file");
     
     typedef clipper::HKL_data_base::HKL_reference_index HRI;
@@ -293,7 +294,7 @@ int main(int argc, char **argv)
 			}				
 		}
 	}
-			
+	
     
     int Ncentric = 0;
     int Nreflections = 0;
@@ -311,7 +312,6 @@ int main(int argc, char **argv)
            Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
     printf("\nNumber of reflections: %d\n", Nreflections);
     clipper::Grid_sampling grid;
-    //clipper::String opfile = "patterson.map";
     
     // can't seem to get max resolution from clipper, so use CCP4 methods
     CMtz::MTZ *mtz1=NULL;
@@ -331,8 +331,7 @@ int main(int argc, char **argv)
     CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
     prog.summary_beg();
     
-    // Clipper changes H3 to R3 so print out old spacegroup symbol instead
-    //std::cout << "\nSpacegroup: " << spgr.symbol_hm() << " (number " << spgr.descr().spacegroup_number() << ")" << std::endl;
+	
     
     char spacegroup[20];
     strcpy(spacegroup,spg1->symbol_old);
@@ -396,7 +395,7 @@ int main(int argc, char **argv)
                 reso_range.include(range.max() );
             }
         } else {
-          reso_range = range;
+			reso_range = range;
         }
     }
     
@@ -413,7 +412,7 @@ int main(int argc, char **argv)
     }
     prog.summary_end();
     printf("\n");
-
+	
     // how big is reso_range
     {
         float rmax = hklinf.resolution().limit();
@@ -499,7 +498,7 @@ int main(int argc, char **argv)
         }
     }
     printf("\nThe high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
-
+	
     // limit resolution of Patterson calculation for tNCS (default 4 A), or set to
     // limit from completeness analysis
     invopt = reso_range.max();
@@ -509,20 +508,29 @@ int main(int argc, char **argv)
     if (!reso_u1.is_null() ) {
         reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_u1.limit() ) );
     }
-
+	
     // check for pseudo translation (taken from cpatterson)
     ctruncate::tNCS<float> tncs;
     const std::vector<clipper::Symop>& cf = tncs(isig, reso_Patt );
-
+	
     prog.summary_beg();
     tncs.summary();
     prog.summary_end();
     printf("\n");
 	
+	//setup aniso copy of isig
+	HKL_data<data32::I_sigI> ianiso(hklinf);
+	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+		if (reso_range.contains(ih.invresolsq() ) ) {
+			float I = isig[ih.hkl()].I();
+			float sigI = isig[ih.hkl()].sigI();
+			ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+		}
+	}
+	
     // anisotropy estimation
     clipper::U_aniso_orth uao;
     clipper::U_aniso_orth uaoc(0,0,0,0,0,0);
-    double Itotal = 0.0;
 	bool anisobysymm(false);
 	bool anisodemo(false);
     {
@@ -530,10 +538,8 @@ int main(int argc, char **argv)
 		printf("\nANISOTROPY ANALYSIS (using intensities):\n");
 		
 		
-		clipper::HKL_info hkla(spgr, cell1, clipper::Resolution(resopt),true);
-		HKL_data<data32::I_sigI> ianiso(hkla);   // anisotropy corrected I and sigma
 		
-
+		
 		clipper::U_aniso_orth uao_sum(1,3,5,7,11,13);
 		for (int i = 1; i != spgr.num_symops() ; ++i ) {
 			clipper::U_aniso_orth uao(1,3,5,7,11,13);
@@ -543,37 +549,23 @@ int main(int argc, char **argv)
 		
 		if (std::fabs(uao_sum.mat00() - uao_sum.mat11() ) > 0.5 || std::fabs(uao_sum.mat00() - uao_sum.mat22()) > 0.5 ) {
 			anisobysymm = true;
-			for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-				if (reso_range.contains(ih.invresolsq() ) ) {
-					float I = isig[ih.hkl()].I();
-					float sigI = isig[ih.hkl()].sigI();
-					if ( I > 0.0 ) Itotal += I;
-					ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-				}
-			}
 			try { 
-				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso);
-				uao = llscl.u_aniso_orth(Scaling::I);
-				uaoc = llscl.u_aniso_orth(Scaling::F);
+				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso, false, false, reso_range);
+				uao = -(llscl.u_aniso_orth(Scaling::I) );
+				uaoc = -(llscl.u_aniso_orth(Scaling::F) );
 			} catch (clipper::Message_fatal) {
 				CCP4::ccperror(1, "Anisotropy anlysis failed.");
 			}
-			
-			//uao = llscl.u_aniso_orth(Scaling::I);
 			
 			// Eigenvalue calculation
 			AnisoDirection<float> direction(uao);
 			
 			std::vector<float> v = direction.eigenValues();
-			float max = direction.max();
+			float max = std::exp(direction.max() );
 			
 			printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
-			printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v[0]/max, v[1]/max, v[2]/max);
-			//if ( v[0] <= 0.0 ) CCP4::ccperror(1, "Anisotropy correction failed - negative eigenvalue.");
-			float ratio = std::min(v[0],std::min(v[1],v[2]) )/( (v[0]+v[1]+v[2])/3.0);
-			//invopt *= ratio;
-			//resopt = 1.0/sqrt(invopt);
-			printf("Resolution limit in weakest direction = %7.3f A\n",1.0/std::sqrt(invopt*ratio));
+			printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", std::exp(v[0])/max, std::exp(v[1])/max, std::exp(v[2])/max);
+			float ratio = std::exp(std::min(v[0],std::min(v[1],v[2]) ) );
 			if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
 			prog.summary_end();
 			printf("\n");
@@ -609,40 +601,8 @@ int main(int argc, char **argv)
 		ym(isig);
 		ym.plot();		
 	}
-
-	//want to use anisotropy correction and resolution truncation for twinning tests
-    //clipper::U_aniso_orth uaoc = llscl.u_aniso_orth(Scaling::F);
-	double FFtotal = 0.0;
-	HKL_data<data32::I_sigI> ianiso(hklinf);
-	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-		float I = isig[ih.hkl()].I();
-		float sigI = isig[ih.hkl()].sigI();
-		ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-	}
 	
-    if (anisobysymm && anisodemo) {
-        clipper::U_aniso_orth biso(-(uaoc(0,0)+uaoc(1,1)+uaoc(2,2))/3.0);
-        uaoc = uaoc+biso;
-        clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uaoc);
-        ianiso.compute(ianiso, compute_s);
-        
-        for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {    
-			if (reso_range.contains(ih.invresolsq() ) ) {
-				if ( !ianiso[ih].missing() ) {
-					if (ianiso[ih].I() > 0.0 ) FFtotal += ianiso[ih].I();
-				}
-			}                                                         
-        }                                                         
-        
-        double scalefac = Itotal/FFtotal;
-        if (debug) printf("\nscalefactor = %6.3f %8.3f %8.3f\n\n",scalefac,Itotal,FFtotal);
-        for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {
-            if ( !ianiso[ih].missing() ) {
-                ianiso[ih].I() *= scalefac;
-                ianiso[ih].sigI() *=scalefac;
-            }
-        }
-    }
+	//want to use anisotropy correction and resolution truncation for twinning tests
 	
 	float lval(0.0);
     {
@@ -762,6 +722,8 @@ int main(int argc, char **argv)
 		else twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
 		prog.summary_end(); 
 		printf("\n");
+		
+		
 		//printf("Starting parity group analysis:\n");
 		
 		//Parity group analysis
@@ -772,300 +734,204 @@ int main(int argc, char **argv)
     ctruncate::Rings icerings;
     icerings.DefaultIceRings();
     icerings.ClearSums();
-    float iceTolerance = 4.0f;
-    
-    for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-        if ( !isig[ih].missing() )
-            if (! ih.hkl_class().centric() ) {
-                double reso = ih.hkl().invresolsq(hklinf.cell());
-				float mult=spgr.num_symops()/ih.hkl_class().epsilon();
-                int ice = icerings.InRing(reso);
-                if ( ice != -1 ) icerings.AddObs(ice,isig[ih],reso,mult ); 
-            }
-    }
-    
-    for (int i = 0; i != icerings.Nrings(); ++i) icerings.SetReject(i, true);
-    
-    //Wilson pre
-    //std::vector<float> wilson(2,0.0f);
-    std::vector<double> param_gauss( 2, 0.0 );
-    //int nprm2 = std::floor(nprm/3.0);
-    int nprm2 = 12;
-    
-    HKL_data<data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
-    
-    {
-        int nbins = 60;
-        std::vector<float> sumov(nbins,0.0);
-        std::vector<float> summeas(nbins,0.0);
-        std::vector<float> iceov(icerings.Nrings(),0.0);
-        std::vector<float> icemeas(icerings.Nrings(),0.0);
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            double reso = ih.hkl().invresolsq(hklinf.cell());
-			float mult=spgr.num_symops()/ih.hkl_class().epsilon();
-            int ring=icerings.InRing(reso);
-            if ( ring == -1 ) {
-                int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-                //if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-                if ( bin < nbins && bin >= 0 ) {
-                    sumov[bin] += mult;
-                    if ( !isig[ih].missing() ) summeas[bin] += mult;
-                }
-            } else {
-                if ( ring <  icerings.Nrings() && ring >= 0 ) {
-                    iceov[ring] += mult;
-                    if ( !isig[ih].missing() ) icemeas[ring] += mult;
-                }
-            }
-        }
-        // smooth the mean values, also means values are over 3 bins so hopefully get fewer empty bins
-		{
-			float tmp1, tmp2, tmp3, tmp4;
-			tmp1 = sumov[0];
-			tmp2 = summeas[0];
-			for (int ii = 0 ; ii != nbins ; ++ii) {
-				if (ii == 0 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
-				} else if ( ii == 299 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
-				} else {
-					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
-				}
-				tmp1 = sumov[ii];
-				tmp2 = summeas[ii];
-				sumov[ii] = tmp3;
-				summeas[ii] = tmp4;
-			}
-        }
-		        
-        HKL_data<data32::I_sigI> tr1(hklinf);
-        tr1 = data32::I_sigI(1.0f,1.0f);
-        for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( ih.hkl_class().epsilon() ); //tage into account  epsilon
-        
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            double reso = ih.hkl().invresolsq(hklinf.cell());
-            xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
-            if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-            if ( icerings.InRing(reso) != -1 ) 
-                if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-        }		
-        
-        // calc scale
-        //std::vector<double> param_gauss( 2, 0.0 );
-        clipper::BasisFn_log_gaussian gauss;
-        clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( xsig, tr1);
-        ResolutionFn rfn_gauss( hklinf, gauss, tfn_gauss, param_gauss );
-        param_gauss = rfn_gauss.params();
-        
-        //datatypes::Compute_scale_u_iso<float> compute_s(1.0,param_gauss[1]);
-        //xsig.compute( isig, compute_s ); scale xsig for gaussian decay
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            if ( !isig[ih].missing() ) {
-                double reso = ih.hkl().invresolsq(hklinf.cell());
-                xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
-            }
-        }
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            double reso = ih.hkl().invresolsq(hklinf.cell());
-            if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-            if ( icerings.InRing(reso) != -1 ) 
-                if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-        }		
-        
-        std::vector<double> params_ice( nprm2, 1.0 );
-        clipper::BasisFn_spline basis_ice( xsig, nprm2, 2.0 );
-        TargetFn_meanInth<clipper::data32::I_sigI> target_ice( xsig, 1 );
-        clipper::ResolutionFn Sigma( hklinf, basis_ice, target_ice, params_ice );
-        
-		std::vector<float> expectedI(icerings.Nrings(),0.0);
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            double reso = ih.hkl().invresolsq(hklinf.cell());
-			float mult=spgr.num_symops();
-            int ring=icerings.InRing(reso);
-            if ( ring != -1 ) {
-				if ( ring <  icerings.Nrings() && ring >= 0 ) {
-                    expectedI[ring] += mult*exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-                }
-            }
-        }
+	
+	{
+		ctruncate::IceRings_analyse ice;
+		bool icer=ice(isig,icerings);
 		
-        for (int i = 0; i != icerings.Nrings(); ++i) {
-            bool reject = false;
-            float reso = icerings.MeanSSqr(i);
-            if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
-                float imean = icerings.MeanI(i);
-                float sigImean = icerings.MeanSigI(i);
-				expectedI[i]/=iceov[i];
-                //float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-                if ((imean-expectedI[i])/sigImean > iceTolerance) reject = true;
-            }
-            icerings.SetReject(i, reject);
-        }
-        
-        bool icer = false;
-        for ( int i = 0; i != icerings.Nrings(); ++i) if (icerings.Reject(i) ) icer = true;
         printf("\n");
         prog.summary_beg();
         printf("\nICE RINGS:\n\n");
         if (icer) printf("Possible Ice Rings\n\n");
         else printf("No Ice Rings detected\n\n");
         prog.summary_end();
-        printf("\n"); 
-        
-        if ( icerings.MeanSSqr(0) <= maxres && icerings.MeanSigI(0) > 0.0f ) {
-            printf("Ice Ring Summary:\n");
-            printf(" reso mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n");
-            for ( int i = 0; i != icerings.Nrings(); ++i) {
-                float reso = icerings.MeanSSqr(i);
-                if ( reso <= maxres && icerings.MeanSigI(i) > 0.0f ) {
-                    int bin = int( double(nbins) * reso / maxres - 0.001);
-                    float imean = icerings.MeanI(i);
-                    float sigImean = icerings.MeanSigI(i);
-                    //float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-                    printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,expectedI[i],
-						   (imean-expectedI[i])/sigImean,icemeas[i]/iceov[i],summeas[bin]/sumov[bin]);
-                }
-            }
-        }
-    }
-    
-    // Sigma or Normalisation curve
-    // calculate Sigma (mean intensity in resolution shell) 
-    // use intensities uncorrected for anisotropy
-    for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-        double reso = ih.hkl().invresolsq(hklinf.cell());
-        xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
-        if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-        if ( icerings.InRing(reso) != -1 ) 
-            if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-    }
-    
-    
-    std::vector<double> params( nprm2, 1.0 );
-    clipper::BasisFn_spline basis_fo( xsig, nprm2, 2.0 );
-    TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
-    clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params );
-    
-    for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-        double reso = ih.hkl().invresolsq(hklinf.cell());
-        xsig[ih].I() = exp( log(Sigma.f(ih)) +param_gauss[1]*reso );  //not using multiplicity  THIS DOES NOT CONFORM!!!!!!
-    }
-    
-    //Wilson plot
-    //std::vector<float> wilson(2,0.0f);
-    //nprm = 60*std::max(int(sqrt(float(Nreflections))),nbins );
-    clipper::MMoleculeSequence seq;
-    
-	WilsonB::MODE wilson_flag;
-	if (is_nucl) {
-		wilson_flag = WilsonB::RNA;
-	} else { 
-		wilson_flag = WilsonB::BEST;
+        printf("\n");
+		
+		std::cout << ice.format() << std::endl;
+		
 	}
-    WilsonB wilson( wilson_flag);
-    if ( ipseq != "NONE" ) {
-        clipper::SEQfile seqf;
-        seqf.read_file( ipseq );
-        seqf.import_molecule_sequence( seq );
-        MPolymerSequence poly = seq[0];
-        wilson(isig,poly,&reso_range, &icerings);
-    } else if (nresidues > 0) {
-        wilson(isig,nresidues,&reso_range, &icerings);
-    } else {
-        wilson(isig,&reso_range,&icerings);
-    }		
-    // end of Norm calc
-    clipper::String comment("Smooth");
-    printf("\n");
-    prog.summary_beg();
-    wilson.summary();
-    prog.summary_end();
-    printf("\n");
-    wilson.plot();
-    
-    // apply the Truncate procedure, unless amplitudes have been input
-    
-    // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
-    // so only scale if B positive
-    float scalef = 1.0;
-    
-    if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
-    int nrej = 0; 
+	
+	// if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
+	// so only scale if B positive
+	float scalef = 1.0;
+	{
+		//Wilson plot
+		//std::vector<float> wilson(2,0.0f);
+		//nprm = 60*std::max(int(sqrt(float(Nreflections))),nbins );
+		clipper::MMoleculeSequence seq;
+		
+		WilsonB::MODE wilson_flag;
+		if (is_nucl) {
+			wilson_flag = WilsonB::RNA;
+		} else { 
+			wilson_flag = WilsonB::BEST;
+		}
+		WilsonB wilson( wilson_flag);
+		if ( ipseq != "NONE" ) {
+			clipper::SEQfile seqf;
+			seqf.read_file( ipseq );
+			seqf.import_molecule_sequence( seq );
+			MPolymerSequence poly = seq[0];
+			wilson(isig,poly,&reso_range, &icerings);
+		} else if (nresidues > 0) {
+			wilson(isig,nresidues,&reso_range, &icerings);
+		} else {
+			wilson(isig,&reso_range,&icerings);
+		}		
+		
+		clipper::String comment("Smooth");
+		printf("\n");
+		prog.summary_beg();
+		wilson.summary();
+		prog.summary_end();
+		printf("\n");
+		wilson.plot();
+		
+		if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
+	}
+	
+		
+	HKL_data<data32::I_sigI> xsig(hklinf);
+	//normal calculation
+	{		
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+			xsig[ih] = clipper::data32::I_sigI( (isig[ih.hkl()].I()), isig[ih.hkl()].sigI() );
+			if ( icerings.InRing(reso) != -1 ) 
+				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}
 
-    if (!amplitudes) {
-        // scale the norm for the anisotropy
-        if (aniso) {
-            /*{
-                //clipper::Range<clipper::ftype> resfilter = isig.hkl_info().invresolsq_range();
-                //std::vector<bool> mask(7,false);
-                //mask[0] = true;
-                //Iscale_logLikeAniso<float> ascl;
-                //ascl(xsig,isig);
-            }*/
-            /*{
-                for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-                    if (reso_range.contains(ih.invresolsq() ) ) {
-                        float I = isig[ih.hkl()].I();
-                        float sigI = isig[ih.hkl()].sigI();
-                        if ( I > 0.0 ) Itotal += I;
-                        ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-                    }
-                }
+		
+		
+		int nprm2=12;
+		int nreflns=500;
+		
+		int Nreflections = 0;
+		{
+			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+				clipper::ftype reso = ih.invresolsq();
+				if ( !xsig[ih].missing() ) ++Nreflections;
+			}
+			if ( nprm2 == 0 && nreflns != 0 ) {
+				nprm2 = std::max( Nreflections/nreflns , 1);
+				//} else if ( nreflns == 0 && nprm2 != 0 ) {
+				//nprm = nbins;
+			} else {
+				//nprm2 = std::max( Nreflections/nreflns , nprm2);
+				double np1(nprm2+0.499);
+				double np2(Nreflections/nreflns);
+				double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+				nprm2 = std::max( int(np), 1 );
+			}
+		}
 
-                Iscale_logLikeAniso<float> bscl;
-                bscl(ianiso);
-                clipper::U_aniso_orth uao2 = bscl.u_aniso_orth(Scaling::F);
-                clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,uao2);
-                xsig.compute(xsig, compute_s);
-                // falloff calculation (Yorgo Modis)
-                //printf("\nAnisotropic U (orthogonal coords):\n\n");
-                //printf("| %8.4f %8.4f %8.4f |\n", uao2(0,0) ,  uao2(0,1) ,  uao2(0,2)  );
-                //printf("| %8.4f %8.4f %8.4f |\n", uao2(1,0) ,  uao2(1,1) ,  uao2(1,2)  );
-                //printf("| %8.4f %8.4f %8.4f |\n", uao2(2,0) ,  uao2(2,1) ,  uao2(2,2)  );
-            }*/
-            if (anisobysymm && anisodemo) {
-                clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
-                xsig.compute(xsig, compute_s);
-                //printf("\nAnisotropic U (orthogonal coords):\n\n");
-                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(0,0) ,  uaoc(0,1) ,  uaoc(0,2)  );
-                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(1,0) ,  uaoc(1,1) ,  uaoc(1,2)  );
-                //printf("| %8.4f %8.4f %8.4f |\n", uaoc(2,0) ,  uaoc(2,1) ,  uaoc(2,2)  );
-
-            }
-        }
-        
-        //user override of truncate procedure and output
-        if (!reso_u3.is_null() ) {
-                reso_trunc = 
+		
+		HKL_data<data32::I_sigI> tr1(hklinf);
+		
+		// calc scale
+#ifdef CTRUNC_TWO
+		tr1 = data32::I_sigI(1.0f,1.0f);
+		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( std::sqrt(ih.hkl_class().epsilon()) ); //take into account  epsilon
+		
+		std::vector<double> param_gauss( 2, 0.0);
+		clipper::BasisFn_log_gaussian gauss;
+		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( xsig, tr1);
+		ResolutionFn rfn_gauss( hklinf, gauss, tfn_gauss, param_gauss );
+		param_gauss = rfn_gauss.params();
+		
+		// Sigma or Normalisation curve
+		// calculate Sigma (mean intensity in resolution shell) 
+		// use intensities uncorrected for anisotropy
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
+			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( icerings.InRing(reso) != -1 ) 
+				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}
+#else
+		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+			tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
+		}		
+#endif
+		
+		std::vector<double> params(nprm2);
+		{
+			double mean = 0.0;
+			double n = 0.0;
+			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+				if (!isig[ih].missing() ) {
+				double reso = ih.invresolsq();
+				mean += isig[ih].I()/tr1[ih.hkl()].I();
+				n += ih.hkl_class().epsilon();
+				}
+			}
+			mean /= n;
+			for (int i = 0; i != nprm2; ++i ) params[i] = mean*(nprm2-i)/nprm2;
+		}
+		clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
+		//TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
+		TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
+		clipper::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, 0.0, false );
+		params = Sigma.params();
+		
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+#ifdef CTRUNC_TWO
+			xsig[ih].I() = exp( log(Sigma.f(ih)) +param_gauss[1]*reso );  //norm does not use epsilon
+#else
+			xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * tr1[ih].I(),1.0f);
+#endif
+		}
+		
+		// scale the norm for the anisotropy
+		if (aniso) {            
+			if (anisobysymm && anisodemo) {
+				clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
+				xsig.compute(xsig, compute_s);
+				//printf("\nAnisotropic U (orthogonal coords):\n\n");
+				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(0,0) ,  uaoc(0,1) ,  uaoc(0,2)  );
+				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(1,0) ,  uaoc(1,1) ,  uaoc(1,2)  );
+				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(2,0) ,  uaoc(2,1) ,  uaoc(2,2)  );
+				
+			}
+		}		
+	}
+		
+	int nrej = 0; 
+	
+	if (!amplitudes) {
+		
+		//user override of truncate procedure and output
+		if (!reso_u3.is_null() ) {
+			reso_trunc = 
 			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
-        }
+		}
 		if ( prior == AUTO && (tncs.hasNCS() || 0.440 > lval) ) {
 			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
 			prior = FLAT;
 		}
 		
 		if ( refl_mean ) {
-            if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
 			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
-        }
-        if (anomalous) {
+		}
+		if (anomalous) {
 			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
             else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
-            int iwarn = 0;
-            for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			int iwarn = 0;
+			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 0 :
 				( !Util::is_nan(fsig_ano[ih].f_pl() ) ) ? 1 :
 				( !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 2 : 0;
 				Dano[ih].d() = fsig_ano[ih].d();
 				Dano[ih].sigd() = fsig_ano[ih].sigd();
-                if ( ih.hkl_class().centric() ) {
-                    Dano[ih].d() = 0.0;
-                    Dano[ih].sigd() = 0.0;
-                }
-            }
+				if ( ih.hkl_class().centric() ) {
+					Dano[ih].d() = 0.0;
+					Dano[ih].sigd() = 0.0;
+				}
+			}
 			// use for phil plot
 			if (!refl_mean ) {
 				for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -1075,82 +941,82 @@ int main(int argc, char **argv)
 					fsig[ih].sigf() = fsig_ano[ih].sigf();
 				}
 			}
-        } 
-    }
-    printf("\n");
-    prog.summary_beg();
-    printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
+		} 
+	}
+	printf("\n");
+	prog.summary_beg();
+	printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
 	if ( prior == FLAT ) printf("Calculation using flat prior\n");
 	else printf("Calculation using Wilson prior\n");
 	
-    printf("%d intensities have been rejected as unphysical\n", nrej);
-    prog.summary_end();
-    printf("\n");
-    
-    
-    
-    // following code is for when truncate calc switched off - do not delete it
-    // usually already have F's in this case; really just need to skip truncate calc
-    
-    /*
-     for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-     if ( !isig[ih].missing() ) {
-     float I = isig[ih].I();
-     float sigma = isig[ih].sigI();
-     HKL hkl = ih.hkl();
-     float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-     float sqwt = sqrt(weight);
-     if (I < 0.0) {
-     fsig[ih].f() = 0.0;
-     fsig[ih].sigf() = 0.0;
-     }
-     else {
-     fsig[ih].f() = sqrt(I)*scalef*sqwt;
-     fsig[ih].sigf() = 0.5*(sigma/sqrt(I))*scalef*sqwt; //check this
-     }
-     }
-     }*/
-    
-    
-    // moments of E using clipper binning
-    // moments_Z(ianiso,resopt,nbins,prog);
-    
-    
-    // construct cumulative distribution function for intensity (using Z rather than E)
-    int ntw = cumulative_plot(isig, xsig);
-    
-    if (ntw > 2) {
-        prog.summary_beg();
-        printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n\n");
-        prog.summary_end();
-    }
-    
-    
-    // falloff calculation (Yorgo Modis)
-    //yorgo_modis_plot(fsig,maxres,60,prog,uao);
-    
-    // anomalous signal
-    if (anomalous ) {
-        if (amplitudes) AnomStats<float> anomstats(fsig_ano);
+	printf("%d intensities have been rejected as unphysical\n", nrej);
+	prog.summary_end();
+	printf("\n");
+	
+	
+	
+	// following code is for when truncate calc switched off - do not delete it
+	// usually already have F's in this case; really just need to skip truncate calc
+	
+	/*
+	 for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+	 if ( !isig[ih].missing() ) {
+	 float I = isig[ih].I();
+	 float sigma = isig[ih].sigI();
+	 HKL hkl = ih.hkl();
+	 float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
+	 float sqwt = sqrt(weight);
+	 if (I < 0.0) {
+	 fsig[ih].f() = 0.0;
+	 fsig[ih].sigf() = 0.0;
+	 }
+	 else {
+	 fsig[ih].f() = sqrt(I)*scalef*sqwt;
+	 fsig[ih].sigf() = 0.5*(sigma/sqrt(I))*scalef*sqwt; //check this
+	 }
+	 }
+	 }*/
+	
+	
+	// moments of E using clipper binning
+	// moments_Z(ianiso,resopt,nbins,prog);
+	
+	
+	// construct cumulative distribution function for intensity (using Z rather than E)
+	int ntw = cumulative_plot(isig, xsig);
+	
+	if (ntw > 2) {
+		prog.summary_beg();
+		printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n\n");
+		prog.summary_end();
+	}
+	
+	
+	// falloff calculation (Yorgo Modis)
+	//yorgo_modis_plot(fsig,maxres,60,prog,uao);
+	
+	// anomalous signal
+	if (anomalous ) {
+		if (amplitudes) AnomStats<float> anomstats(fsig_ano);
         else AnomStats<float> anomstats(isig_ano_import);
-    }
-    
-    
-    {
-        ctruncate::PattPeak patt_peak(std::sqrt(maxres));
-        
-        float opt_res = patt_peak(xsig);
-        
-        float width_patt = 2.0f*patt_peak.sigma();
-        
-        float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
-        
-        prog.summary_beg();
-        std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
-        prog.summary_end();
-        
-        
-        
+	}
+	
+	
+	{
+		ctruncate::PattPeak patt_peak(std::sqrt(maxres));
+		
+		float opt_res = patt_peak(xsig);
+		
+		float width_patt = 2.0f*patt_peak.sigma();
+		
+		float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
+		
+		prog.summary_beg();
+		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
+		prog.summary_end();
+		
+		
+		
     }
     
     // I/Sigma and F/sqrt(Sigma) plots
@@ -1256,7 +1122,7 @@ int main(int argc, char **argv)
             }
             mtzout.export_hkl_data( free, outcol + freecol.tail() );
         }
-
+		
         if (anomalous) {
             if ( !refl_mean ) {
                 if (appendcol == "") labels = outcol + "[FMEAN,SIGFMEAN]";
@@ -1300,22 +1166,22 @@ int main(int argc, char **argv)
             }
             mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );
         }
-
+		
         //copy old history and say something about ctruncate run
         if (history.size() != 0 ) {
-           for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
+			for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
         } else {
             char run_date[10];
             CCP4::ccp4_utils_date(run_date);
             char run_time[8];
             CCP4::ccp4_utils_time(run_time);
             clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
-
+			
             clipper::String history = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
             histin.push_back(history);
         }
         mtzout.set_history(histin);
-
+		
         mtzout.set_spacegroup_confidence(spgr_confidence);
         
         //mtzout.close_append();

@@ -51,47 +51,55 @@ private:
 		std::vector<clipper::Coord_grid> nlist;
 	};
 	
-public:
-	std::vector<int> operator() ( const clipper::Xmap<float>& map );
+	class PeakInterp {
+		struct IllegalStep { };
+		
+	private:
+		template<class T> inline clipper::Coord_map interp( const clipper::Xmap<T> &, const clipper::Coord_map& );
+	public:
+		template<class T> clipper::Coord_map operator() ( const clipper::Xmap<T> &map, const clipper::Coord_map &pos ) {
+			clipper::Coord_map res;
+			try {
+				res = interp( map , pos );
+			}
+			catch (IllegalStep) {
+				return pos;
+			}
+			return res;
+		}
+		clipper::Coord_map operator() ( const clipper::Xmap<float> &map, const int grid ) {
+			clipper::Coord_map res;
+			try {
+				res = interp( map , clipper::Coord_map( map.coord_of( grid ) ) );
+			}
+			catch (IllegalStep) {
+				return clipper::Coord_map( map.coord_of( grid ) );
+			}
+			return res;
+		}
+	};
 	
+public:
+	PeakSearch(clipper::ftype zfrac=0.1) : _zfrac(zfrac), _rho0(0.0), _sigma(0.0), _sig(0.0) {}
+	~PeakSearch() {}
+	template<class T> const std::vector<int>& operator() ( const clipper::Xmap<T>& map, float sig=3.0 );
+	clipper::ftype zero() { return _rho0; }
+	const int operator[](int i) { return _peaks[i]; }
+	int npeaks() { return _peaks.size(); }
 private:
-	clipper::Xmap<float>* xmap;
+	clipper::Xmap_base* _xmap;
+	clipper::ftype _rho0;
+	clipper::ftype _sigma;
+	clipper::ftype _zfrac;
+	clipper::ftype _sig;
+	std::vector<int> _peaks;
 };
 
-/* interpolation for peak positions using clipper Interp::Cubic
-*/
-class PeakInterp {
-	struct IllegalStep { };
-	
-private:
-	inline clipper::Coord_map interp( const clipper::Xmap<float> &, const clipper::Coord_map& );
-public:
-	clipper::Coord_map operator() ( const clipper::Xmap<float> &map, const clipper::Coord_map &pos ) {
-		clipper::Coord_map res;
-		try {
-			res = interp( map , pos );
-		}
-		catch (IllegalStep) {
-			return pos;
-		}
-		return res;
-	}
-	clipper::Coord_map operator() ( const clipper::Xmap<float> &map, const int grid ) {
-		clipper::Coord_map res;
-		try {
-			res = interp( map , clipper::Coord_map( map.coord_of( grid ) ) );
-		}
-		catch (IllegalStep) {
-			return clipper::Coord_map( map.coord_of( grid ) );
-		}
-		return res;
-	}
-};
 
-clipper::Coord_map PeakInterp::interp ( const clipper::Xmap<float> &map, const clipper::Coord_map &pos ) {
+template<class T> clipper::Coord_map PeakSearch::PeakInterp::interp ( const clipper::Xmap<T> &map, const clipper::Coord_map &pos ) {
 	float val;
-	clipper::Grad_map<float> grad;
-	clipper::Curv_map<float> curv;
+	clipper::Grad_map<T> grad;
+	clipper::Curv_map<T> curv;
 	
 	clipper::Interp_cubic::interp_curv( map, pos, val, grad, curv );
 	
@@ -181,5 +189,71 @@ private:
 	clipper::Cell& cell_;
 	float accuracy_;
 };
+
+template<class T> const std::vector<int>& PeakSearch::operator() ( const clipper::Xmap<T>& map, float sig ) {
+	clipper::Coord_grid c, x;
+	
+	_xmap = const_cast<clipper::Xmap<T> *>( &map );
+	_sig = sig;
+	
+	{
+		float rho(0.0);
+		
+		std::vector<T> vals;
+		vals.reserve(map.grid_asu().size());
+		for ( clipper::Xmap_base::Map_reference_index index = map.first() ; !index.last() ; index.next() ) {
+			vals.push_back(map[index]); }
+		std::sort( vals.begin(), vals.end() );
+		_rho0  = ( vals[ int(_zfrac*float(vals.size())) ] );
+		
+		
+		int n(0);
+		for ( int index = 0 ; index != vals.size() ; ++index ) {
+			_sigma += std::pow(vals[index],2);
+			rho += vals[index];
+			++n;
+		}
+		_sigma -= rho*rho/n;
+		_sigma /= n;
+		_sigma = std::sqrt(_sigma);
+	}
+	
+	std::vector<int> peaklist;
+	// loop over skeleton neighbours structure
+	float sig0 = sig*_sigma+_rho0;
+	Neighbours neigh( map );
+	clipper::Coord_grid g0, g1;
+	clipper::Xmap_base::Map_reference_coord i0;
+	for ( clipper::Xmap_base::Map_reference_index index = map.first() ; !index.last() ; index.next() ) {
+		float value = map[index];
+		if (value > sig0) {
+			bool peak = true;
+			g0 = index.coord();
+			for (int i = 0; i < neigh.size(); i++ ) {
+				g1 = g0 + neigh[i];
+				i0 = clipper::Xmap_base::Map_reference_coord( map, g1 );
+				if ( map[i0] > value ) {
+					peak = false;
+					break;
+				}
+			}
+			if ( peak ) peaklist.push_back( index.index() );
+		}
+	}
+	
+	clipper::Map_index_sort::sort_decreasing( map, peaklist );
+	_peaks=peaklist;
+	
+	/*PeakInterp pki;
+	 for (std::vector<int>::const_iterator i=peaklist.begin() ; i != peaklist.end() ; ++i) {
+	 _peaks.push_back(map.coord_of( peaklist[*i] ) ); */
+	/*try {
+	 _peaks.push_back(pki(map, peaklist[*i]).coord_frac(map.grid_sampling() ) );
+	 } catch (...) {
+	 _peaks.push_back(map.coord_of( peaklist[*i] ).coord_frac(map.grid_sampling() ) );
+	 }*/
+	//}
+	return _peaks;
+}
 
 #endif

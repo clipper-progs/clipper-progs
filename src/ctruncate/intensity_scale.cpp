@@ -1091,7 +1091,7 @@ namespace ctruncate {
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
         clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
-        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
+        //clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
         
 		clipper::ftype c[np];
 		c[1] = xs[0]*xs[0];
@@ -1108,8 +1108,8 @@ namespace ctruncate {
 		+c[3]*std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
 		+2.0*(c[4]*params[4]*params[4]+c[5]*params[5]*params[5]+c[6]*params[6]*params[6]);
         
-        result().f = (norm2 > 0.00001) ? 
-            scale*d2 + 0.5*std::log(norm2) :
+        result().f = /*(norm2 > 0.00001) ? 
+            scale*d2 + 0.5*std::log(norm2) : */
             scale*d2;
         
         //std::cout << " f= " << result().f << std::endl;
@@ -1153,7 +1153,7 @@ namespace ctruncate {
         clipper::ftype scale = 1.0/(2.0*sigma_*sigma_);
         clipper::ftype Uiso = (params[1]+params[2]+params[3])/3.0;
         clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
-        clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
+        //clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
 
 		clipper::ftype c[np];
 		c[1] = xs[0]*xs[0];
@@ -1168,7 +1168,7 @@ namespace ctruncate {
             +c[3]*std::fabs(params[3]-Uiso)*std::fabs(params[3]-Uiso)  
             +2.0*(c[4]*params[4]*params[4]+c[5]*params[5]*params[5]+c[6]*params[6]*params[6]);
         
-        clipper::ftype f = (norm2 > 0.00001) ? scale*d2 + 0.5*std::log(norm2) : scale*d2;
+        clipper::ftype f = /*(norm2 > 0.00001) ? scale*d2 + 0.5*std::log(norm2) :*/ scale*d2;
         //std::cout << "f_s " << f << std::endl;
         
         return f;
