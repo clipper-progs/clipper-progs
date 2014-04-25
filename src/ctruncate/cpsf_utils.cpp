@@ -1,5 +1,4 @@
 #include "cpsf_utils.h"
-#include <algorithm>
 
 PeakSearch::Neighbours::Neighbours( const clipper::Xmap_base &map, const float min_distsq, const float max_distsq )
 {

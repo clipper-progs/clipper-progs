@@ -6,6 +6,7 @@
 #include "clipper/clipper-ccp4.h"
 #include "clipper/clipper-minimol.h"
 #include <map>
+#include <algorithm>
 #if defined (__sgi) && defined (_MIPS_ISA)
 extern "C" {
 #include <math.h>
