@@ -325,7 +325,8 @@ private:
 	{
 	public:
 		//! contructor
-		IceRings_analyse(int nbins=60) : _nbins(nbins), _mean(nbins,0.0), _comp(nbins,0.0), _expected(nbins,0.0), _iceTolerance(4.0) { }
+		IceRings_analyse(clipper::ftype tol=4.0) : _iceTolerance(tol) { }
+                ~IceRings_analyse() { }
 		//! check for presence of  rings
 		template <class T> bool operator()(clipper::HKL_data<T>& data, ctruncate::Rings& rings);
 		//!output summary
@@ -335,11 +336,8 @@ private:
 		template <class T> clipper::ftype obs(clipper::HKL_data<T>& f );
 		template <class T> clipper::ftype sigobs(clipper::HKL_data<T>& f );
 		
-		int _nbins;                                //!< number of bins
-		std::vector<clipper::ftype > _comp;        //!< completeness
-		std::vector<clipper::ftype > _mean;        //!< mean in resolution bin
-		std::vector<clipper::ftype > _expected;    //!< mean in resolution bin
 		ctruncate::Rings _ideal_rings;              //!< expected values in rings
+		std::vector<clipper::ftype > _comp;        //!< completeness
 		
 		clipper::HKL_data_base *_data;              //!< pointer to data
 		ctruncate::Rings* _rings;                  //!< pointer to rings data

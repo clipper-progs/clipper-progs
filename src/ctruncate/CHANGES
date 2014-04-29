@@ -1,3 +1,6 @@
+1.15.2 (29/4/14)
+- fix for double free in ice rings analysis
+
 1.15.1 (23/4/14)
 - remove constant normalisation from restaints in LogLikeAniso
 

@@ -139,7 +139,10 @@ namespace ctruncate {
 		// Resolution of iring'th ring as d*
 		double Dstar(const int& iring) const
 		{return rings.at(iring).Dstar();}
-		
+	        
+                // Copy rings
+                void Copy(const Rings& other);
+	
 		// Copy rejected rings only
 		void CopyRejRings(const Rings& other);
 		

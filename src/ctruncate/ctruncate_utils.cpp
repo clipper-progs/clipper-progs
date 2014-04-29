@@ -191,6 +191,16 @@ namespace ctruncate
 		}
 		nrings = rings.size();
 	}
+        // Copy rings
+        void Rings::Copy(const Rings& other)
+        {
+                rings.clear();
+                for (int i=0;i<other.nrings;i++)
+                {
+                        {rings.push_back(other.rings[i]);}
+                }
+                nrings = rings.size();
+        }
 	//--------------------------------------------------------------
 	// Clear list
 	void Rings::Clear()

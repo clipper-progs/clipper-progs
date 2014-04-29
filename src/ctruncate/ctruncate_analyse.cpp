@@ -1444,9 +1444,10 @@ namespace ctruncate {
 		int nr = rings.Nrings();
 		
 		
-		_ideal_rings = rings;
+		_ideal_rings.Copy(rings);
 		_data = &data;
 		_rings = &rings;
+		_comp.resize(_rings->Nrings());
 		
 		clipper::ftype maxres = data.hkl_info().resolution().invresolsq_limit();
 		
@@ -1464,9 +1465,10 @@ namespace ctruncate {
 				if ( rings.Reject( rings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
 		}
 		
-		int nreflns=500;
+		int nreflns=1000;
 		//int Ncentric = 0;
 		int Nreflections = 0;
+		int _nbins=60;
         {
 			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
 				clipper::ftype reso = ih.invresolsq();
@@ -1511,7 +1513,6 @@ namespace ctruncate {
 			}
 		}
 		
-		for (int i=0 ; i != _nbins ; ++i ) _mean[i] = sumI[i]/summeas[i];
 		
 		//smoothing
 		{
@@ -1536,31 +1537,14 @@ namespace ctruncate {
 			}
 		}
 		
-		for (int i=0 ; i != _nbins ; ++ i) _comp[i] = summeas[i]/sumov[i];
-		for (int i=0 ; i != _nbins ; ++ i) summeas[i] = 0.0;
-		for (int i=0 ; i != _nbins ; ++ i) sumov[i] = 0.0;
-		
-		// scale against BEST
-		/*clipper::HKL_data<clipper::data32::I_sigI> ibest(data.hkl_info() );
-		ctruncate::Scattering scat;
-		clipper::ftype totalscatter = data.hkl_info().spacegroup().num_symops()*scat(data.hkl_info().cell(), data.hkl_info().spacegroup());
-		
-		for ( clipper::HKL_data_base::HKL_reference_index ih = ibest.first(); !ih.last(); ih.next() ) {
-			clipper::ftype reso = ih.invresolsq();
-			ibest[ih] = clipper::data32::I_sigI(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
+		for (int i=0 ; i != _rings->Nrings() ; ++ i) {
+			float reso = _rings->MeanSSqr(i);
+			if ( reso <= maxres ) {
+			int bin = int( double(_nbins) * reso / maxres - 0.001);
+			_comp[i] = summeas[bin]/sumov[bin];
+			}
 		}
 		
-		std::vector<clipper::ftype> param_gauss( 2, 0.0 );
-		// scale Ibest to experimental using isothermal 
-		clipper::BasisFn_log_gaussian gauss;
-		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( ibest, xsig);
-		clipper::ResolutionFn rfn_gauss( data.hkl_info(), gauss, tfn_gauss, param_gauss );
-		param_gauss = rfn_gauss.params();
-		
-		for ( HRI ih = ibest.first(); !ih.last(); ih.next() )
-			if ( !ibest[ih].missing() )
-				ibest[ih].scale( exp( 0.5*gauss.f(ih.hkl(),data.hkl_info().cell(),rfn_gauss.params()) ) );
-		*/
 		std::vector<double> params_ice( _nbins, 1.0 );
 		clipper::BasisFn_spline basis_ice( xsig, _nbins, 2.0 );
 		TargetFn_meanInth<T> target_ice( xsig, 1 );
@@ -1572,16 +1556,7 @@ namespace ctruncate {
 			clipper::ftype reso = ih.invresolsq();
 			clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
 			int ring=_ideal_rings.InRing(reso);
-			if ( ring == -1 ) {
-				int bin = int( double(_nbins) * reso / maxres - 0.001);
-				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-				if ( bin < _nbins && bin >= 0 ) {
-					if ( !xsig[ih].missing() ) {
-						sumov[bin] += mult;
-						summeas[bin] += mult*mean.f(ih);
-					}
-				}
-			} else {
+			if ( ring != -1 ) {
 				if (!ih.hkl_class().centric() )
 				if ( ring <  rings.Nrings() && ring >= 0 ) {
 					T tmp = T(ih.hkl_class().epsilon()*mean.f(ih),0.0);
@@ -1590,13 +1565,10 @@ namespace ctruncate {
 			}
 		}
 		
-		for (int i=0 ; i != _nbins ; ++ i) _expected[i] = summeas[i]/sumov[i];
-		
 		for (int i = 0; i != rings.Nrings(); ++i) {
 			bool reject = false;
 			float reso = rings.MeanSSqr(i);
 			if ( reso <= maxres && rings.MeanSigI(i) > 0.0f ) {
-				//float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
 				if (std::abs(rings.MeanI(i)-_ideal_rings.MeanI(i))/rings.MeanSigI(i) > _iceTolerance) reject = true;
 			}
 			rings.SetReject(i, reject);
@@ -1622,7 +1594,6 @@ namespace ctruncate {
 			for ( int i = 0; i != _rings->Nrings(); ++i) {
 				float reso = _rings->MeanSSqr(i);
 				if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
-					int bin = int( double(_nbins) * reso / maxres - 0.001);
 					float imean = _rings->MeanI(i);
 					float sigImean = _rings->MeanSigI(i);
 					//float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
@@ -1632,7 +1603,7 @@ namespace ctruncate {
 					<< std::setw(11) << _ideal_rings.MeanI(i) << " "
 					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
 					<< std::setw(8) << _rings->Comp(i) << " " 
-					<< std::setw(8) << _comp[bin] << std::endl;
+					<< std::setw(8) << _comp[i] << std::endl;
 					//printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,_ideal_rings.MeanI(i),
 					//	   (imean-_ideal_rings.MeanI(i))/sigImean,_rings->Comp(i),_comp[bin] );
 				}
