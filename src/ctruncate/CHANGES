@@ -1,3 +1,9 @@
+1.15.4 (30/4/14)
+- do not use epsilon weight in L-test calculation
+
+1.15.3 (29/4/14)
+- only reread output file if H symmetry
+
 1.15.2 (29/4/14)
 - fix for double free in ice rings analysis
 

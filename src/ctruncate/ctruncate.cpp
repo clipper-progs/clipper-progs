@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.2";
-    clipper::String prog_date = "$Date: 2014/04/29";
+    clipper::String prog_vers = "1.15.4";
+    clipper::String prog_date = "$Date: 2014/04/30";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
     prog.summary_end();
     CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
     prog.summary_beg();
-    
+    CMtz::MtzFree( mtz1 );
 	
     
     char spacegroup[20];
@@ -1188,19 +1188,17 @@ int main(int argc, char **argv)
         mtzout.close_write();
         
         // Clipper will change H3 to R3, so change it back
-        
-        CMtz::MTZ *mtz2=NULL;
-        read_refs=1;  // need to read in reflections, otherwise they won't be written out
-        mtz2 = CMtz::MtzGet(args[mtzoutarg].c_str(), read_refs);
-        // write title to output file
-        strncpy( mtz2->title, title, 71 );
         if (spacegroup[0] == 'H') {
-            strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
-        }
-        CMtz::MtzPut( mtz2, outfile.c_str() );
-        CMtz::MtzFree( mtz2 );
+			CMtz::MTZ *mtz2=NULL;
+			read_refs=1;  // need to read in reflections, otherwise they won't be written out
+			mtz2 = CMtz::MtzGet(outfile.c_str(), read_refs);
+			// write title to output file
+			strncpy( mtz2->title, title, 71 );
+			strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
+			CMtz::MtzPut( mtz2, outfile.c_str() );
+			CMtz::MtzFree( mtz2 );
+		}
     }
-    CMtz::MtzFree( mtz1 );
     prog.set_termination_message( "Normal termination" );
     
     return(0);

@@ -499,18 +499,60 @@ namespace ctruncate {
         clipper::Cell cell = isig.hkl_info().cell();
 		std::vector<clipper::HKL> steps;
 		
-		for ( int g = 2 ; g != 8 ; g += 2) {
-			for ( int delta1 = -6; delta1 <= 6; delta1 += 2 ) {
-				for ( int delta2 = -6; delta2 <= 6; delta2 += 2 ) {
-					for ( int delta3 = -6; delta3 <= 6; delta3 += 2 ) {
-						clipper::HKL hkl2,hkl3;
-						hkl2.h() = delta1;
-						hkl2.k() = delta2;
-						hkl2.l() = delta3;
-						bool sys_abs(false);
-						if ( !(delta1==0 && delta2==0 && delta3==0) ) {
-							clipper::ftype dist2 = clipper::ftype(delta1*delta1+delta2*delta2+delta3*delta3);
-							if ( dist2 > clipper::ftype((g-2)*(g-2))+.001 && dist2 <= clipper::ftype(g*g)+.001 ) {
+		for ( int g = 1 ; g != 7 ; g += 1) {
+			for ( int delta1 = -g; delta1 <= g; delta1 += 1 ) {
+				for ( int delta2 = -g; delta2 <= g; delta2 += 1 ) {
+					for ( int delta3 = -g; delta3 <= g; delta3 += 1 ) {
+						if ( !(delta1==0 && delta2==0 && delta3==0) && (abs(delta1)==g || abs(delta2)==g || abs(delta3)==g) ) {
+							clipper::HKL hkl2,hkl3;
+							hkl2.h() = delta1;
+							hkl2.k() = delta2;
+							hkl2.l() = delta3;
+							bool sys_abs(false);
+							for ( int i = 1; i != spgr.num_symops(); ++i ) {
+								hkl3 = hkl2.transform(spgr.symop(i));
+								clipper::ftype shift = hkl2.sym_phase_shift(spgr.symop(i));
+								if ( hkl3 == hkl2 ) {
+									if ( cos(shift) < 0.999 ) {
+										sys_abs = true; // flag sysabs
+										break;
+									}
+								}
+							}
+							for (std::vector<clipper::Symop>::const_iterator i = tncs.begin() ; i != tncs.end() ; ++i ) {
+								clipper::Coord_frac v1( i->trn());
+								for ( int j = 0; j != spgr.num_symops(); ++j ) {
+									clipper::Coord_frac v2 = v1.transform(spgr.symop(j) );
+									//clipper::ftype shift = hkl2.sym_phase_shift(clipper::Symop(clipper::RTop_frac(clipper::Mat33<clipper::ftype>::identity(), v2) ));
+									clipper::ftype shift = -clipper::Util::twopi()*(clipper::ftype(hkl2.h() )*v2[0]+clipper::ftype(hkl2.k() )*v2[1]+clipper::ftype(hkl2.l() )*v2[2]);
+									if ( cos(shift) < 0.9 ) {
+										sys_abs = true;
+										break;
+									}
+								}
+							}
+							if (!sys_abs) {
+								steps.push_back(hkl2);
+							}
+						}
+					}
+				}
+			}
+			if (steps.size() >= 9) break;
+		}
+		
+		//got nothing so ignore the tNCS (should flag this)
+		if (steps.size() == 0 ) {
+			for ( int g = 1 ; g != 7 ; g += 1) {
+				for ( int delta1 = -g; delta1 <= g; delta1 += 1 ) {
+					for ( int delta2 = -g; delta2 <= g; delta2 += 1 ) {
+						for ( int delta3 = -g; delta3 <= g; delta3 += 1 ) {
+							if ( !(delta1==0 && delta2==0 && delta3==0) && (abs(delta1)==g || abs(delta2)==g || abs(delta3)==g) ) {
+								clipper::HKL hkl2,hkl3;
+								hkl2.h() = delta1;
+								hkl2.k() = delta2;
+								hkl2.l() = delta3;
+								bool sys_abs(false);
 								for ( int i = 1; i != spgr.num_symops(); ++i ) {
 									hkl3 = hkl2.transform(spgr.symop(i));
 									clipper::ftype shift = hkl2.sym_phase_shift(spgr.symop(i));
@@ -521,22 +563,18 @@ namespace ctruncate {
 										}
 									}
 								}
-								for (std::vector<clipper::Symop>::const_iterator i = tncs.begin() ; i != tncs.end() ; ++i ) {
-									clipper::ftype shift = hkl2.sym_phase_shift(*i);
-									if ( cos(shift) < 0.999 ) {
-										sys_abs = true;
-										break;
-									}
+								if (!sys_abs) {
+									steps.push_back(hkl2);
 								}
-								if (!sys_abs) steps.push_back(hkl2);
 							}
 						}
 					}
-					}
 				}
-			if (steps.size() >= 4) break;
-		}
+				if (steps.size() >= 9) break;
+			}
 			
+		}
+		
         double LT=0.0;
 		double LT2=0.0;
 		double NLT=0.0;
@@ -545,7 +583,7 @@ namespace ctruncate {
 			if ( !isig[ih].missing() && !ih.hkl_class().centric() ) {
 				if (_reso.contains(ih.invresolsq() ) ) {
 					clipper::HKL hkl = ih.hkl();
-					clipper::ftype weight = ih.hkl_class().epsilonc();
+					clipper::ftype weight = 1.0;
 					int h = hkl.h();
 					int k = hkl.k();
 					int l = hkl.l();
