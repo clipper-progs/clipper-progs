@@ -503,7 +503,7 @@ namespace ctruncate {
 			for ( int delta1 = -g; delta1 <= g; delta1 += 1 ) {
 				for ( int delta2 = -g; delta2 <= g; delta2 += 1 ) {
 					for ( int delta3 = -g; delta3 <= g; delta3 += 1 ) {
-						if ( !(delta1==0 && delta2==0 && delta3==0) && (abs(delta1)==g || abs(delta2)==g || abs(delta3)==g) ) {
+						if ( !(delta1==0 && delta2==0 && delta3==0) && (std::abs(delta1)==g || std::abs(delta2)==g || std::abs(delta3)==g) ) {
 							clipper::HKL hkl2,hkl3;
 							hkl2.h() = delta1;
 							hkl2.k() = delta2;
@@ -547,7 +547,7 @@ namespace ctruncate {
 				for ( int delta1 = -g; delta1 <= g; delta1 += 1 ) {
 					for ( int delta2 = -g; delta2 <= g; delta2 += 1 ) {
 						for ( int delta3 = -g; delta3 <= g; delta3 += 1 ) {
-							if ( !(delta1==0 && delta2==0 && delta3==0) && (abs(delta1)==g || abs(delta2)==g || abs(delta3)==g) ) {
+							if ( !(delta1==0 && delta2==0 && delta3==0) && (std::abs(delta1)==g || std::abs(delta2)==g || std::abs(delta3)==g) ) {
 								clipper::HKL hkl2,hkl3;
 								hkl2.h() = delta1;
 								hkl2.k() = delta2;
