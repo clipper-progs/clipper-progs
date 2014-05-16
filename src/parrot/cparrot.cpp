@@ -600,7 +600,7 @@ int main( int argc, char** argv )
 		<< clipper::Util::rad2d(euler.gamma()) << ","
 		<< nxop.src().x() << "," << nxop.src().y() << ","
 		<< nxop.src().z() << "," << nxop.tgt().x() << ","
-		<< nxop.tgt().y() << "," << nxop.src().z()
+		<< nxop.tgt().y() << "," << nxop.tgt().z()
 		<< std::endl;
     }
   }
