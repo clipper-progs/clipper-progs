@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.4";
-    clipper::String prog_date = "$Date: 2014/04/30";
+    clipper::String prog_vers = "1.15.5";
+    clipper::String prog_date = "$Date: 2014/06/05";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -85,7 +85,6 @@ int main(int argc, char **argv)
     int mtzinarg = 0;
     int mtzoutarg = 0;
     int nbins = 60;
-    int ncbins = 60;
     int nresidues = 0;
     int nprm = 60;
     
@@ -302,15 +301,13 @@ int main(int argc, char **argv)
         if ( !isig[ih].missing() ) Nreflections++;
         if ( ih.hkl_class().centric() && !isig[ih].missing()) Ncentric++;
     }
-    printf("\nNcentric = %d\n", Ncentric);
-    ncbins = std::min( Ncentric/10, nbins);
-    printf("Number of centric bins = %d\n", ncbins);
     
     prog.summary_beg();
     
     printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
            Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
     printf("\nNumber of reflections: %d\n", Nreflections);
+	printf("\nNumber of centric reflections %d\n", Ncentric);
     clipper::Grid_sampling grid;
     
     // can't seem to get max resolution from clipper, so use CCP4 methods
@@ -829,60 +826,35 @@ int main(int argc, char **argv)
 		HKL_data<data32::I_sigI> tr1(hklinf);
 		
 		// calc scale
-#ifdef CTRUNC_TWO
-		tr1 = data32::I_sigI(1.0f,1.0f);
-		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) tr1[ih].scale( std::sqrt(ih.hkl_class().epsilon()) ); //take into account  epsilon
-		
-		std::vector<double> param_gauss( 2, 0.0);
-		clipper::BasisFn_log_gaussian gauss;
-		clipper::TargetFn_scaleLogI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> tfn_gauss( xsig, tr1);
-		ResolutionFn rfn_gauss( hklinf, gauss, tfn_gauss, param_gauss );
-		param_gauss = rfn_gauss.params();
-		
-		// Sigma or Normalisation curve
-		// calculate Sigma (mean intensity in resolution shell) 
-		// use intensities uncorrected for anisotropy
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.invresolsq();
-			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()*exp(-param_gauss[1]*reso) ), isig[ih].sigI()*exp(-param_gauss[1]*reso) );
-			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( icerings.InRing(reso) != -1 ) 
-				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-		}
-#else
 		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
 			tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
 		}		
-#endif
-		
-		std::vector<double> params(nprm2);
+
+		std::vector<double> params(nprm2,1.0);
 		{
-			double mean = 0.0;
-			double n = 0.0;
-			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-				if (!isig[ih].missing() ) {
+			//precondition the ML calc using least squares fit.  This should give an excellent start
+			clipper::BasisFn_spline basis_pre( xsig, nprm2, 1.0 );
+			TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_pre(tr1,xsig);
+			clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
+			params = pre.params();
+			
+			//reset tr1
+			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
 				double reso = ih.invresolsq();
-				mean += isig[ih].I()/tr1[ih.hkl()].I();
-				n += ih.hkl_class().epsilon();
-				}
-			}
-			mean /= n;
-			for (int i = 0; i != nprm2; ++i ) params[i] = mean*(nprm2-i)/nprm2;
+				tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
+			}					
 		}
+		std::vector<bool> mask(nprm2,false);
 		clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
 		//TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
 		TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
-		clipper::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, 0.0, false );
+		ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, mask, 1.0, false);
 		params = Sigma.params();
 		
 		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
-#ifdef CTRUNC_TWO
-			xsig[ih].I() = exp( log(Sigma.f(ih)) +param_gauss[1]*reso );  //norm does not use epsilon
-#else
 			xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * tr1[ih].I(),1.0f);
-#endif
 		}
 		
 		// scale the norm for the anisotropy

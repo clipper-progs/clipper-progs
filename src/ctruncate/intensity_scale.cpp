@@ -1187,6 +1187,8 @@ namespace ctruncate {
     {
         clipper::ftype r0, r1, w, scale, g, s, dotprod;
         
+		const int LSTEP(10);
+		
         hkl_info_ = &hkl_info;
         basisfn_  = &basisfn;
         targetfn_ = &targetfn;
@@ -1202,8 +1204,8 @@ namespace ctruncate {
         params_.resize( nparams );
         
         // loop for 20 cycles refining the params
-        for ( int n = 0; n != 20; ++n ) {
-            params_old = params_;
+        for ( int n = 0; n != 10; ++n ) {
+            for (int i=0; i!=nparams;++i) params_old[i] = params_[i];
             
             // calc target fn and derivs
             calc_derivs( params_, r0, drdp, drdp2 );
@@ -1254,7 +1256,8 @@ namespace ctruncate {
             
             // now try the step and if necessary reduce the shift
             scale = (1.0+clipper::ftype(n)) / (1.0+clipper::ftype(n)+damp);
-            for ( int j = 0; j != 20; ++j ) {
+			int j = 0;
+            for ( ; j != LSTEP; ++j ) {
                 for ( int i = 0; i != nparams; ++i )
                     params_[i] = params_old[i] - scale*shiftn[i];
                 r1 = 0.0;
@@ -1264,7 +1267,7 @@ namespace ctruncate {
                     r1 += w * targetfn.rderiv( ih, f( ih ) ).r;
                 }
 				
-                //std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
+                if (debug) std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
                 if ( clipper::Util::is_nan(r1) ) {
                     scale *= 0.5;
                 } else {
@@ -1272,6 +1275,10 @@ namespace ctruncate {
                     scale *= 0.5;
                 }
             }
+			if ( j == LSTEP ) for ( int i = 0; i != nparams; ++i ) {
+				params_ = params_old;
+				r1 = r0;
+			}
             
             if ( debug ) std::cout << " Resolution function cycle " << n << " " << r0 << " " << r1 << " " << scale << "\n";
             
@@ -1296,6 +1303,8 @@ namespace ctruncate {
     {
         clipper::ftype r0, r1, w, scale, g, s, dotprod;
         
+		const int LSTEP(10);
+		
         hkl_info_ = &hkl_info;
         basisfn_  = &basisfn;
         targetfn_ = &targetfn;
@@ -1313,7 +1322,7 @@ namespace ctruncate {
   
         // loop for 20 cycles refining the params
         for ( int n = 0; n != 20; ++n ) {
-            params_old = params_;
+            for (int i=0; i!=nparams;++i) params_old[i] = params_[i];
             
             // calc target fn and derivs
             calc_derivs( params_, r0, drdp, drdp2 );
@@ -1378,7 +1387,8 @@ namespace ctruncate {
             
             // now try the step and if necessary reduce the shift
             scale = (1.0+clipper::ftype(n)) / (1.0+clipper::ftype(n)+damp);
-            for ( int j = 0; j != 20; ++j ) {
+			int j = 0;
+            for ( ; j != LSTEP; ++j ) {
                 for ( int i = 0; i != nparams; ++i )
                     params_[i] = params_old[i] - scale*shiftn[i];
                 r1 = 0.0;
@@ -1388,7 +1398,7 @@ namespace ctruncate {
                     r1 += w * targetfn.rderiv( ih, f( ih ) ).r;
 					r1 += w * restfn_->f(ih.hkl(), cell_,params_);
                 }
-				//std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
+				if (debug) std::cout << " sub-cycle(" << j << "): " << r1 << std::endl;
                 if ( clipper::Util::is_nan(r1) ) {
                     scale *= 0.5;
                 } else {
@@ -1396,6 +1406,10 @@ namespace ctruncate {
                     scale *= 0.5;
                 }
             }
+			if ( j == LSTEP ) for ( int i = 0; i != nparams; ++i ) {
+				params_ = params_old;
+				r1 = r0;
+			}
             
             if ( debug ) std::cout << " Resolution function cycle " << n << " " << r0 << " " << r1 << " " << scale << "\n";
             
