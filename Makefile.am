@@ -24,7 +24,7 @@ AM_CXXFLAGS = $(FFTW_CXXFLAGS) $(PTHREAD_CFLAGS)
 
 # LDADD is used for programs for which program_LDADD is not set
 LDADD = -lclipper-ccp4 -lclipper-contrib -lclipper-minimol -lclipper-mmdb \
-	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb $(FFTW_LIBS)
+	-lclipper-core $(PTHREAD_LIBS) -lccp4c -lmmdb2 $(FFTW_LIBS)
 
 src_pirate_cmakereference_LDADD = -lclipper-cif $(LDADD) $(SOCKET_LIB)
 
