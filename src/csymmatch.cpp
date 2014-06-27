@@ -55,7 +55,7 @@ int main( int argc, char** argv )
   }
 
   // atomic models
-  const int mmdbflags = MMDBF_IgnoreBlankLines | MMDBF_IgnoreDuplSeqNum | MMDBF_IgnoreNonCoorPDBErrors | MMDBF_IgnoreRemarks;
+  const int mmdbflags = ::mmdb::MMDBF_IgnoreBlankLines | ::mmdb::MMDBF_IgnoreDuplSeqNum | ::mmdb::MMDBF_IgnoreNonCoorPDBErrors | ::mmdb::MMDBF_IgnoreRemarks;
   clipper::MMDBfile mmdbref, mmdbwrk;
   clipper::MiniMol molref, molwrk;
   mmdbref.SetFlag( mmdbflags );

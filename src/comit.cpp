@@ -178,7 +178,7 @@ int main( int argc, char** argv )
   if ( args.size() <= 1 )
     clipper::Message::message( clipper::Message_fatal( "\nUsage: comit\n\t-pdbin <filename>\n\t-mtzin <filename>\n\t-mtzout <filename>\n\t-mapout <filename>\n\t-prefix <filename>\n\t-colin-fo <colpath>\n\t-colin-fc <colpath>\n\t-colout <colpath>\n\t-nomit <number of spheres>\n\t-pad-radius <radius/A>\n.\n" ) );
 
-  const int mmdbflags = MMDBF_IgnoreBlankLines | MMDBF_IgnoreDuplSeqNum | MMDBF_IgnoreNonCoorPDBErrors | MMDBF_IgnoreRemarks;
+  const int mmdbflags = ::mmdb::MMDBF_IgnoreBlankLines | ::mmdb::MMDBF_IgnoreDuplSeqNum | ::mmdb::MMDBF_IgnoreNonCoorPDBErrors | ::mmdb::MMDBF_IgnoreRemarks;
   typedef clipper::HKL_info::HKL_reference_index HRI;
   typedef clipper::Xmap<float>::Map_reference_index MRI;
 

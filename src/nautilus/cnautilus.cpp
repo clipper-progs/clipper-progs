@@ -106,7 +106,7 @@ int main( int argc, char** argv )
   clipper::Resolution resol;
   clipper::CCP4MTZfile mtzfile;
   mtzfile.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
-  const int mmdbflags = MMDBF_IgnoreBlankLines | MMDBF_IgnoreDuplSeqNum | MMDBF_IgnoreNonCoorPDBErrors | MMDBF_IgnoreRemarks;
+  const int mmdbflags = ::mmdb::MMDBF_IgnoreBlankLines | ::mmdb::MMDBF_IgnoreDuplSeqNum | ::mmdb::MMDBF_IgnoreNonCoorPDBErrors | ::mmdb::MMDBF_IgnoreRemarks;
   typedef clipper::HKL_data_base::HKL_reference_index HRI;
 
   // Get work reflection data
