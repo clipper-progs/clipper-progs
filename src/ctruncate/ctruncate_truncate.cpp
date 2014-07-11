@@ -1166,7 +1166,6 @@ namespace ctruncate {
 	// takes anomalous I's as input for flat prior
 	
 	{
-		std::cout << "flat" << std::endl;
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		float J, sigJ, F, sigF;
 		float invr2 = reso.invresolsq_limit();
@@ -1256,7 +1255,6 @@ namespace ctruncate {
 	// takes anomalous I's as input for flat prior
 	
 	{
-		std::cout << "siviat" << std::endl;
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		float J, sigJ, F, sigF;
 		float invr2 = reso.invresolsq_limit();

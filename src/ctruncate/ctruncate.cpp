@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.6";
-    clipper::String prog_date = "$Date: 2014/07/02";
+    clipper::String prog_vers = "1.15.7";
+    clipper::String prog_date = "$Date: 2014/07/11";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -829,20 +829,34 @@ int main(int argc, char **argv)
 		// calc scale
 		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
-			tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
+			tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::BEST(reso), 0.0);
 		}		
-
+		
 		std::vector<double> params(nprm2,1.0);
 		{
 			//precondition the ML calc using least squares fit.  This should give an excellent start
-			clipper::BasisFn_spline basis_pre( xsig, nprm2, 1.0 );
-			TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_pre(tr1,xsig);
+			clipper::BasisFn_binner basis_pre( tr1, nprm2, 1.0 );
+			TargetFn_meanInth<clipper::data32::I_sigI> target_pre(tr1,1.0);
 			clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
 			params = pre.params();
 			
-			//reset tr1
+			//outlier rejection from Read (1999)
+			int nrej(0);
+			double rlimit(0.0);
 			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-				double reso = ih.invresolsq();
+				if ( !xsig[ih].missing() ) {
+				double I = tr1[ih].I()/(ih.hkl_class().epsilon()*/*tr1[ih].I()*/pre.f(ih));
+				rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
+					if (I > rlimit )  {
+						++nrej;
+						}
+				}
+			}				
+			std::cout << "Number of reflections rejected as outliers (Read (1999) ): " << nrej << std::endl;
+			//reset tr1
+			double reso(0.0);
+			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+				reso = ih.invresolsq();
 				tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
 			}					
 		}
@@ -1011,21 +1025,21 @@ int main(int argc, char **argv)
         clipper::Histogram FScount(range,200);
         
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!isig[ih].missing() ) {
                 Icount.accumulate(isig[ih].I()/xsig[ih].I());
             }
         }
         
         for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!jsig[ih].missing() ) {
                 Jcount.accumulate(jsig[ih].I()/xsig[ih].I());
             }
         }	
         
         for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!fsig[ih].missing() ) {
                 Fcount.accumulate(fsig[ih].f()/(scalef*std::sqrt(xsig[ih].I()) ) );
             }
@@ -1033,21 +1047,21 @@ int main(int argc, char **argv)
         
         
         for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!isig[ih].missing() ) {
                 IScount.accumulate(isig[ih].I()/isig[ih].sigI() );
             }
         }
         
         for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!jsig[ih].missing() ) {
                 JScount.accumulate(jsig[ih].I()/jsig[ih].sigI() );
             }
         }	
         
         for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-            float eps = ih.hkl_class().epsilon();
+            //float eps = ih.hkl_class().epsilon();
             if (!fsig[ih].missing() ) {
                 FScount.accumulate(fsig[ih].f()/fsig[ih].sigf() );
             }
