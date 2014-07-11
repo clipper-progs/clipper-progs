@@ -1,3 +1,7 @@
+1.15.6 (3/7/14)
+- extend mean I flat prior range
+- add sivia flat prior
+
 1.15.5 (6/5/14)
 - precondition the ML norm calculation.  This should reduce NaNs
   in the truncate procedure for high or negative temperature factor

@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.5";
-    clipper::String prog_date = "$Date: 2014/06/05";
+    clipper::String prog_vers = "1.15.6";
+    clipper::String prog_date = "$Date: 2014/07/02";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     int nresidues = 0;
     int nprm = 60;
     
-    enum MODE {AUTO,WILSON,FLAT};
+    enum MODE {AUTO,WILSON,FLAT,SIVIA};
     MODE prior = AUTO;
 	
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
@@ -190,6 +190,7 @@ int main(int argc, char **argv)
     
 	if ( prior_select == "wilson" ) prior = WILSON;
 	else if ( prior_select == "flat" ) prior = FLAT;
+	else if ( prior_select == "sivia" ) prior = SIVIA;
 	
     if (mtzinarg == 0) CCP4::ccperror(1, "No input mtz file");
     
@@ -887,10 +888,12 @@ int main(int argc, char **argv)
 		
 		if ( refl_mean ) {
 			if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
+			else if (prior == SIVIA) truncate_sivia(isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
 			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
 		}
 		if (anomalous) {
 			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
+			else if (prior == SIVIA) truncate_sivia( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
             else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
 			int iwarn = 0;
 			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {

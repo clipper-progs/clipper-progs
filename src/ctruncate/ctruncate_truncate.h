@@ -38,6 +38,13 @@ namespace ctruncate {
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig, 
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
 				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug);
+	
+	int truncate_sivia(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig,
+				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug);
+	int truncate_sivia(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig, 
+				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
+				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug);
 }
 
 #endif
