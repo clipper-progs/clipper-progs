@@ -426,7 +426,7 @@ namespace ctruncate {
 					printf("$TABLE: Centric moments of I:\n");
 					printf("$GRAPHS");
 					printf(": 2nd moment of I %5.3f (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,2:\n", centric_second(), maxres);
-					printf(": 3rd & 4th moments of I (Expected = 15, 150, Perfect Twin = 6, 24):0|%5.3fx0|4:1,3,4:\n", maxres);
+					printf(": 3rd & 4th moments of I (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|150:1,3,4:\n", maxres);
 					printf("$$ 1/resol^2 <I**2> <I**3> <I**4> $$\n$$\n");
 					
 					for (int i=0; i<ncbins; i++) {

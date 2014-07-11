@@ -562,7 +562,11 @@ namespace ctruncate {
 		clipper::mmdb::PPCAtom psel;
 		int hndl, nsel;
 		hndl = mmdb.NewSelection();
-		mmdb.SelectAtoms( hndl, 0, 0, SKEY_NEW );
+#ifdef MMDB2
+		mmdb.SelectAtoms( hndl, 0, 0, ::mmdb::SKEY_NEW );
+#else
+                mmdb.SelectAtoms( hndl, 0, 0, SKEY_NEW );
+#endif
 		mmdb.GetSelIndex( hndl, psel, nsel );
 		clipper::MMDBAtom_list atoms( psel, nsel );
 		for ( int i = 0; i != atoms.size(); ++i ) {
