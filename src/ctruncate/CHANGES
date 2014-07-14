@@ -1,3 +1,6 @@
+1.15.8 (14/7/14)
+- use Read (1999) as consistency check on norm
+
 1.15.7 (11/7/14)
 - Read (1999) outlier rejection entering norm calculation
 

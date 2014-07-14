@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.7";
-    clipper::String prog_date = "$Date: 2014/07/11";
+    clipper::String prog_vers = "1.15.8";
+    clipper::String prog_date = "$Date: 2014/07/14";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -832,6 +832,7 @@ int main(int argc, char **argv)
 			tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::BEST(reso), 0.0);
 		}		
 		
+		int nrej_pre(0);
 		std::vector<double> params(nprm2,1.0);
 		{
 			//precondition the ML calc using least squares fit.  This should give an excellent start
@@ -840,19 +841,18 @@ int main(int argc, char **argv)
 			clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
 			params = pre.params();
 			
-			//outlier rejection from Read (1999)
-			int nrej(0);
+			//outlier rejection from Read (1999)			
 			double rlimit(0.0);
 			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-				if ( !xsig[ih].missing() ) {
+				if ( !xsig[ih.hkl()].missing() ) {
 				double I = tr1[ih].I()/(ih.hkl_class().epsilon()*/*tr1[ih].I()*/pre.f(ih));
 				rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
 					if (I > rlimit )  {
-						++nrej;
+						++nrej_pre;
 						}
 				}
 			}				
-			std::cout << "Number of reflections rejected as outliers (Read (1999) ): " << nrej << std::endl;
+			std::cout << "Number of outliers not used in norm calculation (Read (1999) ): " << nrej_pre << std::endl;
 			//reset tr1
 			double reso(0.0);
 			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
@@ -884,6 +884,23 @@ int main(int argc, char **argv)
 				
 			}
 		}		
+		
+		{
+			int nrej(0);
+			//outlier rejection from Read (1999) using new norm		
+			double rlimit(0.0);
+			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+				if ( !isig[ih].missing() ) {
+					double I = isig[ih].I()/(ih.hkl_class().epsilon()*xsig[ih.hkl()].I() );
+					rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
+					if (I > rlimit )  {
+						++nrej;
+					}
+				}
+			}	
+			std::cout << "Number of outliers (Read (1999) ): " << nrej << std::endl << std::endl;
+			if (nrej > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << std::endl << "WARNING: prior may be unstable" << std::endl << std::endl;
+		}
 	}
 		
 	int nrej = 0; 
