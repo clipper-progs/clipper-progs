@@ -593,7 +593,10 @@ int main(int argc, char **argv)
 			}
 		} else { 
 			printf("\nNo anisotropy by symmetry. \n");
+			prog.summary_end();
 		}
+		
+		
 		// falloff calculation (Yorgo Modis)
 		YorgoModis<data32::I_sigI> ym(resopt,60,uao);
 		ym(isig);
