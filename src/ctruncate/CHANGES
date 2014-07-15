@@ -1,3 +1,6 @@
+1.15.9 (15/7/14)
+- bug fixes, anisotropy summary and centric moments
+
 1.15.8 (14/7/14)
 - use Read (1999) as consistency check on norm
 
