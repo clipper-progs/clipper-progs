@@ -1072,21 +1072,21 @@ namespace ctruncate {
 		
 		float h,x,delta;
 		int n;
-		
-        const float LIMIT1(10.0);
+        const float LIMIT_U(10.0);
+		const float LIMIT_L(-37.0);
+		const float LIMIT_IS(-4.0);
 		// Bayesian statistics tells us to modify I/sigma by subtracting off sigma/S
 		// where S is the mean intensity in the resolution shell
 		h = I/sigma;
-		// reject as unphysical reflections for which I < -3.7 sigma, or h < -4.0
-		if (I/sigma < -3.7 || h < -37.0 ) {
+		// reject as unphysical reflections for which I < -4.0 sigma
+		if ( h < LIMIT_IS ) {
 			nrej++;
 			if (debug) printf("unphys: %f %f %f\n",I,sigma,h);
 			return(0);
-		}
-		else {
-			if (h < LIMIT1) {
+		} else {
+			if (h < LIMIT_U) {
 				// use look up table if -4.0 < h < 10.0
-				x = 10.0*(h+4.0);
+				x = 10.0*(h-LIMIT_L);
 				n = int(x);
 				delta = x-n;
 				// linear interpolation
@@ -1099,8 +1099,7 @@ namespace ctruncate {
 				sigJ *= sigma;
 				F *= sqrt(sigma);
 				sigF *= sqrt(sigma);
-			}
-			else {
+			} else {
 				// if h > 10.0 intensities are unchanged by truncate
 				J = h*sigma;
 				sigJ = sigma;
@@ -1114,7 +1113,7 @@ namespace ctruncate {
 	// flat prior of Sivia and David, based on PDE of F
 	int truncate_sivia_calc(float I, float sigma, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
 	{
-		if (I/sigma < -3.7 || I < -4.0 ) {
+		if (I/sigma < -4.0 || I < -4.0 ) {
 			nrej++;
 			if (debug) printf("unphys: %f %f\n",I,sigma);
 			return(0);
