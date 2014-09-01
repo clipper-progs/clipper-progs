@@ -15,6 +15,7 @@
 #include <string.h>
 #include <cmath>
 #include <iomanip>
+#include <cstdlib>
 
 namespace ctruncate {
 	
