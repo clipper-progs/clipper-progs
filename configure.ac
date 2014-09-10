@@ -46,10 +46,10 @@ AC_CHECK_LIB(ccp4c, ccp4_banner, :,
 AC_CHECK_HEADER(ccp4/ccp4_general.h, :,
                 AC_MSG_ERROR([libccp4 headers not found.]))
 
-AC_CHECK_LIB(mmdb, MMDB_CCIF_Init, :,
-             AC_MSG_WARN([mmdb library not found.]))
-AC_CHECK_HEADER(mmdb/mmdb_manager.h, :,
-                AC_MSG_ERROR([mmdb headers not found.]))
+AC_CHECK_LIB(mmdb2, MMDB_CCIF_Init, :,
+             AC_MSG_ERROR([mmdb2 library not found.]))
+AC_CHECK_HEADER(mmdb2/mmdb_manager.h, :,
+                AC_MSG_ERROR([mmdb2 headers not found.]))
 
 AC_CHECK_HEADERS([clipper/clipper.h \
                   clipper/clipper-mmdb.h \

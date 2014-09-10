@@ -41,7 +41,7 @@
 #include "ctruncate_wilson.h"
 #include "best.h"
 
-#include "mmdb/mmdb_tables.h"
+#include "mmdb2/mmdb_tables.h"
 
 #include "ccp4/ccp4_utils.h"
 

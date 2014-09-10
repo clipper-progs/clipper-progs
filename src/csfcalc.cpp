@@ -97,7 +97,7 @@ int main( int argc, char** argv )
 
   // atomic model
   clipper::MMDBManager mmdb;
-  const int mmdbflags = MMDBF_IgnoreBlankLines | MMDBF_IgnoreDuplSeqNum | MMDBF_IgnoreNonCoorPDBErrors | MMDBF_IgnoreRemarks;
+  const int mmdbflags = ::mmdb::MMDBF_IgnoreBlankLines | ::mmdb::MMDBF_IgnoreDuplSeqNum | ::mmdb::MMDBF_IgnoreNonCoorPDBErrors | ::mmdb::MMDBF_IgnoreRemarks;
   mmdb.SetFlag( mmdbflags );
   mmdb.ReadPDBASCII( (char*)ippdb.c_str() );
 
@@ -105,7 +105,7 @@ int main( int argc, char** argv )
   clipper::mmdb::PPCAtom psel;
   int hndl, nsel;
   hndl = mmdb.NewSelection();
-  mmdb.SelectAtoms( hndl, 0, 0, SKEY_NEW );
+  mmdb.SelectAtoms( hndl, 0, 0, ::mmdb::SKEY_NEW );
   mmdb.GetSelIndex( hndl, psel, nsel );
   clipper::MMDBAtom_list atoms( psel, nsel );
   mmdb.DeleteSelection( hndl );

@@ -64,10 +64,10 @@ double ParrotUtil::effective_resolution( const clipper::HKL_data<clipper::data32
 
 void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file, bool verbose )
 {
-  const int mmdbflags = ( MMDBF_IgnoreBlankLines |
-			  MMDBF_IgnoreDuplSeqNum |
-			  MMDBF_IgnoreNonCoorPDBErrors |
-			  MMDBF_IgnoreRemarks );
+  const int mmdbflags = ( ::mmdb::MMDBF_IgnoreBlankLines |
+			  ::mmdb::MMDBF_IgnoreDuplSeqNum |
+			  ::mmdb::MMDBF_IgnoreNonCoorPDBErrors |
+			  ::mmdb::MMDBF_IgnoreRemarks );
   clipper::MMDBfile mmdb;
   mmdb.SetFlag( mmdbflags );
   if ( file != "NONE" ) {

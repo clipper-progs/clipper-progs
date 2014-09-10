@@ -5628,13 +5628,13 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for MMDB_CCIF_Init in -lmmdb" >&5
-$as_echo_n "checking for MMDB_CCIF_Init in -lmmdb... " >&6; }
-if ${ac_cv_lib_mmdb_MMDB_CCIF_Init+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for MMDB_CCIF_Init in -lmmdb2" >&5
+$as_echo_n "checking for MMDB_CCIF_Init in -lmmdb2... " >&6; }
+if ${ac_cv_lib_mmdb2_MMDB_CCIF_Init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmmdb  $LIBS"
+LIBS="-lmmdb2  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5654,28 +5654,27 @@ return MMDB_CCIF_Init ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_mmdb_MMDB_CCIF_Init=yes
+  ac_cv_lib_mmdb2_MMDB_CCIF_Init=yes
 else
-  ac_cv_lib_mmdb_MMDB_CCIF_Init=no
+  ac_cv_lib_mmdb2_MMDB_CCIF_Init=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mmdb_MMDB_CCIF_Init" >&5
-$as_echo "$ac_cv_lib_mmdb_MMDB_CCIF_Init" >&6; }
-if test "x$ac_cv_lib_mmdb_MMDB_CCIF_Init" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mmdb2_MMDB_CCIF_Init" >&5
+$as_echo "$ac_cv_lib_mmdb2_MMDB_CCIF_Init" >&6; }
+if test "x$ac_cv_lib_mmdb2_MMDB_CCIF_Init" = xyes; then :
   :
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: mmdb library not found." >&5
-$as_echo "$as_me: WARNING: mmdb library not found." >&2;}
+  as_fn_error $? "mmdb2 library not found." "$LINENO" 5
 fi
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "mmdb/mmdb_manager.h" "ac_cv_header_mmdb_mmdb_manager_h" "$ac_includes_default"
-if test "x$ac_cv_header_mmdb_mmdb_manager_h" = xyes; then :
+ac_fn_cxx_check_header_mongrel "$LINENO" "mmdb2/mmdb_manager.h" "ac_cv_header_mmdb2_mmdb_manager_h" "$ac_includes_default"
+if test "x$ac_cv_header_mmdb2_mmdb_manager_h" = xyes; then :
   :
 else
-  as_fn_error $? "mmdb headers not found." "$LINENO" 5
+  as_fn_error $? "mmdb2 headers not found." "$LINENO" 5
 fi
 
 
