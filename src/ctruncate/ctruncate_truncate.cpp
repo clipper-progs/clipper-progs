@@ -661,7 +661,17 @@ namespace ctruncate {
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				} else {
+					jsig[ih].I() = clipper::Util::nan();
+					jsig[ih].sigI() = clipper::Util::nan();
+					fsig[ih].f() = clipper::Util::nan();
+					fsig[ih].sigf() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I() = clipper::Util::nan();
+				jsig[ih].sigI() = clipper::Util::nan();
+				fsig[ih].f() = clipper::Util::nan();
+				fsig[ih].sigf() = clipper::Util::nan();
 			}
 		}
 		//fclose(checkfile);
@@ -709,7 +719,17 @@ namespace ctruncate {
 					fsig[ih].f_pl() = F*scalef*sqwt;
 					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				} else {
+					jsig[ih].I_pl() = clipper::Util::nan();
+					jsig[ih].sigI_pl() = clipper::Util::nan();
+					fsig[ih].f_pl() = clipper::Util::nan();
+					fsig[ih].sigf_pl() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_pl() = clipper::Util::nan();
+				jsig[ih].sigI_pl() = clipper::Util::nan();
+				fsig[ih].f_pl() = clipper::Util::nan();
+				fsig[ih].sigf_pl() = clipper::Util::nan();
 			}
 			
 			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
@@ -737,7 +757,17 @@ namespace ctruncate {
 					fsig[ih].f_mi() = F*scalef*sqwt;
 					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				} else {
+					jsig[ih].I_mi() = clipper::Util::nan();
+					jsig[ih].sigI_mi() = clipper::Util::nan();
+					fsig[ih].f_mi() = clipper::Util::nan();
+					fsig[ih].sigf_mi() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_mi() = clipper::Util::nan();
+				jsig[ih].sigI_mi() = clipper::Util::nan();
+				fsig[ih].f_mi() = clipper::Util::nan();
+				fsig[ih].sigf_mi() = clipper::Util::nan();
 			}
 		}
 		//fclose(checkfile);
@@ -779,7 +809,17 @@ namespace ctruncate {
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
 					//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+				} else {
+					jsig[ih].I() = clipper::Util::nan();
+					jsig[ih].sigI() = clipper::Util::nan();
+					fsig[ih].f() = clipper::Util::nan();
+					fsig[ih].sigf() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I() = clipper::Util::nan();
+				jsig[ih].sigI() = clipper::Util::nan();
+				fsig[ih].f() = clipper::Util::nan();
+				fsig[ih].sigf() = clipper::Util::nan();
 			}
 		}
 		//fclose(checkfile);
@@ -827,7 +867,17 @@ namespace ctruncate {
 						fsig[ih].f_pl() = F*scalef*sqwt;
 						fsig[ih].sigf_pl() = sigF*scalef*sqwt;
 						//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+					} else {
+						jsig[ih].I_pl() = clipper::Util::nan();
+						jsig[ih].sigI_pl() = clipper::Util::nan();
+						fsig[ih].f_pl() = clipper::Util::nan();
+						fsig[ih].sigf_pl() = clipper::Util::nan();
 					}
+				} else {
+					jsig[ih].I_pl() = clipper::Util::nan();
+					jsig[ih].sigI_pl() = clipper::Util::nan();
+					fsig[ih].f_pl() = clipper::Util::nan();
+					fsig[ih].sigf_pl() = clipper::Util::nan();
 				}
 				
 				if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
@@ -855,7 +905,17 @@ namespace ctruncate {
 						fsig[ih].f_mi() = F*scalef*sqwt;
 						fsig[ih].sigf_mi() = sigF*scalef*sqwt;
 						//fprintf(checkfile,"%12.6f %12.6f %12.6f\n", I,fsig[ih].f(),fsig[ih].sigf());
+					} else {
+						jsig[ih].I_mi() = clipper::Util::nan();
+						jsig[ih].sigI_mi() = clipper::Util::nan();
+						fsig[ih].f_mi() = clipper::Util::nan();
+						fsig[ih].sigf_mi() = clipper::Util::nan();
 					}
+				} else {
+					jsig[ih].I_mi() = clipper::Util::nan();
+					jsig[ih].sigI_mi() = clipper::Util::nan();
+					fsig[ih].f_mi() = clipper::Util::nan();
+					fsig[ih].sigf_mi() = clipper::Util::nan();
 				}
 			}
 		}
@@ -1151,7 +1211,17 @@ namespace ctruncate {
 					jsig[ih].sigI() = sigJ*weight;
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
+				} else {
+					jsig[ih].I() = clipper::Util::nan();
+					jsig[ih].sigI() = clipper::Util::nan();
+					fsig[ih].f() = clipper::Util::nan();
+					fsig[ih].sigf() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I() = clipper::Util::nan();
+				jsig[ih].sigI() = clipper::Util::nan();
+				fsig[ih].f() = clipper::Util::nan();
+				fsig[ih].sigf() = clipper::Util::nan();
 			}
 		}
 		return(1);
@@ -1188,7 +1258,17 @@ namespace ctruncate {
 					jsig[ih].sigI_pl() = sigJ*weight;
 					fsig[ih].f_pl() = F*scalef*sqwt;
 					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+				} else {
+					jsig[ih].I_pl() = clipper::Util::nan();
+					jsig[ih].sigI_pl() = clipper::Util::nan();
+					fsig[ih].f_pl() = clipper::Util::nan();
+					fsig[ih].sigf_pl() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_pl() = clipper::Util::nan();
+				jsig[ih].sigI_pl() = clipper::Util::nan();
+				fsig[ih].f_pl() = clipper::Util::nan();
+				fsig[ih].sigf_pl() = clipper::Util::nan();
 			}
 			
 			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
@@ -1208,7 +1288,17 @@ namespace ctruncate {
 					jsig[ih].sigI_mi() = sigJ*weight;
 					fsig[ih].f_mi() = F*scalef*sqwt;
 					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+				} else {
+					jsig[ih].I_mi() = clipper::Util::nan();
+					jsig[ih].sigI_mi() = clipper::Util::nan();
+					fsig[ih].f_mi() = clipper::Util::nan();
+					fsig[ih].sigf_mi() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_mi() = clipper::Util::nan();
+				jsig[ih].sigI_mi() = clipper::Util::nan();
+				fsig[ih].f_mi() = clipper::Util::nan();
+				fsig[ih].sigf_mi() = clipper::Util::nan();
 			}
 		}
 		return(1);
@@ -1240,7 +1330,17 @@ namespace ctruncate {
 					jsig[ih].sigI() = sigJ*weight;
 					fsig[ih].f() = F*scalef*sqwt;
 					fsig[ih].sigf() = sigF*scalef*sqwt;
+				} else {
+					jsig[ih].I() = clipper::Util::nan();
+					jsig[ih].sigI() = clipper::Util::nan();
+					fsig[ih].f() = clipper::Util::nan();
+					fsig[ih].sigf() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I() = clipper::Util::nan();
+				jsig[ih].sigI() = clipper::Util::nan();
+				fsig[ih].f() = clipper::Util::nan();
+				fsig[ih].sigf() = clipper::Util::nan();
 			}
 		}
 		return(1);
@@ -1277,7 +1377,17 @@ namespace ctruncate {
 					jsig[ih].sigI_pl() = sigJ*weight;
 					fsig[ih].f_pl() = F*scalef*sqwt;
 					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+				} else {
+					jsig[ih].I_pl() = clipper::Util::nan();
+					jsig[ih].sigI_pl() = clipper::Util::nan();
+					fsig[ih].f_pl() = clipper::Util::nan();
+					fsig[ih].sigf_pl() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_pl() = clipper::Util::nan();
+				jsig[ih].sigI_pl() = clipper::Util::nan();
+				fsig[ih].f_pl() = clipper::Util::nan();
+				fsig[ih].sigf_pl() = clipper::Util::nan();
 			}
 			
 			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
@@ -1297,7 +1407,17 @@ namespace ctruncate {
 					jsig[ih].sigI_mi() = sigJ*weight;
 					fsig[ih].f_mi() = F*scalef*sqwt;
 					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
-				}
+				} else {
+					jsig[ih].I_mi() = clipper::Util::nan();
+					jsig[ih].sigI_mi() = clipper::Util::nan();
+					fsig[ih].f_mi() = clipper::Util::nan();
+					fsig[ih].sigf_mi() = clipper::Util::nan();
+				} 
+			} else {
+				jsig[ih].I_mi() = clipper::Util::nan();
+				jsig[ih].sigI_mi() = clipper::Util::nan();
+				fsig[ih].f_mi() = clipper::Util::nan();
+				fsig[ih].sigf_mi() = clipper::Util::nan();
 			}
 		}
 		return(1);
