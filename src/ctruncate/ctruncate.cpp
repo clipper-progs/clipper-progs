@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.10";
-    clipper::String prog_date = "$Date: 2014/08/18";
+    clipper::String prog_vers = "1.15.11";
+    clipper::String prog_date = "$Date: 2014/09/10";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -1162,15 +1162,17 @@ int main(int argc, char **argv)
 		
         if (anomalous) {
             if (appendcol != "") {
-                String::size_type loc = anocols.find("+",0);
-                anocols.insert(loc-1,"_"+appendcol);
-                loc = anocols.find(",",0);
-                loc = anocols.find("+",loc+1);
-                anocols.insert(loc-1,"_"+appendcol);
-                loc = anocols.find("-",0);
+                String::size_type loc = anocols.find("-",0);
                 anocols.insert(loc-1,"_"+appendcol);
                 loc = anocols.find(",",loc);
-                loc = anocols.find("-",loc+1);
+                loc = anocols.find("-",loc);
+                //loc = anocols.find("-",loc+appendcol.size()+2 );
+                anocols.insert(loc-1,"_"+appendcol);
+                loc = anocols.find("+",0);
+                anocols.insert(loc-1,"+"+appendcol);
+                loc = anocols.find(",",loc);
+                loc = anocols.find("+",loc);
+                //loc = anocols.find("+",loc+appendcol.size()+2 );
                 anocols.insert(loc-1,"_"+appendcol);
             }
             mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );

@@ -1,3 +1,6 @@
+1.15.11 (10/9/14)
+- allow colout to include a hyphen
+
 1.15.10 (18/8/14)
 - bug fixes, correct looup on flat prior table 
   effects flat prior calculation when dealing with strong tNCS
