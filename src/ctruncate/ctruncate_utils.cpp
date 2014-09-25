@@ -374,3 +374,5 @@ namespace ctruncate
 	
 }
 
+#include "ctruncate_pcf.cpp"
+

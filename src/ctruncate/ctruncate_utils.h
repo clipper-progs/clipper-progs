@@ -56,6 +56,8 @@ namespace ctruncate {
 			}
 			return clipper::Util::nan();
 		}
+
+		static double pbdv(double v, double x);
 	};
 	
 	// Close(a,b[,tol])  true if a == b within tolerance

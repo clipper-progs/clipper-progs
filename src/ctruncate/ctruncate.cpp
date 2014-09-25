@@ -54,7 +54,7 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.15.12";
+    clipper::String prog_vers = "1.16.0";
     clipper::String prog_date = "$Date: 2014/09/16";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
@@ -1165,13 +1165,13 @@ int main(int argc, char **argv)
                 String::size_type loc = anocols.find("-",0);
                 anocols.insert(loc-1,"_"+appendcol);
                 loc = anocols.find(",",loc);
-                loc = anocols.find("-",loc);
+				loc = anocols.find("-",loc);
                 //loc = anocols.find("-",loc+appendcol.size()+2 );
                 anocols.insert(loc-1,"_"+appendcol);
                 loc = anocols.find("+",0);
                 anocols.insert(loc-1,"+"+appendcol);
                 loc = anocols.find(",",loc);
-                loc = anocols.find("+",loc);
+				loc = anocols.find("+",loc);
                 //loc = anocols.find("+",loc+appendcol.size()+2 );
                 anocols.insert(loc-1,"_"+appendcol);
             }

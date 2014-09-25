@@ -10,6 +10,7 @@
 
 #include "ctruncate_truncate.h"
 #include <cstdio>
+#include <cmath>
 
 namespace ctruncate {
 
@@ -271,7 +272,49 @@ namespace ctruncate {
 			0.17804, 0.17690, 0.17579, 0.17470, 0.17363, 0.17257, 0.17154, 0.17053, 0.16953, 0.16856, 
 			0.16760, 0.16665, 0.16572, 0.16481, 0.16391, 0.16303, 0.16216, 0.16131, 0.16047, 0.15964, 
 			0.15882 };
+
+#ifndef USE_TABLES
 		
+		const double LIMIT_L(-37.0);
+		const double LIMIT_IS(-3.7);
+		const double LIMIT_U(20.0);
+		
+		double h = I/sigma - sigma/S;
+		if (I/sigma < LIMIT_IS || h < LIMIT_L ) {
+			nrej++;
+			if (debug) printf("unphys: %f %f %f\n",I,sigma,I/sigma);
+			return(0);
+		} else {
+			if ( clipper::Util::is_nan(h) ) {
+			
+			} else {
+				if (h > LIMIT_U) {
+					J = h*sigma;
+					sigJ = sigma;
+					F = sqrt(J);
+					sigF = 0.5*sigma/F;
+				} else {
+					double x = -h;
+					double moment[5];
+					double ep = std::exp(-0.25*h*h);
+					//moment[0] = std::sqrt(std::pow(2.0,0.0)/clipper::Util::pi() )*std::pow(2.0,-0.5)*tgamma(1.0)*ep*ctruncate::Utils::pbdv(-1.0,x);
+					//moment[1] = std::sqrt(std::pow(2.0,0.5)/clipper::Util::pi() )*std::pow(2.0,-0.75)*tgamma(1.5)*ep*ctruncate::Utils::pbdv(-1.5,x);
+					//moment[2] = std::sqrt(std::pow(2.0,1.0)/clipper::Util::pi() )*std::pow(2.0,-1.0)*tgamma(2.0)*ep*ctruncate::Utils::pbdv(-2.0,x);
+					//moment[4] = std::sqrt(std::pow(2.0,2.0)/clipper::Util::pi() )*std::pow(2.0,-1.5)*tgamma(3.0)*ep*ctruncate::Utils::pbdv(-3.0,x);
+					for (int i=0 ; i != 5 ; ++i ) {
+						double mu = 0.5*double(i);
+						double a = -mu-1.0;
+						moment[i] = std::sqrt(std::pow(2.0,mu)/clipper::Util::pi() )*std::pow(2.0,-(mu+1.0)/2.0)*tgamma(mu+1.0)*ep*ctruncate::Utils::pbdv(a,x);
+					}
+					J = moment[2]/moment[0]*sigma;
+					sigJ = std::sqrt(moment[4]/moment[0] - std::pow(moment[2],2)/std::pow(moment[0],2))*sigma;
+					F = moment[1]/moment[0]*sqrt(sigma);
+					sigF = std::sqrt((moment[2]/moment[0]) - std::pow(moment[1],2)/std::pow(moment[0],2))*sqrt(sigma);
+				}
+			}
+			return(1);
+		}
+#else		
 		float h,x,delta;
 		int n;
         const float LIMIT_U(10.0);
@@ -310,6 +353,7 @@ namespace ctruncate {
 			}
 			return(1);
 		}
+#endif // USE_TABLES
 	}
 	
 	
@@ -578,54 +622,101 @@ namespace ctruncate {
 			0.16870, 0.16773, 0.16677, 0.16582, 0.16490, 0.16399, 0.16309, 0.16221, 0.16135, 0.16050, 
 			0.15966  };
 		
+#ifndef USE_TABLES
 		
-		float h,x,delta;
-		float c1,c2,e2,e4,e6;
-		int n;
-        const float LIMIT_U(5.0);
-		const float LIMIT_L(-37.0);
-		const float LIMIT_IS(-3.7);
-		// Bayesian statistics tells us to modify I/sigma by subtracting off sigma/2S
-		// where S is the mean intensity in the resolution shell
-		h = I/sigma - 0.5*sigma/S;
-		// reject as unphysical reflections for which I < -3.7 sigma, or h < -37.0
+		const double LIMIT_L(-37.0);
+		const double LIMIT_IS(-3.7);
+		const double LIMIT_U(20.0);
+		
+		double h = I/sigma - 0.5*sigma/S;
 		if (I/sigma < LIMIT_IS || h < LIMIT_L ) {
 			nrej++;
-			if (debug) printf("unphys: %f %f %f %f\n",I,sigma,S,h);
+			if (debug) printf("unphys: %f %f %f\n",I,sigma,I/sigma);
 			return(0);
 		} else {
-			if (h < LIMIT_U) {
-				// use look up table if -37.0 < h < 5.0
-				x = 10.0*(h-LIMIT_L);
-				n = int(x);
-				delta = x-n;
-				// linear interpolation
-				J = (1.0-delta)*ZJ[n] + delta*ZJ[n+1];
-				sigJ = (1.0-delta)*ZJSD[n] + delta*ZJSD[n+1];
-				F = (1.0-delta)*ZF[n] + delta*ZF[n+1];
-				sigF = (1.0-delta)*ZFSD[n] + delta*ZFSD[n+1];
-				// look up table gives J/sigma, so multiply by sigma to get output intensity
-				J *= sigma;
-				sigJ *= sigma;
-				F *= sqrt(sigma);
-				sigF *= sqrt(sigma);
+			if ( clipper::Util::is_nan(I) ) {
 			} else {
-				// if h > 5.0 use asymptotic formulas in French and Wilson Appendix, with extra term
-				e2 = 1.0/(h*h);
-				e4 = e2*e2;
-				e6 = e2*e4;
-				c1 = (1.0 - 0.375*e2 - 87.0/128.0*e4 - 2889.0/1024.0*e6)*sqrt(h);
-				c2 = sqrt((273.0/128.0*e6 + 15.0/32.0*e4 + 0.25*e2)*h);
-				
-				J = h*sigma*(1.0 - 0.5*e2 - 0.75*e4 - 3.0*e6);
-				sigJ = 2.0*sigma*c1*c2;
-				F = c1*sqrt(sigma);
-				sigF = c2*sqrt(sigma);
+				if (h > LIMIT_U) {
+					double e2 = 1.0/(h*h);
+					double e4 = e2*e2;
+					double e6 = e2*e4;
+					double c1 = (1.0 - 0.375*e2 - 87.0/128.0*e4 - 2889.0/1024.0*e6)*sqrt(h);
+					double c2 = sqrt((273.0/128.0*e6 + 15.0/32.0*e4 + 0.25*e2)*h);
+					
+					J = h*sigma*(1.0 - 0.5*e2 - 0.75*e4 - 3.0*e6);
+					sigJ = 2.0*sigma*c1*c2;
+					F = c1*sqrt(sigma);
+					sigF = c2*sqrt(sigma);
+				} else {
+					double x = -h;
+					double moment[5];
+					double ep = std::exp(-0.25*h*h);
+					//moment[0] = std::sqrt(std::pow(2.0,-0.5)/clipper::Util::pi() )*std::pow(2.0,-0.25)*tgamma(1.0)*ep*ctruncate::Utils::pbdv(-0.5,x);
+					//moment[1] = std::sqrt(std::pow(2.0,0.0)/clipper::Util::pi() )*std::pow(2.0,-0.50)*tgamma(1.5)*ep*ctruncate::Utils::pbdv(-1.0,x);
+					//moment[2] = std::sqrt(std::pow(2.0,0.5)/clipper::Util::pi() )*std::pow(2.0,-0.75)*tgamma(2.0)*ep*ctruncate::Utils::pbdv(-1.5,x);
+					//moment[4] = std::sqrt(std::pow(2.0,1.5)/clipper::Util::pi() )*std::pow(2.0,-1.25)*tgamma(3.0)*ep*ctruncate::Utils::pbdv(-2.5,x);					
+					for (int i=-1 ; i != 5 ; ++i ) {
+						double mu = 0.5*double(i);
+						double a = -mu-1.0;
+						moment[i+1] = std::sqrt(std::pow(2.0,mu)/clipper::Util::pi() )*std::pow(2.0,-(mu+1.0)/2.0)*tgamma(mu+1.0)*ep*ctruncate::Utils::pbdv(a,x);
+					}
+					J = moment[2]/moment[0]*sigma;
+					sigJ = std::sqrt(moment[4]/moment[0] - std::pow(moment[2],2)/std::pow(moment[0],2))*sigma;
+					F = moment[1]/moment[0]*sqrt(sigma);
+					sigF = std::sqrt((moment[2]/moment[0]) - std::pow(moment[1],2)/std::pow(moment[0],2))*sqrt(sigma);
+				}
 			}
 			return(1);
 		}
-	}
-
+#else
+			float h,x,delta;
+			float c1,c2,e2,e4,e6;
+			int n;
+			const float LIMIT_U(5.0);
+			const float LIMIT_L(-37.0);
+			const float LIMIT_IS(-3.7);
+			// Bayesian statistics tells us to modify I/sigma by subtracting off sigma/2S
+			// where S is the mean intensity in the resolution shell
+			h = I/sigma - 0.5*sigma/S;
+			// reject as unphysical reflections for which I < -3.7 sigma, or h < -37.0
+			if (I/sigma < LIMIT_IS || h < LIMIT_L ) {
+				nrej++;
+				if (debug) printf("unphys: %f %f %f %f\n",I,sigma,S,h);
+				return(0);
+			} else {
+				if (h < LIMIT_U) {
+					// use look up table if -37.0 < h < 5.0
+					x = 10.0*(h-LIMIT_L);
+					n = int(x);
+					delta = x-n;
+					// linear interpolation
+					J = (1.0-delta)*ZJ[n] + delta*ZJ[n+1];
+					sigJ = (1.0-delta)*ZJSD[n] + delta*ZJSD[n+1];
+					F = (1.0-delta)*ZF[n] + delta*ZF[n+1];
+					sigF = (1.0-delta)*ZFSD[n] + delta*ZFSD[n+1];
+					// look up table gives J/sigma, so multiply by sigma to get output intensity
+					J *= sigma;
+					sigJ *= sigma;
+					F *= sqrt(sigma);
+					sigF *= sqrt(sigma);
+				} else {
+					// if h > 5.0 use asymptotic formulas in French and Wilson Appendix, with extra term
+					e2 = 1.0/(h*h);
+					e4 = e2*e2;
+					e6 = e2*e4;
+					c1 = (1.0 - 0.375*e2 - 87.0/128.0*e4 - 2889.0/1024.0*e6)*sqrt(h);
+					c2 = sqrt((273.0/128.0*e6 + 15.0/32.0*e4 + 0.25*e2)*h);
+					
+					J = h*sigma*(1.0 - 0.5*e2 - 0.75*e4 - 3.0*e6);
+					sigJ = 2.0*sigma*c1*c2;
+					F = c1*sqrt(sigma);
+					sigF = c2*sqrt(sigma);
+				}
+				return(1);
+			}
+#endif
+		}
+		
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
 				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
@@ -922,7 +1013,7 @@ namespace ctruncate {
 		//fclose(checkfile);
 		return(1);
 	}
-	
+    
 	// flat prior should be the same as acentric wilson (normal function) without the correction for Sigma
 	int truncate_flat(float I, float sigma, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
 	{
@@ -1130,6 +1221,44 @@ namespace ctruncate {
 			0.16760, 0.16665, 0.16572, 0.16481, 0.16391, 0.16303, 0.16216, 0.16131, 0.16047, 0.15964, 
 			0.15882 };
 		
+#ifndef USE_TABLES
+		const float LIMIT_IS(-4.0);
+		const float LIMIT_U(20.0);
+		double h = I/sigma;
+		if ( h < LIMIT_IS ) {
+			nrej++;
+			if (debug) printf("unphys: %f %f %f\n",I,sigma,h);
+			return(0);
+		} else {
+			if ( clipper::Util::is_nan(I) ) {
+			} else {
+				if (h > LIMIT_U) {
+					J = h*sigma;
+					sigJ = sigma;
+					F = sqrt(J);
+					sigF = 0.5*sigma/F;
+				} else {
+					double x = -h;
+					double moment[5];
+					double ep = std::exp(-0.25*h*h);
+					//moment[0] = std::sqrt(std::pow(2.0,0.0)/clipper::Util::pi() )*std::pow(2.0,-0.5)*tgamma(1.0)*ep*ctruncate::Utils::pbdv(-1.0,x);
+					//moment[1] = std::sqrt(std::pow(2.0,0.5)/clipper::Util::pi() )*std::pow(2.0,-0.75)*tgamma(1.5)*ep*ctruncate::Utils::pbdv(-1.5,x);
+					//moment[2] = std::sqrt(std::pow(2.0,1.0)/clipper::Util::pi() )*std::pow(2.0,-1.0)*tgamma(2.0)*ep*ctruncate::Utils::pbdv(-2.0,x);
+					//moment[4] = std::sqrt(std::pow(2.0,2.0)/clipper::Util::pi() )*std::pow(2.0,-1.5)*tgamma(3.0)*ep*ctruncate::Utils::pbdv(-3.0,x);					
+					for (int i=0 ; i != 5 ; ++i ) {
+						double mu = 0.5*double(i);
+						double a = -mu-1.0;
+						moment[i] = std::sqrt(std::pow(2.0,mu)/clipper::Util::pi() )*std::pow(2.0,-(mu+1.0)/2.0)*tgamma(mu+1.0)*ep*ctruncate::Utils::pbdv(a,x);
+					}
+					J = moment[2]/moment[0]*sigma;
+					sigJ = std::sqrt(moment[4]/moment[0] - std::pow(moment[2],2)/std::pow(moment[0],2))*sigma;
+					F = moment[1]/moment[0]*sqrt(sigma);
+					sigF = std::sqrt((moment[2]/moment[0]) - std::pow(moment[1],2)/std::pow(moment[0],2))*sqrt(sigma);
+				}
+			}
+			return(1);
+		}
+#else
 		float h,x,delta;
 		int n;
         const float LIMIT_U(10.0);
@@ -1168,6 +1297,7 @@ namespace ctruncate {
 			}
 			return(1);
 		}
+#endif
 	}
 	
 	// flat prior of Sivia and David, based on PDE of F
@@ -1412,7 +1542,7 @@ namespace ctruncate {
 					jsig[ih].sigI_mi() = clipper::Util::nan();
 					fsig[ih].f_mi() = clipper::Util::nan();
 					fsig[ih].sigf_mi() = clipper::Util::nan();
-				} 
+				}
 			} else {
 				jsig[ih].I_mi() = clipper::Util::nan();
 				jsig[ih].sigI_mi() = clipper::Util::nan();
