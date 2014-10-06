@@ -53,7 +53,7 @@ int main( int argc, char** argv )
 
   // open file
   mtzin.open_read( ipfile );
-  if ( opcol[0] != '/' ) opcol = mtzin.assigned_paths().back().notail()+"/"+opcol;
+  if ( opcol[0] != '/' ) opcol = mtzin.column_paths().back().notail()+"/"+opcol;
   mtzin.import_hkl_info( hkls );
   mtzin.import_crystal( cxtl, opcol );
   clipper::HKL_data<clipper::data32::F_phi> fphi( hkls, cxtl );
