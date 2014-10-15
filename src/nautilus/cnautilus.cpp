@@ -23,6 +23,12 @@ int main( int argc, char** argv )
   CCP4Program prog( "cnautilus", "0.4", "$Date: 2014/01/10" );
   prog.set_termination_message( "Failed" );
 
+  std::cout << std::endl << "Copyright 2011-2014 Kevin Cowtan and University of York." << std::endl << std::endl;
+  prog.summary_beg();
+  std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Automated nucleic acid chain tracing in real time'" << std::endl << " Cowtan K. (2014). IUCrJ 1, doi:10.1107/S2052252514019290. " << std::endl << std::endl << "$$" << std::endl;
+  prog.summary_end();
+
+
   // defaults
   clipper::String title;
   clipper::String ipmtz = "NONE";
