@@ -242,6 +242,7 @@ int main( int argc, char** argv )
                         clipper::data32::Compute_phifom_from_abcd() );
       hkldata[i] = datanew;
     }
+    /* DISABLE BECAUSE IT'S PROBABLY THE WRONG THING TO DO.
     if ( hkldata[i]->type() == "I_sigI_anom" && s == 2 ) {
       std::cout << hkldata[i]->type() << " " << opcols[i] << std::endl;
       HKL_data<I_sigI>* datanew = new HKL_data<I_sigI> ( hklinfo );
@@ -284,6 +285,7 @@ int main( int argc, char** argv )
       }
       hkldata[i] = datanew;
     }
+    */
   }
 
 
