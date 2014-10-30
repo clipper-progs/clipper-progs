@@ -48,6 +48,7 @@
 <b>-sequence-reliability </b><i>reliability</i>
 <b>-new-residue-name</b> <i>type</i>
 <b>-new-residue-type</b> <i>type</i>
+<b>-known-structure</b> <i>known-structure-spec</i>
 <b>-verbose </b><i>verbosity</i>
 <b>-stdin </b>
 <br />
@@ -249,6 +250,24 @@ sequence will be accepted. 0.5 means every sequence will be docked,
 
 <p>[Optional] Set the type of residue to be used when building new
 residues.</p>
+
+<h3><a name="known-structure"></a>-known-structure <i>known-structure-spec</i></h3>
+<dl><dd> A single known-structure group can be specified in the general parameters (above), however for more complex cases multiple groups can be defined using keyword input. The known-structure keyword allows atoms or chains from the input model (given using the 'Specify input model to be extended' button at the top of the window) to be preserved. This can be useful when heavy atoms or nucleotide chains comprise a significant portion of the scattering. 
+</dd><dd> Syntax: <tt>known-structure coordinateID:radius</tt>
+</dd><dd> Atoms specified by the coordinateID will be retained in the output structure. If a radius is specified, then no main chain atoms will be built within the given radius of the specified atoms. Multiple known-structure keywords may be given with different radii. Examples:
+<ul><li> <tt>known-structure /A/*/*/:2.0</tt>
+</li></ul>
+<dl><dd> Keep all atoms in the A chain and don't build within 2A.
+</dd></dl>
+<ul><li> <tt>known-structure /*/*/ZN&nbsp;&nbsp;/:3.0</tt>
+</li></ul>
+<dl><dd> Keep all Zinc atoms and don't build within 3A.
+</dd></dl>
+<ul><li> <tt>known-structure //*/*/</tt>
+</li></ul>
+<dl><dd> Keep all atoms in the unlabelled chain. (REQUIRES REFMAC UPGRADE) 
+</dd></dl>
+</dd></dl>
 
 <h3><a name="verbose"></a>-verbose <i>verbosity</i></h3>
 </blockquote>
