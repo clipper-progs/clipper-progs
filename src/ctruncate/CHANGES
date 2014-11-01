@@ -1,3 +1,6 @@
+1.16.1 (1/11/14)
+- use unweighted mean to combine I+ and I-, output weighted estimate of Fmean
+
 1.16.0 (16/9/14)
 - analytical truncate procedure
 

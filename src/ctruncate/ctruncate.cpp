@@ -54,8 +54,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.16.0";
-    clipper::String prog_date = "$Date: 2014/09/16";
+    clipper::String prog_vers = "1.16.1";
+    clipper::String prog_date = "$Date: 2014/11/01";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -279,6 +279,7 @@ int main(int argc, char **argv)
 	} else {
 		if ( amplitudes) {
 			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+                                //this is none weighted mean
 				isig[ih].I() = clipper::Util::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2));
 				isig[ih].sigI() = clipper::Util::sig_mean(2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
 				//isig[ih].I() = ctruncate::Utils::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2),2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi());
@@ -286,11 +287,12 @@ int main(int argc, char **argv)
 			}
 		} else {
 			for ( HRI ih = isig_ano_import.first(); !ih.last(); ih.next() ) {
-				//isig[ih].I() = clipper::Util::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi());
-				//isig[ih].sigI() = clipper::Util::sig_mean(isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(), 0.0f );
+                                //this is none weighted mean
+				isig[ih].I() = clipper::Util::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi());
+				isig[ih].sigI() = clipper::Util::sig_mean(isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(), 0.0f );
 				//isig[ih].I() = ctruncate::Utils::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi());
 				//isig[ih].sigI() = ctruncate::Utils::sig_mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(),0.0f );
-				isig[ih] = clipper::data32::I_sigI(isig_ano_import[ih].I(),isig_ano_import[ih].sigI());
+				//isig[ih] = clipper::data32::I_sigI(isig_ano_import[ih].I(),isig_ano_import[ih].sigI());
 			}				
 		}
 	}
