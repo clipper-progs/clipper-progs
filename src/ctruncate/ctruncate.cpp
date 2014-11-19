@@ -78,6 +78,7 @@ int main(int argc, char **argv)
     bool debug = false;
     bool freein = false;
     bool amplitudes = false;
+    bool outImean = false;
     bool anomalous = false;
     bool refl_mean = false;
     bool is_nucl = false;
@@ -159,6 +160,8 @@ int main(int argc, char **argv)
             aniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
             amplitudes = true;
+        } else if ( args[arg] == "-Imean" ) {
+            outImean = true;
         } else if ( args[arg] == "-comp" ) {
 			if ( ++arg < args.size() ) composition = args[arg];
 		} else if ( args[arg] == "-prior" ) {
@@ -1161,7 +1164,10 @@ int main(int argc, char **argv)
 			}
 			mtzout.export_hkl_data( isig, outcol + meancol.tail() );
         }
-		
+
+		// KDC hack to output Imean  if explicitly requested (should be combined with above)
+		if ( outImean ) mtzout.export_hkl_data( isig, outcol + appendcol + "_MEAN" );
+
         if (anomalous) {
             if (appendcol != "") {
                 String::size_type loc = anocols.find("-",0);
