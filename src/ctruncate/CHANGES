@@ -1,3 +1,6 @@
+1.16.2 (19/11/14)
+- add keyword to allow output of Imean from I+/I-
+
 1.16.1 (1/11/14)
 - use unweighted mean to combine I+ and I-, output weighted estimate of Fmean
 
