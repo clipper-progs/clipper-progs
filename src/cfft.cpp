@@ -25,6 +25,7 @@ int main( int argc, char** argv )
   clipper::String ipcold = "NONE";
   clipper::String ipcola = "NONE";
   clipper::String ipcolh = "NONE";
+  clipper::String ipcolp = "NONE";
   clipper::String ipcolm = "NONE";
   clipper::String opfile = "NONE";
   bool stats = false;
@@ -52,6 +53,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ipcold = args[arg];
     } else if ( args[arg] == "-colin-hl" ) {
       if ( ++arg < args.size() ) ipcolh = args[arg];
+    } else if ( args[arg] == "-colin-phifom" ) {
+      if ( ++arg < args.size() ) ipcolp = args[arg];
     } else if ( args[arg] == "-colin-fc" ) {
       if ( ++arg < args.size() ) ipcolm = args[arg];
     } else if ( args[arg] == "-u-value" ) {
@@ -79,7 +82,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: cfft\n\t-mtzin <filename>\n\t-mapout <filename>\n\t-colin-fo <colpath>\n\t-colin-fano <colpath>\n\t-colin-fdiff <colpath>\n\t-colin-hl <colpath>\n\t-colin-fc <colpath>\n\t-u-value <U>\n\t-b-value <B>\n\t-resolution <reso>\n\t-grid <nu>,<nv>,<nw>\n\t-anomalous\n\t-stats\n\t-stats-radius <radius>\nIf -colin-hl is specified, conversion is ABCD->phi/fom.\nIf -colin-fo and -colin-hl are specified, they are used to calculate\nmap coefficient. Otherwise the map coefficient may be provided using\n-colin-fc.\n";
+    std::cout << "Usage: cfft\n\t-mtzin <filename>\n\t-mapout <filename>\n\t-colin-fo <colpath>\n\t-colin-fano <colpath>\n\t-colin-fdiff <colpath>\n\t-colin-hl <colpath>\n\t-colin-pw <colpath>\n\t-colin-fc <colpath>\n\t-u-value <U>\n\t-b-value <B>\n\t-resolution <reso>\n\t-grid <nu>,<nv>,<nw>\n\t-anomalous\n\t-stats\n\t-stats-radius <radius>\nIf -colin-hl is specified, conversion is ABCD->phi/fom.\nIf -colin-fo and -colin-hl are specified, they are used to calculate\nmap coefficient. Otherwise the map coefficient may be provided using\n-colin-fc.\n";
     exit(1);
   }
 
@@ -105,11 +108,13 @@ int main( int argc, char** argv )
   clipper::HKL_data<clipper::data32::F_sigF>     dsig( hkls );
   clipper::HKL_data<clipper::data32::F_sigF_ano> fano( hkls );
   clipper::HKL_data<clipper::data32::F_phi>      fphi( hkls );
+  clipper::HKL_data<clipper::data32::Phi_fom>    phiw( hkls );
   if ( ipcolf != "NONE" ) mtzin.import_hkl_data( fsig, ipcolf );
   if ( ipcola != "NONE" ) mtzin.import_hkl_data( fano, ipcola );
-  if ( ipcold != "NONE" ) mtzin.import_hkl_data( dsig, ipcolf );
+  if ( ipcold != "NONE" ) mtzin.import_hkl_data( dsig, ipcold );
   if ( ipcolh != "NONE" ) mtzin.import_hkl_data( abcd, ipcolh );
   if ( ipcolm != "NONE" ) mtzin.import_hkl_data( fphi, ipcolm );
+  if ( ipcolp != "NONE" ) mtzin.import_hkl_data( phiw, ipcolp );
   mtzin.close_read();
 
   // make anomalous F if necessary
@@ -130,15 +135,16 @@ int main( int argc, char** argv )
 
   // make map coeffs if necessary
   if ( ipcolm == "NONE" ) {
-    clipper::HKL_data<clipper::data32::Phi_fom> phiw( hkls );
-    phiw.compute( abcd, clipper::data32::Compute_phifom_from_abcd() );
-    fphi.compute( fsig, phiw,clipper::data32::Compute_fphi_from_fsigf_phifom());
+    if ( ipcolp == "NONE" ) {
+      phiw.compute( abcd, clipper::data32::Compute_phifom_from_abcd() );
+    }
+    fphi.compute( fsig, phiw, clipper::data32::Compute_fphi_from_fsigf_phifom());
   }
 
   // shift phase for anomalous differences is necessary
   if ( adiff )
     for ( HRI ih = fphi.first(); !ih.last(); ih.next() )
-      fphi[ih].shift_phase( 0.5*clipper::Util::pi() );
+      fphi[ih].shift_phase( -0.5*clipper::Util::pi() );
 
   // apply U value
   fphi.compute( fphi, clipper::data32::Compute_scale_u_iso_fphi(1.0,-uvalue) );
