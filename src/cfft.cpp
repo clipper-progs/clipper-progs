@@ -82,7 +82,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: cfft\n\t-mtzin <filename>\n\t-mapout <filename>\n\t-colin-fo <colpath>\n\t-colin-fano <colpath>\n\t-colin-fdiff <colpath>\n\t-colin-hl <colpath>\n\t-colin-pw <colpath>\n\t-colin-fc <colpath>\n\t-u-value <U>\n\t-b-value <B>\n\t-resolution <reso>\n\t-grid <nu>,<nv>,<nw>\n\t-anomalous\n\t-stats\n\t-stats-radius <radius>\nIf -colin-hl is specified, conversion is ABCD->phi/fom.\nIf -colin-fo and -colin-hl are specified, they are used to calculate\nmap coefficient. Otherwise the map coefficient may be provided using\n-colin-fc.\n";
+    std::cout << "Usage: cfft\n\t-mtzin <filename>\n\t-mapout <filename>\n\t-colin-fo <colpath>\n\t-colin-fano <colpath>\n\t-colin-fdiff <colpath>\n\t-colin-hl <colpath>\n\t-colin-phi-fom <colpath>\n\t-colin-pw <colpath>\n\t-colin-fc <colpath>\n\t-u-value <U>\n\t-b-value <B>\n\t-resolution <reso>\n\t-grid <nu>,<nv>,<nw>\n\t-anomalous\n\t-stats\n\t-stats-radius <radius>\nIf -colin-fo and -colin-hl/phi-fom are specified, they are used to calculate\nmap coefficients. Otherwise the map coefficient may be provided using\n-colin-fc.\n";
     exit(1);
   }
 
