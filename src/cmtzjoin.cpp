@@ -69,6 +69,30 @@ struct Compare_HKL{ bool operator() ( const clipper::HKL& h1, const clipper::HKL
       dtype I_pl_, I_mi_, sigI_pl_, sigI_mi_;
     };
 
+    class FFlag : private Datatype_base
+    {
+    public:
+      FFlag() { set_null(); }
+      explicit FFlag( const dtype& flag ) : flag_(flag) {}
+      void set_null() { Util::set_null(flag_); }
+      static String type() { return "FFlag"; }
+      void friedel() {}
+      void shift_phase(const ftype&) {}
+      bool missing() const { return (Util::is_nan(flag_)); }
+      static int data_size() { return 1; }
+      static String data_names() { return "flag"; }
+      void data_export( xtype array[] ) const
+	{ array[0] = xtype(flag()); }
+      void data_import( const xtype array[] )
+	{ flag() = dtype(array[0]); }
+      // accessors
+      const dtype& flag() const { return flag_; }  //<! read access
+      dtype& flag() { return flag_; }  //<! write access
+    private:
+      dtype flag_;
+    };
+
+
 int main( int argc, char** argv )
 {
   CCP4Program prog( "cmtzjoin", "0.1", "$Date: 2012/05/01" );
@@ -111,9 +135,10 @@ int main( int argc, char** argv )
   using clipper::HKL_info;        using clipper::HKL_data;
   using clipper::data32::F_sigF;  using clipper::data32::I_sigI;
   using clipper::data32::Phi_fom; using clipper::data32::ABCD;
-  using clipper::data32::F_phi;   using clipper::data32::Flag;
+  using clipper::data32::F_phi;
   clipper::CCP4MTZ_type_registry::add_group( "F_sigF_anom", "FANM" );
   clipper::CCP4MTZ_type_registry::add_group( "I_sigI_anom", "IANM" );
+  clipper::CCP4MTZ_type_registry::add_group( "FFlag", "FREE" );
 
   // first pass read to get crystal data and reflection list
   unsigned int nullhash(12345678);
@@ -212,7 +237,7 @@ int main( int argc, char** argv )
     else if ( types == "FP" )   data = new HKL_data<F_phi>  ( hklinfo );
     else if ( types == "PW" )   data = new HKL_data<Phi_fom>( hklinfo );
     else if ( types == "AAAA" ) data = new HKL_data<ABCD>   ( hklinfo );
-    else if ( types == "I" )    data = new HKL_data<Flag>   ( hklinfo );
+    else if ( types == "I" )    data = new HKL_data<FFlag>  ( hklinfo );
     if ( data != NULL ) {
       mtzin.import_crystal( xtal, ipcols[i] );
       mtzin.import_dataset( dset, ipcols[i] );
