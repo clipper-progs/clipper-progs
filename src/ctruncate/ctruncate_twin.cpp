@@ -429,8 +429,8 @@ namespace ctruncate {
 	clipper::ftype L_test::estimateAlphafromNL() const {
 		const clipper::ftype UPPER = 1.0;
 		const clipper::ftype LOWER = 0.0;
-		clipper::ftype alpha;
-		clipper::ftype na;
+		clipper::ftype alpha(0.0);
+		clipper::ftype na(0.0);
 		
 		for (int i=0;i != _cdf.size() ;++i) {
 			clipper::ftype l = (double(i+1))/double(_cdf.size());
