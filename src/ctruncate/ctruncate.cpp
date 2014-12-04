@@ -24,6 +24,8 @@
 #include <math.h>
 #include <algorithm>
 #include <iomanip>
+#include <ctime>
+#include <fstream>
 
 //#include "ccp4/ccp4_fortran.h"
 #include "intensity_target.h"  // contains additions to resol_targetfn.h
@@ -54,8 +56,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.16.3";
-    clipper::String prog_date = "$Date: 2014/12/04";
+    clipper::String prog_vers = "1.16.4";
+    clipper::String prog_date = "$Date: 2014/12/05";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -72,6 +74,7 @@ int main(int argc, char **argv)
     clipper::String ipseq = "NONE";
     clipper::String composition = "protein";
     clipper::String prior_select = "auto";
+    clipper::String xmlfile = "";
     std::vector<clipper::String> history;
     
     bool aniso = true;
@@ -82,6 +85,7 @@ int main(int argc, char **argv)
     bool anomalous = false;
     bool refl_mean = false;
     bool is_nucl = false;
+    bool outxml = false;
     
     int mtzinarg = 0;
     int mtzoutarg = 0;
@@ -101,6 +105,11 @@ int main(int argc, char **argv)
     
     CCP4MTZfile mtzfile, mtzout;
     HKL_info hklinf;
+    
+    //time information
+    time_t now = std::time(0);
+    std::string date_time(ctime(&now) );
+    date_time.replace(date_time.find('\n'),1,1,' ');
     
     // command input
     prog.summary_beg();
@@ -170,6 +179,11 @@ int main(int argc, char **argv)
             debug = true;
         } else if ( args[arg] == "-history" ) {
             if ( ++arg < args.size() ) history.push_back( args[arg] );
+        } else if ( args[arg] == "-xmlout" ) {
+            if ( ++arg < args.size() ) {
+                xmlfile = args[arg];
+                outxml = true;
+            }
         } else if ( args[arg] == "-i" ) {
             CCP4::ccp4_prog_info();
             return(0);
@@ -512,6 +526,8 @@ int main(int argc, char **argv)
         reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_u1.limit() ) );
     }
 	
+    std::stringstream xtncs;
+    
     // check for pseudo translation (taken from cpatterson)
     ctruncate::tNCS<float> tncs;
     const std::vector<clipper::Symop>& cf = tncs(isig, reso_Patt );
@@ -520,6 +536,12 @@ int main(int argc, char **argv)
     tncs.summary();
     prog.summary_end();
     printf("\n");
+    {
+        xtncs << "<tNCS>" << std::endl;
+        xtncs << "  <detected>" << ((tncs.hasNCS()) ? 1 : 0) << "</detected>" << std::endl;
+        xtncs << "</tNCS>" << std::endl;
+        
+    }
 	
 	//setup aniso copy of isig
 	HKL_data<data32::I_sigI> ianiso(hklinf);
@@ -611,8 +633,10 @@ int main(int argc, char **argv)
 	//want to use anisotropy correction and resolution truncation for twinning tests
 	
 	float lval(0.0);
+    std::stringstream xtwin;
     {
 		printf("\nTWINNING ANALYSIS:\n\n");
+        xtwin << "<twinning>\n";
 		
 		clipper::Range<clipper::ftype> range_Twin(reso_range.min(),
 												  (!reso_u2.is_null() ) ? 
@@ -706,6 +730,10 @@ int main(int argc, char **argv)
 		std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
 		std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << m_fraction << std::endl << std::endl;
 		
+        {
+            xtwin << "  <L-test>" << ( (ltest.statistic() < 0.44) ? "Yes" : "No") << "</L-test>" << std::endl;
+        }
+        
 		std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;
 		if ( ts1.size() > 0 ) {
 			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
@@ -719,9 +747,18 @@ int main(int argc, char **argv)
 				std::cout << ") |" << std::endl;
 			}
 			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
+            {
+                for (int i = 0; i != ts1.size() ; ++i ) {
+                    xtwin << "  <H-test operator=\"" << std::setw(4) << std::setprecision(2) << htests[i].description() << "\"> " << hval[i] << " </H-test>" << std::endl;
+                }
+                for (int i = 0; i != ts1.size() ; ++i ) {
+                    xtwin << "  <ML-Britton operator=\"" << std::setw(4) << std::setprecision(2) << htests[i].description() << "\"> " << bval[i] << " </ML-Britton>" << std::endl;
+                }
+            }
 		} else {
 			std::cout << "  No operators found" << std::endl << std::endl;
 		}
+        
 		
 		prog.summary_beg();
 		if (ts1.size() == 0 ) twin_summary(0.0,lval);
@@ -729,6 +766,7 @@ int main(int argc, char **argv)
 		prog.summary_end(); 
 		printf("\n");
 		
+        xtwin << "</twinning>" << std::endl;
 		
 		//printf("Starting parity group analysis:\n");
 		
@@ -1217,6 +1255,18 @@ int main(int argc, char **argv)
 			CMtz::MtzPut( mtz2, outfile.c_str() );
 			CMtz::MtzFree( mtz2 );
 		}
+    }
+    
+    if (outxml) {
+        time_t now = std::time(0);
+        
+        std::ofstream xf;
+        xf.open(xmlfile.c_str() );
+        xf << "<CTRUNCATE version=\"" << prog_vers <<  "\" RunTime=\"" << date_time << "\" >" << std::endl;
+        xf << xtncs.str();
+        xf << xtwin.str();
+        xf << "</CTRUNCATE>" << std::endl;
+        
     }
     prog.set_termination_message( "Normal termination" );
     
