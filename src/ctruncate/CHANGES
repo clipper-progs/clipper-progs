@@ -1,3 +1,6 @@
+1.16.5 (6/12/14)
+- fix loop range causing problems on windows
+
 1.16.4 (5/12/14)
 - some xml output for ccp4i2
 

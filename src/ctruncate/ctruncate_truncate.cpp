@@ -655,7 +655,7 @@ namespace ctruncate {
 					//moment[1] = std::sqrt(std::pow(2.0,0.0)/clipper::Util::pi() )*std::pow(2.0,-0.50)*tgamma(1.5)*ep*ctruncate::Utils::pbdv(-1.0,x);
 					//moment[2] = std::sqrt(std::pow(2.0,0.5)/clipper::Util::pi() )*std::pow(2.0,-0.75)*tgamma(2.0)*ep*ctruncate::Utils::pbdv(-1.5,x);
 					//moment[4] = std::sqrt(std::pow(2.0,1.5)/clipper::Util::pi() )*std::pow(2.0,-1.25)*tgamma(3.0)*ep*ctruncate::Utils::pbdv(-2.5,x);					
-					for (int i=-1 ; i != 5 ; ++i ) {
+					for (int i=-1 ; i != 4 ; ++i ) {
 						double mu = 0.5*double(i);
 						double a = -mu-1.0;
 						moment[i+1] = std::sqrt(std::pow(2.0,mu)/clipper::Util::pi() )*std::pow(2.0,-(mu+1.0)/2.0)*tgamma(mu+1.0)*ep*ctruncate::Utils::pbdv(a,x);
