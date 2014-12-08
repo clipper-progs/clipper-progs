@@ -12,6 +12,7 @@ bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 	       src/cpatterson src/caniso src/convert2mtz \
 	       src/csymmatch src/cmaplocal src/cncsfrommodel \
 	       src/cmodeltoseq src/cmapcut src/comit \
+	       src/cmapcoeff \
 	       src/cmtzsplit src/cmtzjoin \
 	       src/ctruncate/ctruncate \
 	       src/pirate/cpirate src/pirate/cmakereference \
@@ -62,6 +63,8 @@ src_cmodeltoseq_SOURCES = src/cmodeltoseq.cpp
 src_cmapcut_SOURCES = src/cmapcut.cpp
 
 src_comit_SOURCES = src/comit.cpp
+
+src_cmapcoeff_SOURCES = src/cmapcoeff.cpp
 
 src_cmtzjoin_SOURCES = src/cmtzjoin.cpp
 

@@ -58,7 +58,7 @@ bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
 	src/caniso$(EXEEXT) src/convert2mtz$(EXEEXT) \
 	src/csymmatch$(EXEEXT) src/cmaplocal$(EXEEXT) \
 	src/cncsfrommodel$(EXEEXT) src/cmodeltoseq$(EXEEXT) \
-	src/cmapcut$(EXEEXT) src/comit$(EXEEXT) src/cmtzsplit$(EXEEXT) \
+	src/cmapcut$(EXEEXT) src/comit$(EXEEXT) src/cmapcalc$(EXEEXT) src/cmtzsplit$(EXEEXT) \
 	src/cmtzjoin$(EXEEXT) src/ctruncate/ctruncate$(EXEEXT) \
 	src/pirate/cpirate$(EXEEXT) src/pirate/cmakereference$(EXEEXT) \
 	src/buccaneer/cbuccaneer$(EXEEXT) \
@@ -182,6 +182,10 @@ am_src_comit_OBJECTS = src/comit.$(OBJEXT)
 src_comit_OBJECTS = $(am_src_comit_OBJECTS)
 src_comit_LDADD = $(LDADD)
 src_comit_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cmapcalc_OBJECTS = src/cmapcalc.$(OBJEXT)
+src_cmapcalc_OBJECTS = $(am_src_cmapcalc_OBJECTS)
+src_cmapcalc_LDADD = $(LDADD)
+src_cmapcalc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_src_convert2mtz_OBJECTS = src/convert2mtz.$(OBJEXT)
 src_convert2mtz_OBJECTS = $(am_src_convert2mtz_OBJECTS)
 src_convert2mtz_LDADD = $(LDADD)
@@ -332,7 +336,7 @@ SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
 	$(src_cmodeltoseq_SOURCES) $(src_cmtzjoin_SOURCES) \
 	$(src_cmtzsplit_SOURCES) $(src_cncsfrommodel_SOURCES) \
-	$(src_comit_SOURCES) $(src_convert2mtz_SOURCES) \
+	$(src_comit_SOURCES) $(src_cmapcalc_SOURCES) $(src_convert2mtz_SOURCES) \
 	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
 	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
 	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
@@ -348,7 +352,7 @@ DIST_SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
 	$(src_cmodeltoseq_SOURCES) $(src_cmtzjoin_SOURCES) \
 	$(src_cmtzsplit_SOURCES) $(src_cncsfrommodel_SOURCES) \
-	$(src_comit_SOURCES) $(src_convert2mtz_SOURCES) \
+	$(src_comit_SOURCES) $(src_cmapcalc_SOURCES) $(src_convert2mtz_SOURCES) \
 	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
 	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
 	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
@@ -550,6 +554,7 @@ src_cncsfrommodel_SOURCES = src/cncsfrommodel.cpp
 src_cmodeltoseq_SOURCES = src/cmodeltoseq.cpp
 src_cmapcut_SOURCES = src/cmapcut.cpp
 src_comit_SOURCES = src/comit.cpp
+src_cmapcalc_SOURCES = src/cmapcalc.cpp
 src_cmtzjoin_SOURCES = src/cmtzjoin.cpp
 src_cmtzsplit_SOURCES = src/cmtzsplit.cpp
 src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
@@ -906,6 +911,10 @@ src/comit.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/comit$(EXEEXT): $(src_comit_OBJECTS) $(src_comit_DEPENDENCIES) $(EXTRA_src_comit_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/comit$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_comit_OBJECTS) $(src_comit_LDADD) $(LIBS)
+src/cmapcalc.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/cmapcalc$(EXEEXT): $(src_cmapcalc_OBJECTS) $(src_cmapcalc_DEPENDENCIES) $(EXTRA_src_cmapcalc_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cmapcalc$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cmapcalc_OBJECTS) $(src_cmapcalc_LDADD) $(LIBS)
 src/convert2mtz.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/convert2mtz$(EXEEXT): $(src_convert2mtz_OBJECTS) $(src_convert2mtz_DEPENDENCIES) $(EXTRA_src_convert2mtz_DEPENDENCIES) src/$(am__dirstamp)
@@ -1111,6 +1120,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmtzsplit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cncsfrommodel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/comit.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/convert2mtz.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasecombine.Po@am__quote@
