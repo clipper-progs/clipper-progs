@@ -1,3 +1,6 @@
+1.16.6 (10/12/14)
+- fix infinite loop in Britton alpha estimation
+
 1.16.5 (6/12/14)
 - fix loop range causing problems on windows
 

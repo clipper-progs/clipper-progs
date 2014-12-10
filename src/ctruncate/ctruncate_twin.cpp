@@ -849,11 +849,17 @@ namespace ctruncate {
         }
         for (int j = 0; j != _nbins ; ++j) _pdf[j] /= NT;
         for (int j = 0; j != _nbins ; ++j) _zpdf[j] /= NT;
+        NT = 0;
+        for (int j = 0; j != _nbins-1 ; ++j) {
+            weights[j] = ( _zpdf[j] == 0.0 && _zpdf[j+1] == 0.0 ) ? 0.0 : 1.0 ;
+            ++NT;
+        }
+
         clipper::ftype alpha(-1.0),alpha1(1.0),beta(0.0);
         do {
             clipper::ftype a, b, siga, sigb;
             straight_line_fit(_zpdf,x,weights,_nbins,a,b,siga,sigb);
-            if (b > 0.5) {
+            if (b >= 0.5) {
                 alpha = 0.5;
 				beta = 0.0;
 				break;
@@ -865,8 +871,7 @@ namespace ctruncate {
             alpha1 = alpha;
             alpha = b;
             beta = a;
-            int limit = int(b*2.0*float(_nbins));
-            limit += (_nbins - limit)/3; // fudge for curvature
+            int limit = int((b)*2.0*float(_nbins));
             for (int jj = 0 ; jj != limit ; ++jj) weights[jj] = 0.0;
             for (int jj = limit ; jj != _nbins ; ++jj) weights[jj] = 1.0;
         } while (std::fabs(alpha1-alpha) > 0.0005);
