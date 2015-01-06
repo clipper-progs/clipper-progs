@@ -134,9 +134,9 @@ int main( int argc, char** argv )
   if ( ipcola != "NONE" ) {
     // anomalous difference F
     fsig1.compute( fano, clipper::data32::Compute_diff_fsigf_from_fsigfano() );
+    fphi1.compute( fsig1, phiw1, clipper::data32::Compute_fphi_from_fsigf_phifom() );
     for ( HRI ih = fphi1.first(); !ih.last(); ih.next() )
       fphi1[ih].shift_phase( -0.5*clipper::Util::pi() );
-    fphi1.compute( fsig1, phiw1, clipper::data32::Compute_fphi_from_fsigf_phifom() );
   } else {
     fphi1.compute( fsig1, phiw1, clipper::data32::Compute_fphi_from_fsigf_phifom() );
     if ( ipcolf2 != "NONE" ) {
