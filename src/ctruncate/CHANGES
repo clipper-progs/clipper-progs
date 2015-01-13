@@ -1,3 +1,7 @@
+1.16.7 (12/01/15)
+- use more conservative lower limit for the pcf calculation
+- minimum h for wilson truncation of -22
+
 1.16.6 (10/12/14)
 - fix infinite loop in Britton alpha estimation
 

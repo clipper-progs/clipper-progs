@@ -275,7 +275,7 @@ namespace ctruncate {
 
 #ifndef USE_TABLES
 		
-		const double LIMIT_L(-37.0);
+		const double LIMIT_L(-22.0);
 		const double LIMIT_IS(-3.7);
 		const double LIMIT_U(20.0);
 		
@@ -624,7 +624,7 @@ namespace ctruncate {
 		
 #ifndef USE_TABLES
 		
-		const double LIMIT_L(-37.0);
+		const double LIMIT_L(-22.0);
 		const double LIMIT_IS(-3.7);
 		const double LIMIT_U(20.0);
 		
@@ -733,8 +733,7 @@ namespace ctruncate {
 				float sigma = isig[ih].sigI();
 				float S = Sigma.f(ih);
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -746,7 +745,7 @@ namespace ctruncate {
 				//if ( !ih.hkl_class().centric()  && I < 0 ) 
 				//fprintf(checkfile,"%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %8.4f %8.4f %8.4f\n", I,sigma,S,J,sigJ,F,sigF,weight,
 				//ih.hkl_class().epsilon());
-				if (iflag) {
+				if (iflag != 0) {
 					jsig[ih].I() = J*weight;
 					jsig[ih].sigI() = sigJ*weight;
 					fsig[ih].f() = F*scalef*sqwt;
@@ -790,8 +789,7 @@ namespace ctruncate {
 				float sigma = isig[ih].sigI_pl();
 				float S = Sigma.f(ih);
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -828,8 +826,7 @@ namespace ctruncate {
 				float sigma = isig[ih].sigI_mi();
 				float S = Sigma.f(ih);
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -881,8 +878,7 @@ namespace ctruncate {
 				float sigma = isig[ih].sigI();
 				float S = Sigma[ih].I();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+                                float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -938,8 +934,7 @@ namespace ctruncate {
 					float sigma = isig[ih].sigI_pl();
 					float S = Sigma[ih].I();
 					clipper::HKL hkl = ih.hkl();
-					float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-					if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+					float weight(ih.hkl_class().epsilon() );
 					float sqwt = sqrt(weight);
 					
 					I /= weight;
@@ -976,8 +971,7 @@ namespace ctruncate {
 					float sigma = isig[ih].sigI_mi();
 					float S = Sigma[ih].I();
 					clipper::HKL hkl = ih.hkl();
-					float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-					if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+					float weight(ih.hkl_class().epsilon() );
 					float sqwt = sqrt(weight);
 					
 					I /= weight;
@@ -1222,6 +1216,7 @@ namespace ctruncate {
 			0.15882 };
 		
 #ifndef USE_TABLES
+		const float LIMIT_L(-22.0);
 		const float LIMIT_IS(-4.0);
 		const float LIMIT_U(20.0);
 		double h = I/sigma;
@@ -1328,8 +1323,7 @@ namespace ctruncate {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1375,8 +1369,7 @@ namespace ctruncate {
 				float I = isig[ih].I_pl();
 				float sigma = isig[ih].sigI_pl();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1405,8 +1398,7 @@ namespace ctruncate {
 				float I = isig[ih].I_mi();
 				float sigma = isig[ih].sigI_mi();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1447,8 +1439,7 @@ namespace ctruncate {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1494,8 +1485,7 @@ namespace ctruncate {
 				float I = isig[ih].I_pl();
 				float sigma = isig[ih].sigI_pl();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1524,8 +1514,7 @@ namespace ctruncate {
 				float I = isig[ih].I_mi();
 				float sigma = isig[ih].sigI_mi();
 				clipper::HKL hkl = ih.hkl();
-				float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-				if( fabs( ih.hkl_class().epsilon() - weight ) > 0.001) printf("epsilon %f != weight %f", ih.hkl_class().epsilon(), weight);
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;

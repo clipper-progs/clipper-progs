@@ -56,8 +56,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.16.6";
-    clipper::String prog_date = "$Date: 2014/12/10";
+    clipper::String prog_vers = "1.16.7";
+    clipper::String prog_date = "$Date: 2015/01/12";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -944,7 +944,7 @@ int main(int argc, char **argv)
 					}
 				}
 			}	
-			std::cout << "Number of outliers (Read (1999) ): " << nrej << std::endl << std::endl;
+			std::cout << "Number of outliers in final normal (Read (1999) ): " << nrej << std::endl << std::endl;
 			if (nrej > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << std::endl << "WARNING: prior may be unstable" << std::endl << std::endl;
 		}
 	}

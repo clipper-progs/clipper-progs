@@ -97,7 +97,7 @@ namespace ctruncate {
 
     double Utils::pbdv( double v, double x )
         /*!Compute parabolic cylinder function.
-		Note overflow for x > 20 
+		Note overflow for x > 22 on 64-bit
          \param v order
          \param x argument
          \return Dv(x) */
