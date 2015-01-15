@@ -719,7 +719,7 @@ namespace ctruncate {
 		
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		//FILE *checkfile;
@@ -771,7 +771,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input. 
 	
@@ -864,7 +864,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		//FILE *checkfile;
@@ -916,7 +916,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input. 
 	
@@ -1312,7 +1312,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		float J, sigJ, F, sigF;
@@ -1354,7 +1354,7 @@ namespace ctruncate {
 	
 	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input for flat prior
 	
@@ -1428,7 +1428,7 @@ namespace ctruncate {
 
 	int truncate_sivia(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		float J, sigJ, F, sigF;
@@ -1470,7 +1470,7 @@ namespace ctruncate {
 	
 	int truncate_sivia(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
-				 CSym::CCP4SPG *spg1, clipper::Resolution& reso, int& nrej, bool debug)
+				 clipper::Resolution& reso, int& nrej, bool debug)
 	
 	// takes anomalous I's as input for flat prior
 	

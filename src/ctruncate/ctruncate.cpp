@@ -56,8 +56,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.16.7";
-    clipper::String prog_date = "$Date: 2015/01/12";
+    clipper::String prog_vers = "1.16.8";
+    clipper::String prog_date = "$Date: 2015/01/14";
     CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -317,78 +317,59 @@ int main(int argc, char **argv)
     
     int Ncentric = 0;
     int Nreflections = 0;
-    for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-        if ( !isig[ih].missing() ) Nreflections++;
-        if ( ih.hkl_class().centric() && !isig[ih].missing()) Ncentric++;
+    clipper::Range<clipper::ftype64> reso_range;
+	{
+		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			if ( !isig[ih].missing() ){
+				Nreflections++;
+				if ( ih.hkl_class().centric() ) Ncentric++;
+			}
+		}
+		
+		prog.summary_beg();
+		
+		reso_range = isig.invresolsq_range();
+		
+		printf("\nSpacegroup: %s (number %4d)\n", spgr.symbol_hm().c_str(), spgr.spacegroup_number() );
+		printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
+			   Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
+		printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/std::sqrt(reso_range.min() ),1.0/std::sqrt(reso_range.max()));
+		printf("\nTotal umber of reflections: %d (%d acentric, %d centric )\n", Nreflections,Nreflections-Ncentric,Ncentric);		
+
+		prog.summary_end();
+		
+		if ( ipseq != "NONE" ) {
+			prog.summary_beg(); printf("CELL CONTENTS:\n\n");
+			
+			clipper::SEQfile seqf;
+			seqf.read_file( ipseq );
+			
+			ctruncate::Matthews cmath(true,false);
+			int nmol = cmath(cell1, spgr, seqf, 1.0/sqrt(reso_range.max() ) );
+			std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+			prog.summary_end();
+			cmath.summary();
+		} else if (nresidues > 0) {		
+			prog.summary_beg(); printf("CELL CONTENTS:\n\n");
+			ctruncate::Matthews cmath(true,false);
+			int nmol = cmath(cell1, spgr, nresidues, 1.0/sqrt(reso_range.max() ) );
+			std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
+			prog.summary_end();
+			cmath.summary();
+		}
     }
-    
-    prog.summary_beg();
-    
-    printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
-           Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
-    printf("\nNumber of reflections: %d\n", Nreflections);
-	printf("\nNumber of centric reflections %d\n", Ncentric);
-    clipper::Grid_sampling grid;
-    
-    // can't seem to get max resolution from clipper, so use CCP4 methods
-    CMtz::MTZ *mtz1=NULL;
-    int read_refs=1;  // not sure what read_refs actually does - reads reflections presumably
-    float minres,maxres;
-    mtz1 = CMtz::MtzGet(args[mtzinarg].c_str(), read_refs);
-    
-    // read title
-    char title[72];
-    CMtz::ccp4_lrtitl(mtz1, title);
-    
-    CMtz::MtzResLimits(mtz1,&minres,&maxres);
-    float invopt = maxres;
-    float resopt = 1.0/sqrt(invopt);
-    printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/sqrt(minres),1.0/sqrt(maxres));
-    prog.summary_end();
-    CSym::CCP4SPG *spg1 = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz1));
-    prog.summary_beg();
-    CMtz::MtzFree( mtz1 );
 	
-    
-    char spacegroup[20];
-    strcpy(spacegroup,spg1->symbol_old);
-    printf("\nSpacegroup: %s (number %4d)\n", spg1->symbol_old, spg1->spg_ccp4_num);
-    
-    char pointgroup[20];
-    strcpy(pointgroup,spg1->point_group);
-    printf("Pointgroup: %s\n\n",pointgroup);
-    prog.summary_end();
-    
-    if ( ipseq != "NONE" ) {
-        prog.summary_beg(); printf("CELL CONTENTS:\n\n");
-        
-        clipper::SEQfile seqf;
-        seqf.read_file( ipseq );
-        
-        ctruncate::Matthews cmath(true,false);
-        int nmol = cmath(cell1, spgr, seqf, resopt);
-        std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
-        prog.summary_end();
-        cmath.summary();
-    } else if (nresidues > 0) {		
-        prog.summary_beg(); printf("CELL CONTENTS:\n\n");
-        ctruncate::Matthews cmath(true,false);
-        int nmol = cmath(cell1, spgr, nresidues, resopt);
-        std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
-        prog.summary_end();
-        cmath.summary();
-    }
-    
+	
     //Completeness information
     //what is our working resolution (85% of I/sigI > 3.0)
-    clipper::Range<double> reso_range;
+    clipper::Range<double> active_range;
     int NBINS = 60;
     double ACCEPTABLE = 0.85;
     ctruncate::Completeness<data32::I_sigI> compt(NBINS);
     compt(isig);
     compt.plot();
     {
-        clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
+        clipper::Range<double> range(reso_range.min(),reso_range.max() );
         int i = 0;
         for ( ; i != NBINS-1 ; ++i) {
             if ( compt.completeness3(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
@@ -401,48 +382,48 @@ int main(int argc, char **argv)
             if (j != 0 )
 				if (i != 0) {
 					float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-					reso_range.include(d);
+					active_range.include(d);
 				} else {
-					reso_range.include(minres );
+					active_range.include(reso_range.min() );
 				}
             if (j != NBINS-1 ) {
                 float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                reso_range.include(d);	
+                active_range.include(d);	
             } else {
-                reso_range.include(range.max() );
+                active_range.include(range.max() );
             }
         } else {
-			reso_range = range;
+			active_range = range;
         }
     }
     
     prog.summary_beg();
     double rr = 0.0;
     printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
-    if ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
+    if ( active_range.max() == -999999999 && active_range.min() == 999999999 ) {
         printf("WARNING: The resolution range with I/sigI > 3  and completeness above %4.2f could not be\n",ACCEPTABLE);
         printf("         determined.  This data is of poor quality.\n\n");
     } else {
         printf("\nUsing I/sigI > 3 with completeness above %4.2f, the estimated useful\nResolution Range ",ACCEPTABLE);
-        printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
-        rr = 1.0/std::sqrt(reso_range.min() ) - 1.0/std::sqrt(reso_range.max() );
+        printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
+        rr = 1.0/std::sqrt(active_range.min() ) - 1.0/std::sqrt(active_range.max() );
     }
     prog.summary_end();
     printf("\n");
 	
-    // how big is reso_range
+    // how big is active_range
     {
         float rmax = hklinf.resolution().limit();
-        float rmin = 1.0/std::sqrt(minres);
-        float amax = 1.0/std::sqrt(reso_range.max() );
+        float rmin = 1.0/std::sqrt(reso_range.min() );
+        float amax = 1.0/std::sqrt(active_range.max() );
         if ( rr < 4.0 || amax > std::max(6.0,rmax+2.0)  ) {
-            reso_range = clipper::Range<double>();
+            active_range = clipper::Range<double>();
             printf("WARNING: The resolution range with I/sigI > 3 with completeness above 0.85 is small\n");
             do {
                 printf("         Recalculating using I/sigI > 2 with completeness aboue %4.2f for\n",ACCEPTABLE);
                 printf("         use in the following statistics, which must be treated with extreme caution\n");
                 int i = 0;
-                clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
+                clipper::Range<double> range(reso_range.min(),reso_range.max() );
                 for ( ; i != NBINS-1 ; ++i) {
                     if ( compt.completeness2(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
                 }
@@ -454,30 +435,30 @@ int main(int argc, char **argv)
                     if (j != 0 )
                         if (i != 0) {
                             float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-                            reso_range.include(d);
+                            active_range.include(d);
                         } else {
-                            reso_range.include(range.min() );
+                            active_range.include(range.min() );
                         }
                     if (j != NBINS-1 ) {
                         float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                        reso_range.include(d);
+                        active_range.include(d);
                     } else {
-                        reso_range.include(range.max() );
+                        active_range.include(range.max() );
                     }
                 }
-                amax = 1.0/std::sqrt(reso_range.max() );
-                rr = ( reso_range.max() == -999999999 && reso_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(reso_range.min() ) - amax;
+                amax = 1.0/std::sqrt(active_range.max() );
+                rr = ( active_range.max() == -999999999 && active_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(active_range.min() ) - amax;
                 ACCEPTABLE -= 0.1;
-                printf("         Resolution Range of this data for these values is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), amax );
+                printf("         Resolution Range of this data for these values is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), amax );
                 if (ACCEPTABLE <= 0.40) break;
             } while ( rr < 4.0 || amax > std::max(6.8,rmax+2.0) );
-            if (ACCEPTABLE <= 0.40) reso_range = clipper::Range<double>();
+            if (ACCEPTABLE <= 0.40) active_range = clipper::Range<double>();
             
             // try on Istandard
-            if (reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
+            if (active_range.max() == -999999999 && active_range.min() == 999999999 ) {
                 printf("         Attempt resolution range estimate using Istandard < 1.0 (Ideally would use 0.2) \n");
                 int i = 0;
-                clipper::Range<double> range(minres,hklinf.invresolsq_range().max() );
+                clipper::Range<double> range(reso_range.min(),reso_range.max() );
                 for ( ; i != NBINS-1 ; ++i) {
                     if ( compt.standard(compt.bin2invresolsq(i)) < 1.0 && compt.standard(compt.bin2invresolsq(i+1)) < 1.0 ) break;
                 }
@@ -489,28 +470,28 @@ int main(int argc, char **argv)
                     if (j != 0 )
                         if (i != 0) {
                             float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-                            reso_range.include(d);
+                            active_range.include(d);
                         } else {
-                            reso_range.include(minres );
+                            active_range.include(reso_range.min() );
                         }
                     if (j != NBINS-1 ) {
                         float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                        reso_range.include(d);
+                        active_range.include(d);
                     } else {
-                        reso_range.include(range.max() );
+                        active_range.include(range.max() );
                     }
                 } else {
-                    reso_range = range;
+                    active_range = range;
                 }
-                if ( reso_range.max() != -999999999 && reso_range.min() != 999999999 ) {
-                    printf("         Resolution Range of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+                if ( active_range.max() != -999999999 && active_range.min() != 999999999 ) {
+                    printf("         Resolution Range of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
                 }
             }
             
-            if (reso_range.max() == -999999999 && reso_range.min() == 999999999 ) {
-                reso_range.include(minres);
-                reso_range.include(1.0/std::pow(rmax+2.0,2.0));
-                printf("WARNING: Arbitary resolution range of %7.3fA to %7.3fA\n",1.0/std::sqrt(reso_range.min() ), 1.0/std::sqrt(reso_range.max() ) );
+            if (active_range.max() == -999999999 && active_range.min() == 999999999 ) {
+                active_range.include(reso_range.min() );
+                active_range.include(1.0/std::pow(rmax+2.0,2.0));
+                printf("WARNING: Arbitary resolution range of %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
             }
         }
     }
@@ -518,8 +499,8 @@ int main(int argc, char **argv)
 	
     // limit resolution of Patterson calculation for tNCS (default 4 A), or set to
     // limit from completeness analysis
-    invopt = reso_range.max();
-    resopt = 1.0/std::sqrt(invopt);
+    float invopt = active_range.max();
+    float resopt = 1.0/std::sqrt(invopt);
     reso_Patt = clipper::Resolution( std::max( double(resopt), reso_Patt.limit() ) );
     //user override of defaults
     if (!reso_u1.is_null() ) {
@@ -546,7 +527,7 @@ int main(int argc, char **argv)
 	//setup aniso copy of isig
 	HKL_data<data32::I_sigI> ianiso(hklinf);
 	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-		if (reso_range.contains(ih.invresolsq() ) ) {
+		if (active_range.contains(ih.invresolsq() ) ) {
 			float I = isig[ih.hkl()].I();
 			float sigI = isig[ih.hkl()].sigI();
 			ianiso[ih] = clipper::data32::I_sigI( I, sigI );
@@ -575,7 +556,7 @@ int main(int argc, char **argv)
 		if (std::fabs(uao_sum.mat00() - uao_sum.mat11() ) > 0.5 || std::fabs(uao_sum.mat00() - uao_sum.mat22()) > 0.5 ) {
 			anisobysymm = true;
 			try { 
-				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso, false, false, reso_range);
+				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso, false, false, active_range);
 				uao = -(llscl.u_aniso_orth(Scaling::I) );
 				uaoc = -(llscl.u_aniso_orth(Scaling::F) );
 			} catch (clipper::Message_fatal) {
@@ -638,10 +619,10 @@ int main(int argc, char **argv)
 		printf("\nTWINNING ANALYSIS:\n\n");
         xtwin << "<twinning>\n";
 		
-		clipper::Range<clipper::ftype> range_Twin(reso_range.min(),
+		clipper::Range<clipper::ftype> range_Twin(active_range.min(),
 												  (!reso_u2.is_null() ) ? 
-												  std::min(reso_range.max(),1.0/std::pow(reso_u2.limit(),2) ) :
-												  reso_range.max() );
+												  std::min(active_range.max(),1.0/std::pow(reso_u2.limit(),2) ) :
+												  active_range.max() );
 		
 		printf("\nData has been truncated at %6.2f - %6.2f A resolution\n",1.0/std::sqrt(range_Twin.min()), 1.0/std::sqrt(range_Twin.max()));
 		printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
@@ -740,7 +721,7 @@ int main(int argc, char **argv)
 			std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
 			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
 			for (int i = 0; i != ts1.size() ; ++i ) {
-				std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= lval && lval < 0.440) ? " Yes " : " No  " ) 
+				std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= ltest.statistic() && ltest.statistic() < 0.440) ? " Yes " : " No  " ) 
 				<< " |  " << std::setw(4) << std::setprecision(2) << hval[i] << "  |  " << bval[i] << "  |  " << mval[i] << " (";
 				if (mrval[i] == 100.0 ) std::cout << " N/A ";
 				else std::cout << std::setw(5) << mrval[i];
@@ -816,11 +797,11 @@ int main(int argc, char **argv)
 			seqf.read_file( ipseq );
 			seqf.import_molecule_sequence( seq );
 			MPolymerSequence poly = seq[0];
-			wilson(isig,poly,&reso_range, &icerings);
+			wilson(isig,poly,&active_range, &icerings);
 		} else if (nresidues > 0) {
-			wilson(isig,nresidues,&reso_range, &icerings);
+			wilson(isig,nresidues,&active_range, &icerings);
 		} else {
-			wilson(isig,&reso_range,&icerings);
+			wilson(isig,&active_range,&icerings);
 		}		
 		
 		clipper::String comment("Smooth");
@@ -964,14 +945,14 @@ int main(int argc, char **argv)
 		}
 		
 		if ( refl_mean ) {
-			if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
-			else if (prior == SIVIA) truncate_sivia(isig, jsig, fsig, scalef, spg1, reso_trunc, nrej, debug );
-			else truncate( isig, jsig, fsig, xsig, scalef, spg1, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
+			else if (prior == SIVIA) truncate_sivia(isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
+			else truncate( isig, jsig, fsig, xsig, scalef, reso_trunc, nrej, debug );
 		}
 		if (anomalous) {
-			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
-			else if (prior == SIVIA) truncate_sivia( isig_ano_import, jsig_ano, fsig_ano, scalef, spg1, reso_trunc, nrej, debug );
-            else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, spg1, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+			else if (prior == SIVIA) truncate_sivia( isig_ano_import, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+            else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, reso_trunc, nrej, debug );
 			int iwarn = 0;
 			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 0 :
@@ -1006,30 +987,6 @@ int main(int argc, char **argv)
 	printf("\n");
 	
 	
-	
-	// following code is for when truncate calc switched off - do not delete it
-	// usually already have F's in this case; really just need to skip truncate calc
-	
-	/*
-	 for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-	 if ( !isig[ih].missing() ) {
-	 float I = isig[ih].I();
-	 float sigma = isig[ih].sigI();
-	 HKL hkl = ih.hkl();
-	 float weight = (float) CSym::ccp4spg_get_multiplicity( spg1, hkl.h(), hkl.k(), hkl.l() );
-	 float sqwt = sqrt(weight);
-	 if (I < 0.0) {
-	 fsig[ih].f() = 0.0;
-	 fsig[ih].sigf() = 0.0;
-	 }
-	 else {
-	 fsig[ih].f() = sqrt(I)*scalef*sqwt;
-	 fsig[ih].sigf() = 0.5*(sigma/sqrt(I))*scalef*sqwt; //check this
-	 }
-	 }
-	 }*/
-	
-	
 	// moments of E using clipper binning
 	// moments_Z(ianiso,resopt,nbins,prog);
 	
@@ -1055,7 +1012,7 @@ int main(int argc, char **argv)
 	
 	
 	{
-		ctruncate::PattPeak patt_peak(std::sqrt(maxres));
+		ctruncate::PattPeak patt_peak(std::sqrt(reso_range.max() ));
 		
 		float opt_res = patt_peak(xsig);
 		
@@ -1245,16 +1202,22 @@ int main(int argc, char **argv)
         mtzout.close_write();
         
         // Clipper will change H3 to R3, so change it back
-        if (spacegroup[0] == 'H') {
-			CMtz::MTZ *mtz2=NULL;
-			read_refs=1;  // need to read in reflections, otherwise they won't be written out
-			mtz2 = CMtz::MtzGet(outfile.c_str(), read_refs);
+        if ((spgr.symbol_hm())[0] == 'R') {			
+			CMtz::MTZ *mtz=NULL;
+			int read_refs=1;  // need to read in reflections, otherwise they won't be written out
+			mtz = CMtz::MtzGet(outfile.c_str(), read_refs);
 			// write title to output file
-			strncpy( mtz2->title, title, 71 );
-			strcpy(mtz2->mtzsymm.spcgrpname,spacegroup);
-			CMtz::MtzPut( mtz2, outfile.c_str() );
-			CMtz::MtzFree( mtz2 );
-		}
+			char title[72];
+			CMtz::ccp4_lrtitl(mtz, title);
+			strncpy( mtz->title, title, 71 );
+			//reset spacegroup
+			char spacegroup[20];
+			CSym::CCP4SPG *spg = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz));
+			strcpy(spacegroup,spg->symbol_old);
+			strcpy(mtz->mtzsymm.spcgrpname,spacegroup);
+			CMtz::MtzPut( mtz, outfile.c_str() );
+			CMtz::MtzFree( mtz );
+		} 
     }
     
     if (outxml) {

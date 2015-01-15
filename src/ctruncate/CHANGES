@@ -1,3 +1,6 @@
+1.16.8 (14/01/15)
+- remove unnecessary file read
+
 1.16.7 (12/01/15)
 - use more conservative lower limit for the pcf calculation
 - minimum h for wilson truncation of -22
