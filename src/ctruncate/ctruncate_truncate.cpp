@@ -279,6 +279,8 @@ namespace ctruncate {
 		const double LIMIT_IS(-3.7);
 		const double LIMIT_U(20.0);
 		
+		J = sigJ = F = sigF = clipper::Util::nan();
+		
 		double h = I/sigma - sigma/S;
 		if (I/sigma < LIMIT_IS || h < LIMIT_L ) {
 			nrej++;
@@ -286,7 +288,7 @@ namespace ctruncate {
 			return(0);
 		} else {
 			if ( clipper::Util::is_nan(h) ) {
-			
+				return(0);
 			} else {
 				if (h > LIMIT_U) {
 					J = h*sigma;
@@ -628,13 +630,16 @@ namespace ctruncate {
 		const double LIMIT_IS(-3.7);
 		const double LIMIT_U(20.0);
 		
+		J = sigJ = F = sigF = clipper::Util::nan();
+		
 		double h = I/sigma - 0.5*sigma/S;
 		if (I/sigma < LIMIT_IS || h < LIMIT_L ) {
 			nrej++;
 			if (debug) printf("unphys: %f %f %f\n",I,sigma,I/sigma);
 			return(0);
 		} else {
-			if ( clipper::Util::is_nan(I) ) {
+			if ( clipper::Util::is_nan(h) ) {
+				return(0);
 			} else {
 				if (h > LIMIT_U) {
 					double e2 = 1.0/(h*h);
@@ -878,7 +883,7 @@ namespace ctruncate {
 				float sigma = isig[ih].sigI();
 				float S = Sigma[ih].I();
 				clipper::HKL hkl = ih.hkl();
-                                float weight(ih.hkl_class().epsilon() );
+				float weight(ih.hkl_class().epsilon() );
 				float sqwt = sqrt(weight);
 				
 				I /= weight;
@@ -1002,6 +1007,15 @@ namespace ctruncate {
 					fsig[ih].f_mi() = clipper::Util::nan();
 					fsig[ih].sigf_mi() = clipper::Util::nan();
 				}
+			} else {
+				jsig[ih].I_pl() = clipper::Util::nan();
+				jsig[ih].sigI_pl() = clipper::Util::nan();
+				fsig[ih].f_pl() = clipper::Util::nan();
+				fsig[ih].sigf_pl() = clipper::Util::nan();
+				jsig[ih].I_mi() = clipper::Util::nan();
+				jsig[ih].sigI_mi() = clipper::Util::nan();
+				fsig[ih].f_mi() = clipper::Util::nan();
+				fsig[ih].sigf_mi() = clipper::Util::nan();
 			}
 		}
 		//fclose(checkfile);
@@ -1220,12 +1234,15 @@ namespace ctruncate {
 		const float LIMIT_IS(-4.0);
 		const float LIMIT_U(20.0);
 		double h = I/sigma;
+		J = sigJ = F = sigF = clipper::Util::nan();
+		
 		if ( h < LIMIT_IS ) {
 			nrej++;
 			if (debug) printf("unphys: %f %f %f\n",I,sigma,h);
 			return(0);
 		} else {
-			if ( clipper::Util::is_nan(I) ) {
+			if ( clipper::Util::is_nan(h) ) {
+				return(0);
 			} else {
 				if (h > LIMIT_U) {
 					J = h*sigma;
