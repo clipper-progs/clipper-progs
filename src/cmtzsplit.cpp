@@ -102,6 +102,7 @@ int main( int argc, char** argv )
   clipper::String title;
   clipper::String ipfile;
   std::vector<clipper::String> opfiles, ipcols, opcols, history;
+  clipper::String cspgr = "NONE";
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -117,6 +118,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ipcols.push_back( args[arg] );
     } else if ( args[arg] == "-colout" ) {
       if ( ++arg < args.size() ) opcols.push_back( args[arg] );
+    } else if ( args[arg] == "-spacegroup" ) {
+      if ( ++arg < args.size() ) cspgr = args[arg];
     } else if ( args[arg] == "-history" ) {
       if ( ++arg < args.size() ) history.push_back( args[arg] );
     } else {
@@ -125,7 +128,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: cmtzjoin\n\t-mtzin <filename>\n\n";
+    std::cout << "Usage: cmtzjoin\n\t-mtzin <filename> [-mtzout <filename> -colin <column-group> -colout <column-group>] -spacegroup <spacegroup> [-history <text>]\n\n";
     return 1;
   }
 
@@ -260,6 +263,19 @@ int main( int argc, char** argv )
     std::replace( opnames.begin(), opnames.end(), ' ', ',' );
     std::cout << i << " " << opnames << std::endl;
     opcols.push_back( opnames );
+  }
+
+  // override spacegroup if required
+  if ( cspgr != "NONE" ) {
+    clipper::Spgr_descr spgrd( cspgr );
+    clipper::Spacegroup spgr( spgrd );
+    unsigned int phash1 = hklinfo.spacegroup().generator_ops().pgrp_ops().hash();
+    unsigned int phash2 = spgr.generator_ops().pgrp_ops().hash();
+    if ( phash1 != phash2 ) {
+      std::cerr << "Pointgroup mismatch between -mtzin and -spacegroup" << std::endl;
+      return 2;
+    }
+    hklinfo.init( spgr, hklinfo.cell(), hklinfo.resolution(), false );
   }
 
   // now write out the files in turn
