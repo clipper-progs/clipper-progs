@@ -275,7 +275,11 @@ int main( int argc, char** argv )
       std::cerr << "Pointgroup mismatch between -mtzin and -spacegroup" << std::endl;
       return 2;
     }
+    std::vector<clipper::HKL> hkls;
+    for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
+      hkls.push_back( ih.hkl() );
     hklinfo.init( spgr, hklinfo.cell(), hklinfo.resolution(), false );
+    hklinfo.add_hkl_list( hkls );
   }
 
   // now write out the files in turn
