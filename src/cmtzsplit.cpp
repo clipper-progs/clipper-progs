@@ -83,9 +83,9 @@ struct Compare_HKL{ bool operator() ( const clipper::HKL& h1, const clipper::HKL
       static int data_size() { return 1; }
       static String data_names() { return "flag"; }
       void data_export( xtype array[] ) const
-	{ array[0] = xtype(flag()); }
+        { array[0] = xtype(flag()); }
       void data_import( const xtype array[] )
-	{ flag() = dtype(array[0]); }
+        { flag() = dtype(array[0]); }
       // accessors
       const dtype& flag() const { return flag_; }  //<! read access
       dtype& flag() { return flag_; }  //<! write access
@@ -163,10 +163,10 @@ int main( int argc, char** argv )
     clipper::String types;
     for ( int c1 = 0; c1 < cols.size(); c1++ ) {
       for ( int c2 = 0; c2 < mtzcols.size(); c2++ ) {
-	std::vector<clipper::String> nametype = mtzcols[c2].split( " " );
-	clipper::String name = nametype[0].tail();
-	clipper::String type = nametype[1];
-	if ( name == cols[c1] ) types += type;
+        std::vector<clipper::String> nametype = mtzcols[c2].split( " " );
+        clipper::String name = nametype[0].tail();
+        clipper::String type = nametype[1];
+        if ( name == cols[c1] ) types += type;
       }
     }
     if ( types.length() != cols.size() ) types = "";
@@ -226,7 +226,7 @@ int main( int argc, char** argv )
         } else {
           isigi.I() = 0.5 * ( isigianom.I_pl() + isigianom.I_mi() );
           isigi.sigI() = 0.5 * sqrt( isigianom.sigI_pl()*isigianom.sigI_pl() +
-				                             isigianom.sigI_mi()*isigianom.sigI_mi() );
+                                                             isigianom.sigI_mi()*isigianom.sigI_mi() );
         }
         (*datanew)[ih] = isigi;
       }
@@ -247,7 +247,7 @@ int main( int argc, char** argv )
         } else {
           fsigf.f() = 0.5 * ( fsigfanom.f_pl() + fsigfanom.f_mi() );
           fsigf.sigf() = 0.5 * sqrt( fsigfanom.sigf_pl()*fsigfanom.sigf_pl() +
-				                             fsigfanom.sigf_mi()*fsigfanom.sigf_mi() );
+                                                             fsigfanom.sigf_mi()*fsigfanom.sigf_mi() );
         }
         (*datanew)[ih] = fsigf;
       }
@@ -276,8 +276,7 @@ int main( int argc, char** argv )
       return 2;
     }
     std::vector<clipper::HKL> hkls;
-    for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
-      hkls.push_back( ih.hkl() );
+    for ( int h = 0; h < hklinfo.num_reflections(); h++ ) hkls.push_back( hklinfo.hkl_of(h) );
     hklinfo.init( spgr, hklinfo.cell(), hklinfo.resolution(), false );
     hklinfo.add_hkl_list( hkls );
   }
@@ -292,9 +291,9 @@ int main( int argc, char** argv )
     std::cerr << xtals[i].crystal_name() << std::endl;
     std::cerr << dsets[i].dataset_name() << std::endl;
     std::cerr << opcols[i] << std::endl;
-        clipper::String path = ( "/" + xtals[i].crystal_name() + 
-			     "/" + dsets[i].dataset_name() +
-			     "/["+opcols[i]+"]" );
+    clipper::String path = ( "/" + xtals[i].crystal_name() + 
+                             "/" + dsets[i].dataset_name() +
+                             "/["+opcols[i]+"]" );
     std::cout << path << std::endl;
     mtzout.export_crystal( xtals[i], path );
     mtzout.export_dataset( dsets[i], path );

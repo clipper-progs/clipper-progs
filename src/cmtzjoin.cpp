@@ -82,9 +82,9 @@ struct Compare_HKL{ bool operator() ( const clipper::HKL& h1, const clipper::HKL
       static int data_size() { return 1; }
       static String data_names() { return "flag"; }
       void data_export( xtype array[] ) const
-	{ array[0] = xtype(flag()); }
+        { array[0] = xtype(flag()); }
       void data_import( const xtype array[] )
-	{ flag() = dtype(array[0]); }
+        { flag() = dtype(array[0]); }
       // accessors
       const dtype& flag() const { return flag_; }  //<! read access
       dtype& flag() { return flag_; }  //<! write access
@@ -101,6 +101,7 @@ int main( int argc, char** argv )
   clipper::String title;
   clipper::String opfile;
   std::vector<clipper::String> ipfiles, ipcols, opcols;
+  bool generate = false;
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -116,6 +117,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ipcols.push_back( args[arg] );
     } else if ( args[arg] == "-colout" ) {
       if ( ++arg < args.size() ) opcols.push_back( args[arg] );
+    } else if ( args[arg] == "-complete" ) {
+      generate = true;
     } else {
       std::cout << "Unrecognized:\t" << args[arg] << "\n";
       args.clear();
@@ -156,20 +159,20 @@ int main( int argc, char** argv )
     if ( i < ipcols.size() ) {  // column names specified
       cols = ipcols[i].split(",");
       for ( int c1 = 0; c1 < cols.size(); c1++ ) {
-	for ( int c2 = 0; c2 < mtzcols.size(); c2++ ) {
-	  std::vector<clipper::String> nametype = mtzcols[c2].split( " " );
-	  clipper::String name = nametype[0].tail();
-	  clipper::String type = nametype[1];
-	  if ( name == cols[c1] ) types += type;
-	}
+        for ( int c2 = 0; c2 < mtzcols.size(); c2++ ) {
+          std::vector<clipper::String> nametype = mtzcols[c2].split( " " );
+          clipper::String name = nametype[0].tail();
+          clipper::String type = nametype[1];
+          if ( name == cols[c1] ) types += type;
+        }
       }
     } else {  // column names not specified
       for ( int c = 0; c < mtzcols.size(); c++ ) {
-	std::vector<clipper::String> nametype = mtzcols[c].split( " " );
+        std::vector<clipper::String> nametype = mtzcols[c].split( " " );
         if ( nametype[1] != "H" ) {
-	  cols.push_back( nametype[0].tail() );
-	  types += nametype[1];
-	}
+          cols.push_back( nametype[0].tail() );
+          types += nametype[1];
+        }
       }
       clipper::String ipnames = cols[0];
       for ( int c = 1; c < cols.size(); c++ ) ipnames += ','+cols[c];
@@ -199,9 +202,8 @@ int main( int argc, char** argv )
     reslim = std::min( reslim, mtzin.resolution().limit() );
     // read reflections
     clipper::HKL_info hkls;
-    mtzin.import_hkl_info( hkls );
-    for ( int h = 0; h < hkls.num_reflections(); h++ )
-      hkl_set.insert( hkls.hkl_of(h) );
+    mtzin.import_hkl_info( hkls, generate );
+    for ( int h = 0; h < hkls.num_reflections(); h++ ) hkl_set.insert( hkls.hkl_of(h) );
     mtzin.close_read();
     //std::cerr << i << " " << hkl_set.size() << std::endl;
   }
@@ -283,7 +285,7 @@ int main( int argc, char** argv )
         } else {
           isigi.I() = 0.5 * ( isigianom.I_pl() + isigianom.I_mi() );
           isigi.sigI() = 0.5 * sqrt( isigianom.sigI_pl()*isigianom.sigI_pl() +
-				                             isigianom.sigI_mi()*isigianom.sigI_mi() );
+                                                             isigianom.sigI_mi()*isigianom.sigI_mi() );
         }
         (*datanew)[ih] = isigi;
       }
@@ -304,7 +306,7 @@ int main( int argc, char** argv )
         } else {
           fsigf.f() = 0.5 * ( fsigfanom.f_pl() + fsigfanom.f_mi() );
           fsigf.sigf() = 0.5 * sqrt( fsigfanom.sigf_pl()*fsigfanom.sigf_pl() +
-				                             fsigfanom.sigf_mi()*fsigfanom.sigf_mi() );
+                                                             fsigfanom.sigf_mi()*fsigfanom.sigf_mi() );
         }
         (*datanew)[ih] = fsigf;
       }
@@ -314,18 +316,31 @@ int main( int argc, char** argv )
   }
 
 
+  // check for unassigned free R flags
+  bool missing_flags = false;
+  for ( int i = 0; i < hkldata.size(); i++ ) {
+    HKL_data<FFlag>& free = *dynamic_cast<HKL_data<FFlag>*>(hkldata[i]);
+    for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
+      if ( free[ih].missing() ) missing_flags = true;
+  }
+
+
   // now write out the lot
   clipper::CCP4MTZfile mtzout;
   mtzout.open_write( opfile );
   mtzout.export_hkl_info( hklinfo );
   for ( int i = 0; i < hkldata.size(); i++ ) {
     clipper::String path = ( "/" + xtals[i].crystal_name() + 
-			     "/" + dsets[i].dataset_name() +
-			     "/["+opcols[i]+"]" );
+                             "/" + dsets[i].dataset_name() +
+                             "/["+opcols[i]+"]" );
     std::cout << path << std::endl;
     mtzout.export_crystal( xtals[i], path );
     mtzout.export_dataset( dsets[i], path );
     mtzout.export_hkl_data( *(hkldata[i]), path );
   }
   mtzout.close_write();
+
+
+  // return value for missing flags
+  if ( missing_flags ) return 101;
 }
