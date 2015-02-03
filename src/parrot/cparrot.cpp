@@ -17,7 +17,7 @@ extern "C" {
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.2", "$Date: 2010/08/21" );
+  CCP4Program prog( "cparrot", "1.0.3", "$Date: 2014/02/02" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -46,6 +46,7 @@ int main( int argc, char** argv )
   clipper::String opcol_hl = "NONE";
   clipper::String opcol_fc = "NONE";
   clipper::String opncsm = "NONE";
+  clipper::String opxml = "NONE";
   double res_in = 1.0;         // Resolution limit
   double solrad = 0.0;
   double solc   = 0.0;         // solvent content
@@ -111,6 +112,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) opcol_fc = args[arg];
     } else if ( key == "-mapout-ncs" ) {
       if ( ++arg < args.size() ) opncsm = args[arg];
+    } else if ( key == "-xmlout" ) {
+      if ( ++arg < args.size() ) opxml  = args[arg];
     } else if ( key == "-solvent-flatten" ) {
       dosolv = true;
     } else if ( key == "-histogram-match" ) {
@@ -139,19 +142,19 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ncs_asufrc = clipper::String(args[arg]).f();
     } else if ( key == "-ncs-operator" ) {
       if ( ++arg < args.size() ) {
-	std::vector<clipper::String> op=clipper::String(args[arg]).split(", ");
-	if ( op.size() == 9 ) {
-	  clipper::Euler_ccp4 eul( clipper::Util::d2rad(op[0].f64()),
-				   clipper::Util::d2rad(op[1].f64()),
-				   clipper::Util::d2rad(op[2].f64()) );
-	  clipper::Coord_orth src( op[3].f64(), op[4].f64(), op[5].f64() );
-	  clipper::Coord_orth tgt( op[6].f64(), op[7].f64(), op[8].f64() );
-	  clipper::Rotation rot( eul );
-	  nxops.push_back( Local_rtop( rot, src, tgt ) );
-	} else {
-	  std::cout << "\nInvalid ncs operator:\t" << args[arg] << "\n";
-	  args.clear();
-	}
+        std::vector<clipper::String> op=clipper::String(args[arg]).split(", ");
+        if ( op.size() == 9 ) {
+          clipper::Euler_ccp4 eul( clipper::Util::d2rad(op[0].f64()),
+                                   clipper::Util::d2rad(op[1].f64()),
+                                   clipper::Util::d2rad(op[2].f64()) );
+          clipper::Coord_orth src( op[3].f64(), op[4].f64(), op[5].f64() );
+          clipper::Coord_orth tgt( op[6].f64(), op[7].f64(), op[8].f64() );
+          clipper::Rotation rot( eul );
+          nxops.push_back( Local_rtop( rot, src, tgt ) );
+        } else {
+          std::cout << "\nInvalid ncs operator:\t" << args[arg] << "\n";
+          args.clear();
+        }
       }
     } else if ( key == "-sharpen" ) {
       if ( ++arg < args.size() ) usharp = clipper::String(args[arg]).f();
@@ -163,7 +166,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbin-ha <filename>\n\t-pdbin-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-fo <colpath>\t\tCOMPULSORY\n\t-colin-hl <colpath> or -colin-phifom <colpath>\tCOMPULSORY\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-mapout-ncs <filename prefix>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\nAn input mtz is specified, F's and HL coefficients are required.\n";
+    std::cout << "\nUsage: cparrot\n\t-mtzin-ref <filename>\n\t-pdbin-ref <filename>\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbin-ha <filename>\n\t-pdbin-mr <filename>\n\t-colin-ref-fo <colpath>\n\t-colin-ref-hl <colpath>\n\t-colin-fo <colpath>\t\tCOMPULSORY\n\t-colin-hl <colpath> or -colin-phifom <colpath>\tCOMPULSORY\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-mtzout <filename>\n\t-colout <colpath>\n\t-colout-hl <colpath>\n\t-colout-fc <colpath>\n\t-mapout-ncs <filename prefix>\n\t-solvent-flatten\n\t-histogram-match\n\t-ncs-average\n\t-rice-probability\n\t-anisotropy-correction\n\t-cycles <cycles>\n\t-resolution <resolution/A>\n\t-solvent-content <fraction>\n\t-solvent-mask-filter-radius <radius>\n\t-ncs-mask-filter-radius <radius>\n\t-ncs-asu-fraction <fraction>\n\t-ncs-operator <alpha>,<beta>,<gamma>,<x>,<y>,<z>,<x>,<y>,<z>\n\t-xmlout <filename>\nAn input mtz is specified, F's and HL coefficients are required.\n";
     exit(1);
   }
 
@@ -185,7 +188,7 @@ int main( int argc, char** argv )
   clipper::CCP4MTZfile mtzfile;
   mtzfile.set_column_label_mode( clipper::CCP4MTZfile::Legacy );
   std::string msg;
-  ParrotUtil util( ncycles );
+  ParrotUtil util( title );
   if ( opcol_hl == "NONE" ) opcol_hl = opcol;
   if ( opcol_fc == "NONE" ) opcol_fc = opcol;
   if ( !( dosolv || dohist || doncsa ) ) dosolv = dohist = doncsa = true;
@@ -255,7 +258,7 @@ int main( int argc, char** argv )
     if ( ipcol_wrk_fc != "NONE" ) wrk_fp.compute( wrk_fp, compute_aniso );    
     // output
     std::cout << std::endl << "Applying anisotropy correction:"
-	      << std::endl << uaniso.format() << std::endl;
+              << std::endl << uaniso.format() << std::endl;
   }
 
   if ( usharp != 0.0 )
@@ -295,7 +298,7 @@ int main( int argc, char** argv )
     // OUTPUT
     prog.summary_beg();
     std::cout << std::endl << "Solvent content from model: " << solest
-	      << std::endl << std::endl;
+              << std::endl << std::endl;
     prog.summary_end(); std::cout << std::endl;
   }
 
@@ -313,17 +316,17 @@ int main( int argc, char** argv )
     printf(" N(NCS)   Solvent_fraction    Probability\n");
     for ( int n = 1; n < solcs.size(); n++ )
       printf("    %2i       %8.3f         %8.3f\n",
-	     n, solcs[n].second, solcs[n].first );
+             n, solcs[n].second, solcs[n].first );
     std::cout << std::endl << "Solvent content from sequence: " << solest
-	      << "   (assuming " << nncs << " copies per asymmetric unit)."
-	      << std::endl << std::endl;
+              << "   (assuming " << nncs << " copies per asymmetric unit)."
+              << std::endl << std::endl;
     if ( solcs.size() > 2 && solcs[nncs].first < 0.98 )
       std::cout << "$TEXT:Warning: $$ $$" << std::endl
-		<< "WARNING: Assuming " << nncs << "-fold NCS. "
-		<< "This is only a guess." << std::endl
-		<< "Consider other possibilities "
-		<< "and set solvent content accordingly" << std::endl
-		<< "$$" << std::endl;
+                << "WARNING: Assuming " << nncs << "-fold NCS. "
+                << "This is only a guess." << std::endl
+                << "Consider other possibilities "
+                << "and set solvent content accordingly" << std::endl
+                << "$$" << std::endl;
     prog.summary_end(); std::cout << std::endl;
   }
 
@@ -366,27 +369,15 @@ int main( int argc, char** argv )
     NCSfind ncsatom( tol_dst, tol_ang );
     NCSaver ncsaver;
     atmops = ncsatom.find_ncs_candidates( mol_wrk_ha.atom_list(),
-					  spgr_wrk, cell_wrk );
+                                          spgr_wrk, cell_wrk );
     newops = ncsaver.filter_ncs_candidates( atmops, map_wrk, ncs_radius,
-					    ncs_level, ncs_asufrc, 3 );
+                                            ncs_level, ncs_asufrc, 3 );
     if ( verbose > 0 ) Local_rtop::print_nxops( "from heavy atoms", atmops );
     if ( verbose > 0 ) Local_rtop::print_nxops( "density filtered", newops );
     for ( int r = 0; r < newops.size(); r++ ) {
-      clipper::Rotation rot( newops[r].rot() );
-      clipper::Polar_ccp4 polar = rot.polar_ccp4();
-      clipper::Euler_ccp4 euler = rot.euler_ccp4();
       std::cout << std::endl << "NCS operator found relating heavy atoms: "
-		<< std::endl;
-      std::cout << " Polar rotation/deg: "
-		<< clipper::Util::rad2d(polar.omega()) << ","
-		<< clipper::Util::rad2d(polar.phi() ) << ","
-		<< clipper::Util::rad2d(polar.kappa()) << std::endl;
-      std::cout << " Euler rotation/deg: "
-		<< clipper::Util::rad2d(euler.alpha()) << ","
-		<< clipper::Util::rad2d(euler.beta() ) << ","
-		<< clipper::Util::rad2d(euler.gamma()) << std::endl;
-      std::cout << " Source: " << newops[r].src().format() << std::endl;
-      std::cout << " Target: " << newops[r].tgt().format() << std::endl;
+                << std::endl;
+      util.log_ncs_operator( newops[r] );
     }
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from heavy atoms.\n$$" << std::endl;
     else nxops.insert( nxops.end(), newops.begin(), newops.end() );
@@ -397,30 +388,18 @@ int main( int argc, char** argv )
     std::vector<Local_rtop> newops;
     for ( int c1 = 0; c1 < mol_wrk_mr.size(); c1++ )
       for ( int c2 = 0; c2 < mol_wrk_mr.size(); c2++ )
-	if ( c1 != c2 ) {
-	  const double rmsd = 1.0;
-	  Local_rtop nxop =
-	    NCSfind::local_rtop( mol_wrk_mr[c1], mol_wrk_mr[c2], rmsd, 16 );
-	  if ( !nxop.is_null() ) {
-	    newops.push_back( nxop );
-	    clipper::Rotation rot( nxop.rot() );
-	    clipper::Polar_ccp4 polar = rot.polar_ccp4();
-	    clipper::Euler_ccp4 euler = rot.euler_ccp4();
-	    std::cout << std::endl << "NCS operator found relating chains "
-		      << mol_wrk_mr[c1].id() << " and "
-		      <<  mol_wrk_mr[c2].id() << std::endl;
-	    std::cout << " Polar rotation/deg: "
-		      << clipper::Util::rad2d(polar.omega()) << ","
-		      << clipper::Util::rad2d(polar.phi() ) << ","
-		      << clipper::Util::rad2d(polar.kappa()) << std::endl;
-	    std::cout << " Euler rotation/deg: "
-		      << clipper::Util::rad2d(euler.alpha()) << ","
-		      << clipper::Util::rad2d(euler.beta() ) << ","
-		      << clipper::Util::rad2d(euler.gamma()) << std::endl;
-	    std::cout << " Source: " << nxop.src().format() << std::endl;
-	    std::cout << " Target: " << nxop.tgt().format() << std::endl;
-	  }
-	}
+        if ( c1 != c2 ) {
+          const double rmsd = 1.0;
+          Local_rtop nxop =
+            NCSfind::local_rtop( mol_wrk_mr[c1], mol_wrk_mr[c2], rmsd, 16 );
+          if ( !nxop.is_null() ) {
+            newops.push_back( nxop );
+            std::cout << std::endl << "NCS operator found relating chains "
+                      << mol_wrk_mr[c1].id() << " and "
+                      <<  mol_wrk_mr[c2].id() << std::endl;
+            util.log_ncs_operator( nxop );
+          }
+        }
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from atomic model.\n$$" << std::endl;
     else nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
@@ -452,7 +431,7 @@ int main( int argc, char** argv )
     // mask radius
     double autorad = 1.0 * ParrotUtil::effective_resolution( wrk_pw );
     std::cout << "Suggested radius for solvent mask determination: "
-	      << autorad << std::endl << std::endl;
+              << autorad << std::endl << std::endl;
 
     // mask calculation from density
     if ( domask ) {
@@ -490,26 +469,26 @@ int main( int argc, char** argv )
     if ( doncsa && nxops.size() > 0 ) {
       std::vector<double> ncsvols( nxops.size() ), ncscors( nxops.size() );
       for ( int r = 0; r < nxops.size(); r++ ) {
-	Local_rtop nxop = nxops[r];
-	Local_rtop nxop_old = nxop;
-	clipper::NXmap<float> ncsmsk;
-	const double asuvol = map_wrk.cell().volume() /
-	  double( map_wrk.spacegroup().num_symops() );
-	const double map_radius = pow( asuvol, 0.333 );
-	ncsaver.ncs_mask( ncsmsk, map_wrk, nxop,
-			  map_radius, ncs_radius, ncs_level, 3 );
-	if ( ncsref ) ncsaver.ncs_refine( nxop, map_wrk, ncsmsk );
-	ncsaver.ncs_average( map_ncs, map_nwt, map_wrk, ncsmsk, nxop );
-	nxops[r] = nxop;
+        Local_rtop nxop = nxops[r];
+        Local_rtop nxop_old = nxop;
+        clipper::NXmap<float> ncsmsk;
+        const double asuvol = map_wrk.cell().volume() /
+          double( map_wrk.spacegroup().num_symops() );
+        const double map_radius = pow( asuvol, 0.333 );
+        ncsaver.ncs_mask( ncsmsk, map_wrk, nxop,
+                          map_radius, ncs_radius, ncs_level, 3 );
+        if ( ncsref ) ncsaver.ncs_refine( nxop, map_wrk, ncsmsk );
+        ncsaver.ncs_average( map_ncs, map_nwt, map_wrk, ncsmsk, nxop );
+        nxops[r] = nxop;
 
-	// store and log output
-	util.log_ncs_stats
-	  ( nxop_old, nxop, ncsaver.mask_volume_asu(),
-	    ncsaver.mask_multiplicity(), ncsaver.correlation_sphere(),
-	    ncsaver.correlation_old(), ncsaver.correlation_new(),
-	    ncsaver.mask_volume_ratio(), ncsaver.mask_overlap_ratio() );
-	if ( opncsm != "NONE" )
-	  util.output_ncs_mask( opncsm, ncsmsk, cell_wrk, cycle, r );
+        // store and log output
+        util.log_ncs_stats
+          ( nxop_old, nxop, ncsaver.mask_volume_asu(),
+            ncsaver.mask_multiplicity(), ncsaver.correlation_sphere(),
+            ncsaver.correlation_old(), ncsaver.correlation_new(),
+            ncsaver.mask_volume_ratio(), ncsaver.mask_overlap_ratio() );
+        if ( opncsm != "NONE" )
+          util.output_ncs_mask( opncsm, ncsmsk, cell_wrk, cycle, r );
       }
 
       // output
@@ -564,12 +543,13 @@ int main( int argc, char** argv )
       wrk_fp.compute( wrk_f, wrk_pw, Compute_fphi_from_fsigf_phifom() );
       // restore missing data
       for ( HRI ih = wrk_fp.first(); !ih.last(); ih.next() )
-	if ( wrk_fp[ih].missing() ) wrk_fp[ih] = fbest[ih];
+        if ( wrk_fp[ih].missing() ) wrk_fp[ih] = fbest[ih];
     }
 
     // display stats
     util.log_sigmaa_graph( sfw, flagwt );
     util.log_rfl_stats( wrk_f, wrk_fp, wrk_pw, flagwt );
+    if ( opxml != "NONE" ) util.xml( opxml );
   } // cycle loop
   // ----------------------------------------------------------------------
 
@@ -595,13 +575,13 @@ int main( int argc, char** argv )
       clipper::Rotation rot( nxop.rtop_orth().rot() );
       clipper::Euler_ccp4 euler = rot.euler_ccp4();
       std::cout << " -ncs-operator "
-		<< clipper::Util::rad2d(euler.alpha()) << ","
-		<< clipper::Util::rad2d(euler.beta() ) << ","
-		<< clipper::Util::rad2d(euler.gamma()) << ","
-		<< nxop.src().x() << "," << nxop.src().y() << ","
-		<< nxop.src().z() << "," << nxop.tgt().x() << ","
-		<< nxop.tgt().y() << "," << nxop.tgt().z()
-		<< std::endl;
+                << clipper::Util::rad2d(euler.alpha()) << ","
+                << clipper::Util::rad2d(euler.beta() ) << ","
+                << clipper::Util::rad2d(euler.gamma()) << ","
+                << nxop.src().x() << "," << nxop.src().y() << ","
+                << nxop.src().z() << "," << nxop.tgt().x() << ","
+                << nxop.tgt().y() << "," << nxop.tgt().z()
+                << std::endl;
     }
   }
   std::cout << std::endl;

@@ -65,9 +65,9 @@ double ParrotUtil::effective_resolution( const clipper::HKL_data<clipper::data32
 void ParrotUtil::read_model( clipper::MiniMol& mol, clipper::String file, bool verbose )
 {
   const int mmdbflags = ( ::mmdb::MMDBF_IgnoreBlankLines |
-			  ::mmdb::MMDBF_IgnoreDuplSeqNum |
-			  ::mmdb::MMDBF_IgnoreNonCoorPDBErrors |
-			  ::mmdb::MMDBF_IgnoreRemarks );
+                          ::mmdb::MMDBF_IgnoreDuplSeqNum |
+                          ::mmdb::MMDBF_IgnoreNonCoorPDBErrors |
+                          ::mmdb::MMDBF_IgnoreRemarks );
   clipper::MMDBfile mmdb;
   mmdb.SetFlag( mmdbflags );
   if ( file != "NONE" ) {
@@ -177,7 +177,7 @@ void ParrotUtil::solvent_mask( clipper::Xmap<float>& msk, const clipper::MiniMol
   for ( int c = 0; c < mol.size(); c++ )
     for ( int r = 0; r < mol[c].size(); r++ )
       if ( sel.find( mol[c][r].type() ) != std::string::npos )
-	mp.insert( mol[c][r] );
+        mp.insert( mol[c][r] );
   mskcalc( msk, mp.atom_list() );
   mask_smooth( msk, 1, 2 );
 }
@@ -189,7 +189,7 @@ void ParrotUtil::density_modify( clipper::Xmap<float>& map_mod, const clipper::X
 
   // apply NCS
   clipper::Xmap<float> map_tmp( map_wrk.spacegroup(), map_wrk.cell(),
-				map_wrk.grid_sampling() );
+                                map_wrk.grid_sampling() );
   for ( MRI ix = map_wrk.first(); !ix.last(); ix.next() ) {
     map_tmp[ix] = ( map_wrk[ix] + map_ncs[ix] ) / ( map_nwt[ix] + 1.0 );
   }
@@ -264,17 +264,17 @@ std::vector<std::pair<double,double> > ParrotUtil::solvent_probability( clipper:
   // count sequence elements
   clipper::String codes = "ABCDEFGHIJKLMNOPQRSTUVWYXZ";
   double protmw[] = {  71.0,   0.0, 102.0, 114.0, 128.0,  /* ABCDE */
-		      147.0,  57.0, 138.0, 113.0,   0.0,  /* FGHIJ */
-		      129.0, 113.0, 131.0, 114.0,   0.0,  /* KLMNO */
-		       97.0, 128.0, 157.0,  87.0, 101.0,  /* PQRST */
-		        0.0,  99.0, 186.0, 114.0, 163.0,  /* UVWXY */
-		        0.0 };                            /* Z */
+                      147.0,  57.0, 138.0, 113.0,   0.0,  /* FGHIJ */
+                      129.0, 113.0, 131.0, 114.0,   0.0,  /* KLMNO */
+                       97.0, 128.0, 157.0,  87.0, 101.0,  /* PQRST */
+                        0.0,  99.0, 186.0, 114.0, 163.0,  /* UVWXY */
+                        0.0 };                            /* Z */
   double nuclmw[] = { 313.0, -999., 289.0, -999., -999.,  /* ABCDE */
-		      -999., 329.0, -999., -999., -999.,  /* FGHIJ */
-		      -999., -999., -999., -999., -999.,  /* KLMNO */
-		      -999., -999., -999., -999., 304.0,  /* PQRST */
-		      290.0, -999., -999., -999., -999.,  /* UVWXY */
-		      -999. };                            /* Z */
+                      -999., 329.0, -999., -999., -999.,  /* FGHIJ */
+                      -999., -999., -999., -999., -999.,  /* KLMNO */
+                      -999., -999., -999., -999., 304.0,  /* PQRST */
+                      290.0, -999., -999., -999., -999.,  /* UVWXY */
+                      -999. };                            /* Z */
   double mwp(0.0), mwn(0.0);
   for ( int c = 0; c < seq.size(); c++ ) {
     clipper::String s = seq[c].sequence();
@@ -282,8 +282,8 @@ std::vector<std::pair<double,double> > ParrotUtil::solvent_probability( clipper:
     for ( int m = 0; m < s.size(); m++ ) {
       int t = codes.find( s.substr(m,1) );
       if ( t >= 0 && t < 26 ) {
-	p += protmw[t];
-	n += nuclmw[t];
+        p += protmw[t];
+        n += nuclmw[t];
       }
     }
     if ( n > p ) mwn += n;
@@ -328,18 +328,37 @@ double ParrotUtil::random()
 
 // LOGGING
 
-ParrotUtil::ParrotUtil( int ncyc )
+ParrotUtil::ParrotUtil( clipper::String title )
 {
+  title_ = title;
   cyc = 0;
-  ncsdata.resize(ncyc+1);
-  rfldata.resize(ncyc+1);
+  ncsdata.resize(1);
+  rfldata.resize(1);
+}
+
+void ParrotUtil::log_ncs_operator( Local_rtop nxop )
+{
+      clipper::Polar_ccp4 polar = nxop.rot().polar_ccp4();
+      clipper::Euler_ccp4 euler = nxop.rot().euler_ccp4();
+      std::cout << " Polar rotation/deg: "
+                << clipper::Util::rad2d(polar.omega()) << ","
+                << clipper::Util::rad2d(polar.phi() ) << ","
+                << clipper::Util::rad2d(polar.kappa()) << std::endl;
+      std::cout << " Euler rotation/deg: "
+                << clipper::Util::rad2d(euler.alpha()) << ","
+                << clipper::Util::rad2d(euler.beta() ) << ","
+                << clipper::Util::rad2d(euler.gamma()) << std::endl;
+      std::cout << " Source: " << nxop.src().format() << std::endl;
+      std::cout << " Target: " << nxop.tgt().format() << std::endl;
 }
 
 void ParrotUtil::log_cycle( int c )
 {
   cyc = c;
   std::cout << std::endl << "-- Cycle: " << cyc
-	    << " --------------------------------" << std::endl << std::endl;
+            << " --------------------------------" << std::endl << std::endl;
+  ncsdata.resize(c+1);
+  rfldata.resize(c+1);
 }
 
 void ParrotUtil::log_histogram_graph( const clipper::Xmap<float>& msk_ref, const clipper::Xmap<float>& msk_prt, const clipper::Xmap<float>& msk_sol, const clipper::Xmap<float>& map_ref, const clipper::Xmap<float>& map_sim, const clipper::Xmap<float>& map_wrk, const clipper::Xmap<float>& map_mod ) const
@@ -378,7 +397,7 @@ void ParrotUtil::log_histogram_graph( const clipper::Xmap<float>& msk_ref, const
     double mp = ord_mod_prt.ordinal(r2) - ord_mod_prt.ordinal(r1);
     double ms = ord_mod_sol.ordinal(r2) - ord_mod_sol.ordinal(r1);
     printf( "%7.3f %7.3f      %5.3f  %5.3f  %5.3f  %5.3f  %5.3f  %5.3f\n",
-	    r1, r2, rs, wp, rr, mp, ws, ms );
+            r1, r2, rs, wp, rr, mp, ws, ms );
   }
   printf("$$\n");
   std::cout << std::endl << std::endl;
@@ -388,7 +407,7 @@ void ParrotUtil::log_histogram_graph( const clipper::Xmap<float>& msk_ref, const
 void ParrotUtil::log_sigmaa_graph( clipper::SFweight_spline<float>& sfw, const clipper::HKL_data<clipper::data32::Flag>& flagwt ) const
 {
   printf( "Log likelihood:%14.6e      Log likelihood (free):%14.6e\n\n",
-	  sfw.log_likelihood_work(), sfw.log_likelihood_free() );
+          sfw.log_likelihood_work(), sfw.log_likelihood_free() );
   printf("$TABLE :Cycle %i SigmaA statistics:\n",cyc);
   printf("$GRAPHS :SigmaA statistics:N:1,2,3: $$\n");
   printf(" 1/resol^2  sigmaA(s)  sigmaA(w) $$\n");
@@ -419,19 +438,19 @@ void ParrotUtil::log_rfl_stats( clipper::HKL_data<clipper::data32::F_sigF>& wrk_
       sn += 1.0;
       sfom += wrk_pw[ih].fom();
       if ( flagwt[ih].flag() == clipper::SFweight_spline<float>::BOTH ) {
-	snw  += 1.0;
-	s1w  +=  wrk_f[ih].f();
-	s2w  += wrk_fp[ih].f();
-	s11w +=  wrk_f[ih].f() *  wrk_f[ih].f();
-	s22w += wrk_fp[ih].f() * wrk_fp[ih].f();
-	s12w +=  wrk_f[ih].f() * wrk_fp[ih].f();
+        snw  += 1.0;
+        s1w  +=  wrk_f[ih].f();
+        s2w  += wrk_fp[ih].f();
+        s11w +=  wrk_f[ih].f() *  wrk_f[ih].f();
+        s22w += wrk_fp[ih].f() * wrk_fp[ih].f();
+        s12w +=  wrk_f[ih].f() * wrk_fp[ih].f();
       } else {
-	snf  += 1.0;
-	s1f  +=  wrk_f[ih].f();
-	s2f  += wrk_fp[ih].f();
-	s11f +=  wrk_f[ih].f() *  wrk_f[ih].f();
-	s22f += wrk_fp[ih].f() * wrk_fp[ih].f();
-	s12f +=  wrk_f[ih].f() * wrk_fp[ih].f();
+        snf  += 1.0;
+        s1f  +=  wrk_f[ih].f();
+        s2f  += wrk_fp[ih].f();
+        s11f +=  wrk_f[ih].f() *  wrk_f[ih].f();
+        s22f += wrk_fp[ih].f() * wrk_fp[ih].f();
+        s12f +=  wrk_f[ih].f() * wrk_fp[ih].f();
       }
     }
   double m(0.0), cw(0.0), cf(0.0);
@@ -453,7 +472,7 @@ void ParrotUtil::log_ncs_stats( Local_rtop nxop0, Local_rtop nxop1, double vol, 
   ncsdata[cyc].push_back( data );
 
   // output
-  printf( "NCS operator: %3i\n", ncsdata[cyc].size() );
+  printf( "NCS operator: %3i\n", int(ncsdata[cyc].size()) );
   printf( " NCS masking: Mask volume as fraction of ASU: %8.2f   Multiplicity: %i\n", vol, mult );
   printf( "              Contiguity score: %6.3f   Self-overlap score: %6.3f\n", rcont, rover );
   if ( correl0 > -1.0 && correl1 > -1.0 ) {
@@ -473,7 +492,7 @@ void ParrotUtil::log_ncs_table() const
   printf(" Operator_number  Mask_volume/ASU  Correlation\n");
   for ( int n = 0; n < ncsdata[cyc].size(); n++ )
     printf( "         %4i         %8.3f     %8.3f\n",
-	    n+1, ncsdata[cyc][n].ncsvol, ncsdata[cyc][n].ncscor );
+            n+1, ncsdata[cyc][n].ncsvol, ncsdata[cyc][n].ncscor );
 }
 
 
@@ -486,7 +505,7 @@ void ParrotUtil::log_summary_graphs() const
   printf("$$\n");
   for ( int c = 0; c < rfldata.size(); c++ ) {
     printf( " %4i    %6.3f  %12.3f    %12.3f\n", c,
-	    rfldata[c].meanfom, rfldata[c].fcorrw, rfldata[c].fcorrf );
+            rfldata[c].meanfom, rfldata[c].fcorrw, rfldata[c].fcorrf );
   }
   printf("$$\n");
   std::cout << std::endl;
@@ -501,10 +520,10 @@ void ParrotUtil::log_summary_graphs() const
       if ( ncsdata[c].size() > nncs ) nncs = ncsdata[c].size();
       volmin[c] = volmax[c] = ncsdata[c][0].ncsvol;
       for ( int r = 0; r < ncsdata[c].size(); r++ ) {
-	cormean[c] += ncsdata[c][r].ncscor;
-	volmean[c] += ncsdata[c][r].ncsvol;
-	volmin[c] = std::min( ncsdata[c][r].ncsvol, volmin[c] );
-	volmax[c] = std::max( ncsdata[c][r].ncsvol, volmax[c] );
+        cormean[c] += ncsdata[c][r].ncscor;
+        volmean[c] += ncsdata[c][r].ncsvol;
+        volmin[c] = std::min( ncsdata[c][r].ncsvol, volmin[c] );
+        volmax[c] = std::max( ncsdata[c][r].ncsvol, volmax[c] );
       }
       cormean[c] /= double( ncsdata[c].size() );
       volmean[c] /= double( ncsdata[c].size() );
@@ -518,9 +537,60 @@ void ParrotUtil::log_summary_graphs() const
     printf("$$\n");
     for ( int c = 1; c < ncyc; c++ ) {
       printf( " %4i    %12.3f  %12.3f  %12.3f  %12.3f\n", c,
-	      cormean[c], volmean[c], volmin[c], volmax[c] );
+              cormean[c], volmean[c], volmin[c], volmax[c] );
     }
     printf("$$\n");
   }
   std::cout << std::endl;
+}
+
+void ParrotUtil::xml( clipper::String xml ) const
+{
+  // ncs graph
+  int ncyc = ncsdata.size();
+  int nncs = 0;
+  std::vector<double> volmin(ncyc,0.0), volmax(ncyc,0.0), volmean(ncyc,0.0);
+  std::vector<double> cormean(ncyc,0.0);
+  for ( int c = 0; c < ncyc; c++ ) {
+    if ( ncsdata[c].size() > 0 ) {
+      if ( ncsdata[c].size() > nncs ) nncs = ncsdata[c].size();
+      volmin[c] = volmax[c] = ncsdata[c][0].ncsvol;
+      for ( int r = 0; r < ncsdata[c].size(); r++ ) {
+        cormean[c] += ncsdata[c][r].ncscor;
+        volmean[c] += ncsdata[c][r].ncsvol;
+        volmin[c] = std::min( ncsdata[c][r].ncsvol, volmin[c] );
+        volmax[c] = std::max( ncsdata[c][r].ncsvol, volmax[c] );
+      }
+      cormean[c] /= double( ncsdata[c].size() );
+      volmean[c] /= double( ncsdata[c].size() );
+    }
+  }
+
+  // xml output
+  clipper::String xmltmp = xml+".tmp";
+  FILE *f = fopen( xmltmp.c_str(), "w" );
+  if ( f == NULL ) clipper::Message::message( clipper::Message_fatal( "Error: Could not open xml temporary file: "+xmltmp ) );
+  fprintf( f, "<ParrotResult>\n" );
+  fprintf( f, " <Title>%s</Title>\n", title_.c_str() );
+  // initial
+  fprintf( f, " <Nncs>%i</Nncs>\n", nncs );
+  // by cycle
+  fprintf( f, " <Cycles>\n" );
+  for ( int c = 0; c < rfldata.size(); c++ ) {
+    fprintf( f, "  <Cycle>\n" );
+    fprintf( f, "   <Number>%i</Number><MeanFOM>%6.3f</MeanFOM><Fcorrel>%6.3f</Fcorrel><FreeFcorrel>%6.3f</FreeFcorrel><NCScormean>%6.3f</NCScormean><NCSvolmean>%6.3f</NCSvolmean><NCSvolmin>%6.3f</NCSvolmin><NCSvolmax>%6.3f</NCSvolmax>\n", c, rfldata[c].meanfom, rfldata[c].fcorrw, rfldata[c].fcorrf, cormean[c], volmean[c], volmin[c], volmax[c] );
+    fprintf( f, "  </Cycle>\n" );
+  }
+  fprintf( f, " </Cycles>\n" );
+  // overall
+  int c = rfldata.size()-1;
+  fprintf( f, " <Final>\n" );
+  fprintf( f, "  <MeanFOM>%6.3f</MeanFOM><Fcorrel>%6.3f</Fcorrel><FreeFcorrel>%6.3f</FreeFcorrel><NCScormean>%6.3f</NCScormean><NCSvolmean>%6.3f</NCSvolmean><NCSvolmin>%6.3f</NCSvolmin><NCSvolmax>%6.3f</NCSvolmax>\n", rfldata[c].meanfom, rfldata[c].fcorrw, rfldata[c].fcorrf, cormean[c], volmean[c], volmin[c], volmax[c] );
+  fprintf( f, "  <Operators>\n" );
+  for ( int r = 0; r < ncsdata[c].size(); r++ ) fprintf( f, "   <Operator>%i</Operator><NCScorrel>%6.3f</NCScorrel><NCSvolume>%6.3f</NCSvolume>\n", r+1, ncsdata[c][r].ncscor, ncsdata[c][r].ncsvol );
+  fprintf( f, "  </Operators>\n" );
+  fprintf( f, " </Final>\n" );
+  fprintf( f, "</ParrotResult>\n" );
+  fclose(f);
+  rename( xmltmp.c_str(), xml.c_str() );
 }

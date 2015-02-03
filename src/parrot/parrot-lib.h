@@ -64,7 +64,9 @@ class ParrotUtil {
   // LOGGING FUNCTIONS
 
   // constructor
-  ParrotUtil( int ncyc );
+  ParrotUtil( clipper::String title );
+  // log input NCS operator
+  void log_ncs_operator( Local_rtop nxop );
   // start a cycle
   void log_cycle( int c );
   // produce histogram graph
@@ -79,10 +81,13 @@ class ParrotUtil {
   void log_ncs_table() const;
   // output final graphs for summary
   void log_summary_graphs() const;
+  // output xml
+  void xml( clipper::String xml ) const;
 
  private:
   struct ncsopinf{ double ncsvol, ncscor; };
   struct rflcyinf{ double meanfom, fcorrw, fcorrf; };
+  clipper::String title_;
   int cyc;
   std::vector<std::vector<ncsopinf> > ncsdata;
   std::vector<rflcyinf> rfldata;

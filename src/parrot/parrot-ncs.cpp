@@ -34,7 +34,7 @@ std::pair<double,Local_rtop> Local_rtop::symm_match( const Local_rtop& other, co
     symop_orth[i] = spgr.symop(i).rtop_orth(cell);
 
   // find scored symmetry match between two ops
-  Local_rtop rcbest;
+  Local_rtop rcbest( clipper::Rotation::null(), clipper::Coord_orth(), clipper::Coord_orth() );
   double scbest = 1.0e9;
   clipper::Coord_frac cf;
   for ( int sym1 = 0; sym1 < spgr.num_symops(); sym1++ )
