@@ -12,6 +12,9 @@ if (WIN32)
   set(SOCKET_LIB ws2_32)
 endif()
 
+add_executable(ccontacts src/ccontacts.cpp)
+target_link_libraries(ccontacts ${CCP4_LIBRARIES})
+
 add_executable(chltofom src/chltofom.cpp)
 target_link_libraries(chltofom ${CCP4_LIBRARIES})
 
