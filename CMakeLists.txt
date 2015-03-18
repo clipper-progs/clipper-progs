@@ -172,7 +172,7 @@ target_link_libraries(cnautilus ${CCP4_LIBRARIES})
 install(FILES src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
         DESTINATION lib/data)
 
-install(TARGETS chltofom cphasematch csfcalc cfft cinvfft csigmaa
+install(TARGETS ccontacts chltofom cphasematch csfcalc cfft cinvfft csigmaa
                 cecalc cphasecombine cpatterson caniso convert2mtz
                 csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut
                 comit cmapcoeff cmtzsplit cmtzjoin
