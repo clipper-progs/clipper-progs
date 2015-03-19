@@ -28,8 +28,10 @@ void insert_coot_prologue_scheme ( std::fstream& output );
 void insert_coot_prologue_python ( std::fstream& output );
 void insert_coot_files_loadup_scheme ( std::fstream& output, const clipper::String& pdb, bool mode );
 void insert_coot_files_loadup_python ( std::fstream& output, const clipper::String& pdb, bool mode );
-void insert_coot_go_to_res_scheme ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text );
-void insert_coot_go_to_res_python ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text );
+void insert_coot_go_to_res_scheme ( std::fstream& output, const clipper::String chain, int resid, const clipper::String atom_name, const clipper::String& text );
+void insert_coot_go_to_res_python ( std::fstream& output, const clipper::String chain, int resid, const clipper::String atom_name, const clipper::String& text );
+void insert_coot_go_to_pos_scheme ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text );
+void insert_coot_go_to_pos_python ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text );
 void insert_coot_epilogue_scheme ( std::fstream& output );
 void insert_coot_epilogue_python ( std::fstream& output );
 
@@ -300,10 +302,13 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
 void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::String ippdb, bool i2mode ) 
 {
 
-    std::fstream of_scm; std::fstream of_py;
+    std::fstream of_scm; std::fstream of_py; std::fstream logfile;
     of_scm.open("ccontacts-results.scm", std::fstream::out);
     of_py.open ("ccontacts-results.py" , std::fstream::out);
     
+    std::vector < clipper::String > name_vec = ippdb.split(".");
+    logfile.open(clipper::String(name_vec[0]+"_contacts.txt").c_str(), std::fstream::out );
+
     insert_coot_prologue_scheme ( of_scm );
     insert_coot_prologue_python ( of_py );
     insert_coot_files_loadup_scheme (of_scm, ippdb, i2mode );
@@ -324,22 +329,37 @@ void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::Str
         std::cout << std::fixed << std::setw( 4 ) << std::setprecision( 2 ) << " -- [" << salt_bridges[i].distance << "] -- " ;
         std::cout << salt_bridges[i].negative_chain.id() << "/" << std::fixed << std::setw (3) << salt_bridges[i].negative.id().trim() << " " << salt_bridges[i].negative.type();
         
+        logfile << "\t" << salt_bridges[i].positive_chain.id() << "/" << std::fixed << std::setw( 3 ) << salt_bridges[i].positive.id().trim() << " " << salt_bridges[i].positive.type();
+        logfile << std::fixed << std::setw( 4 ) << std::setprecision( 2 ) << " -- [" << salt_bridges[i].distance << "] -- " ;
+        logfile << salt_bridges[i].negative_chain.id() << "/" << std::fixed << std::setw (3) << salt_bridges[i].negative.id().trim() << " " << salt_bridges[i].negative.type() << std::endl;
+        
         message = salt_bridges[i].positive_chain.id() + "/" + salt_bridges[i].positive.id().trim() + " " 
                   + salt_bridges[i].positive.type().trim() + " - " + salt_bridges[i].negative_chain.id() 
-                  + "/" + salt_bridges[i].negative.id().trim() + " " + salt_bridges[i].negative.type().trim() ;
+                  + "/" + salt_bridges[i].negative.id().trim() + " " + salt_bridges[i].negative.type().trim();
         
         if ( salt_bridges[i].symop_negative != 0 ) std::cout << "*" ;
         std::cout << std::endl ;
         salt_bridges[i].positive_chain.id() == salt_bridges[i].negative_chain.id() ? intra++ : inter++;
 
-        insert_coot_go_to_res_scheme ( of_scm, salt_bridges[i].centroid_positive, message );
-        insert_coot_go_to_res_python ( of_py, salt_bridges[i].centroid_positive, message );
+        clipper::String atom_name;
+        
+        if ( salt_bridges[i].positive.type().trim() == "LYS" )
+            atom_name = "NZ";
+        else 
+            atom_name = "NH1";
+
+        insert_coot_go_to_res_scheme ( of_scm, salt_bridges[i].positive_chain.id(), salt_bridges[i].positive.seqnum(), atom_name, message );
+        insert_coot_go_to_res_python ( of_py,  salt_bridges[i].positive_chain.id(), salt_bridges[i].positive.seqnum(), atom_name, message );
     }
 
     std::cout << std::endl << "Total: " << salt_bridges.size() << "\tIntramolecular: " << intra << "\tInterfacing: " << inter << std::endl; 
 
     insert_coot_epilogue_scheme ( of_scm );
     insert_coot_epilogue_python ( of_py );
+
+    of_scm.close();
+    of_py.close();
+    logfile.close();
 
     return;
 }
@@ -377,6 +397,9 @@ void insert_coot_prologue_scheme ( std::fstream& output )
             << "(set-default-bond-thickness 5)\n"
             << "(scale-zoom  0.20)\n"
             << "(set-nomenclature-errors-on-read \"auto-correct\")"
+            << "(set-show-environment-distances-bumps 0)\n" 
+            << "(set-show-environment-distances 1)\n"
+            << "(set-environment-distances-distance-limits 2.5 4.1 )\n"
             << "(set-run-state-file-status 0)\n";
 
 }
@@ -415,6 +438,9 @@ void insert_coot_prologue_python ( std::fstream& output )
             << "scale_zoom (0.20)\n"
             << "set_nomenclature_errors_on_read (\"auto-correct\")\n"
             << "set_run_state_file_status (0)\n"
+            << "set_show_environment_distances_bumps (0)\n"
+            << "set_show_environment_distances (1)\n"
+            << "set_environment_distances_distance_limits ( 2.5,  4.1 )\n"
             << "toggle_idle_spin_function\n";   
 
 }
@@ -438,17 +464,27 @@ void insert_coot_files_loadup_python ( std::fstream& output, const clipper::Stri
 }
 
 
-void insert_coot_go_to_res_scheme ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text )
+void insert_coot_go_to_pos_scheme ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text )
 {
     output  << "\t(list\t\"" << text << "\"\t" << res_centre.x() << "\t" << res_centre.y() << "\t" << res_centre.z() << ")\n";
 }
 
 
-void insert_coot_go_to_res_python ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text )
+void insert_coot_go_to_pos_python ( std::fstream& output, const clipper::Coord_orth& res_centre, const clipper::String& text )
 {
     output  << "\t[\"" << text << "\",\t" << res_centre.x() << ",\t" << res_centre.y() << ",\t" << res_centre.z() << "],\n";
 }
 
+void insert_coot_go_to_res_scheme ( std::fstream& output, const clipper::String chain, int resid, const clipper::String atom_name, const clipper::String& text )
+{
+    output  << "\t(list \"" << text << "\"" << "\t0\t\"" << chain << "\"\t" << resid << "\"\"\t\"" << atom_name << "\"\t\"\"" << ")\n";
+}
+
+
+void insert_coot_go_to_res_python ( std::fstream& output, const clipper::String chain, int resid, const clipper::String atom_name, const clipper::String& text )
+{
+    output  << "\t[\"" << text << "\"," << "\t0,\t\"" << chain << "\",\t" << resid << ",\t\"\",\t\"" << atom_name << "\",\t\"\"" << "],\n";
+}
 
 void insert_coot_epilogue_scheme ( std::fstream& output )
 {
