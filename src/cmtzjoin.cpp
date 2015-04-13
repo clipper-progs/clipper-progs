@@ -319,9 +319,11 @@ int main( int argc, char** argv )
   // check for unassigned free R flags
   bool missing_flags = false;
   for ( int i = 0; i < hkldata.size(); i++ ) {
-    HKL_data<FFlag>& free = *dynamic_cast<HKL_data<FFlag>*>(hkldata[i]);
-    for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
-      if ( free[ih].missing() ) missing_flags = true;
+    if ( hkldata[i]->type() == "FFlag" ) {
+      HKL_data<FFlag>& free = *dynamic_cast<HKL_data<FFlag>*>(hkldata[i]);
+      for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
+        if ( free[ih].missing() ) missing_flags = true;
+    }
   }
 
 
