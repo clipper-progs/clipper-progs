@@ -27,6 +27,7 @@ int main( int argc, char** argv )
   clipper::String oppdb    = "symmatch.pdb";
   double crad = 2.0;
   bool omatch = false;
+  bool wmatch = false;  // use work rather than reference cell
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -44,13 +45,15 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) crad = clipper::String(args[arg]).f();
     } else if ( args[arg] == "-origin-hand" ) {
       omatch = true;
+    } else if ( args[arg] == "-origin-hand-work" ) {
+      wmatch = true;
     } else {
       std::cout << "Unrecognized:\t" << args[arg] << "\n";
       args.clear();
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "Usage: csymmatch\n\t-pdbin-ref <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-connectivity-radius <radius/A>\n\t-origin-hand\nApply symmetry and cell shifts to each chain in 'pdbin' to obtain the best match to 'pdbin-ref'.\n";
+    std::cout << "Usage: csymmatch\n\t-pdbin-ref <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-connectivity-radius <radius/A>\n\t-origin-hand\n\t-origin-hand-work\nApply symmetry and cell shifts to each chain in 'pdbin' to obtain the best match to 'pdbin-ref'.\n";
     exit(1);
   }
 
@@ -92,10 +95,14 @@ int main( int argc, char** argv )
   std::cout << std::endl;
 
   // do origin matching if required
-  if ( omatch ) {
+  if ( omatch || wmatch ) {
     // calculate structure factors
     clipper::Spacegroup rspgr = molref.spacegroup();
     clipper::Cell       rcell = molref.cell();
+    if ( wmatch ) {
+      rspgr = molwrk.spacegroup();
+      rcell = molwrk.cell();
+    }
     clipper::Resolution rreso( 3.0 );
     clipper::HKL_sampling hkls( rcell, rreso );
     clipper::HKL_data<clipper::data32::F_phi> fphi1( rspgr, rcell, hkls );
