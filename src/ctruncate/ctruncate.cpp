@@ -269,6 +269,22 @@ int main(int argc, char **argv)
     clipper::Cell      cell1 = mtzfile.cell();
     clipper::Resolution reso = mtzfile.resolution();
     
+	std::stringstream xml_rfile;
+	{
+		xml_rfile << "<ReflectionFile name=\"" << ipfile << "\">" << std::endl;
+		xml_rfile << "  <CrystalDatasetId>" << mtzfile.assigned_paths()[0].notail() << "</CrystalDatasetId>" << std::endl;
+		xml_rfile << "  <cell>" << std::endl;
+		xml_rfile << "    <a>" << cell1.a() << "</a>" << std::endl;
+		xml_rfile << "    <b>" << cell1.b() << "</b>" << std::endl;
+		xml_rfile << "    <c>" << cell1.c() << "</c>" << std::endl;
+		xml_rfile << "    <alpha>" << cell1.alpha() << "</alpha>" << std::endl;
+		xml_rfile << "    <beta>" << cell1.beta() << "</beta>" << std::endl;
+		xml_rfile << "    <gamma>" << cell1.gamma() << "</gamma>" << std::endl;
+		xml_rfile << "  </cell>" << std::endl;
+		xml_rfile << "  <SpacegroupName>" << spgr.symbol_hm() << "</SpacegroupName>" << std::endl;
+		xml_rfile << "</ReflectionFile>" << std::endl;
+	}
+	
     // limit resolution for truncation, and hence output
     reso_trunc = clipper::Resolution(  reso.limit()  );
     
@@ -1172,7 +1188,7 @@ int main(int argc, char **argv)
                 //loc = anocols.find("-",loc+appendcol.size()+2 );
                 anocols.insert(loc-1,"_"+appendcol);
                 loc = anocols.find("+",0);
-                anocols.insert(loc-1,"+"+appendcol);
+                anocols.insert(loc-1,"_"+appendcol);
                 loc = anocols.find(",",loc);
 				loc = anocols.find("+",loc);
                 //loc = anocols.find("+",loc+appendcol.size()+2 );
@@ -1226,6 +1242,7 @@ int main(int argc, char **argv)
         std::ofstream xf;
         xf.open(xmlfile.c_str() );
         xf << "<CTRUNCATE version=\"" << prog_vers <<  "\" RunTime=\"" << date_time << "\" >" << std::endl;
+		xf << xml_rfile.str();
         xf << xtncs.str();
         xf << xtwin.str();
         xf << "</CTRUNCATE>" << std::endl;
