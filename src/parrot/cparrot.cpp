@@ -17,7 +17,7 @@ extern "C" {
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.3", "$Date: 2014/02/02" );
+  CCP4Program prog( "cparrot", "1.0.4", "$Date: 2015/05/20" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -306,27 +306,16 @@ int main( int argc, char** argv )
   if ( seq_wrk.size() > 0 ) {
     std::vector<std::pair<double,double> > solcs = ParrotUtil::solvent_probability( seq_wrk, hkls_wrk.spacegroup(), hkls_wrk.cell(), resol );
     nncs = 0;
-    for ( int n = 0; n < solcs.size(); n++ )
-      if ( solcs[n].first > solcs[nncs].first ) nncs = n;
-    double solest = solcs[nncs].second;
-    if ( solc <= 0.0 ) solc = solest;
+    if ( solc <= 0.0 ) {
+      for ( int n = 0; n < solcs.size(); n++ )
+        if ( solcs[n].first > solcs[nncs].first ) nncs = n;
+      solc = solcs[nncs].second;
+    }
     // OUTPUT
+    solcs[0].first = double(nncs);
+    solcs[0].second = solc;
     prog.summary_beg();
-    printf("\nSolvent content estimation from sequence:\n");
-    printf(" N(NCS)   Solvent_fraction    Probability\n");
-    for ( int n = 1; n < solcs.size(); n++ )
-      printf("    %2i       %8.3f         %8.3f\n",
-             n, solcs[n].second, solcs[n].first );
-    std::cout << std::endl << "Solvent content from sequence: " << solest
-              << "   (assuming " << nncs << " copies per asymmetric unit)."
-              << std::endl << std::endl;
-    if ( solcs.size() > 2 && solcs[nncs].first < 0.98 )
-      std::cout << "$TEXT:Warning: $$ $$" << std::endl
-                << "WARNING: Assuming " << nncs << "-fold NCS. "
-                << "This is only a guess." << std::endl
-                << "Consider other possibilities "
-                << "and set solvent content accordingly" << std::endl
-                << "$$" << std::endl;
+    util.log_solvent_content( solcs );
     prog.summary_end(); std::cout << std::endl;
   }
 
@@ -382,6 +371,7 @@ int main( int argc, char** argv )
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from heavy atoms.\n$$" << std::endl;
     else nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
+    util.log_ncs_ha( newops.size() );
   }
   if ( doncsa && mol_wrk_mr.size() > 0 ) {
     std::cout << std::endl << "NCS from atomic model: " << std::endl;
@@ -396,13 +386,14 @@ int main( int argc, char** argv )
             newops.push_back( nxop );
             std::cout << std::endl << "NCS operator found relating chains "
                       << mol_wrk_mr[c1].id() << " and "
-                      <<  mol_wrk_mr[c2].id() << std::endl;
+                      << mol_wrk_mr[c2].id() << std::endl;
             util.log_ncs_operator( nxop );
           }
         }
     if ( newops.size() == 0 ) std::cout << "$TEXT:Warning: $$ $$\nWARNING: No NCS found from atomic model.\n$$" << std::endl;
     else nxops.insert( nxops.end(), newops.begin(), newops.end() );
     std::cout << std::endl;
+    util.log_ncs_mr( newops.size() );
   }
 
   // store initial stats

@@ -65,6 +65,11 @@ class ParrotUtil {
 
   // constructor
   ParrotUtil( clipper::String title );
+  // log solvent content histogram
+  void log_solvent_content( std::vector<std::pair<double,double> > solcs );
+  // log input NCS determination
+  void log_ncs_ha( int n ) { ncs_ha = n; }
+  void log_ncs_mr( int n ) { ncs_mr = n; }
   // log input NCS operator
   void log_ncs_operator( Local_rtop nxop );
   // start a cycle
@@ -88,8 +93,10 @@ class ParrotUtil {
   struct ncsopinf{ double ncsvol, ncscor; };
   struct rflcyinf{ double meanfom, fcorrw, fcorrf; };
   clipper::String title_;
-  int cyc;
+  int cyc, ncs_ha, ncs_mr;
+  std::vector<std::pair<double,double> > solcdata;
   std::vector<std::vector<ncsopinf> > ncsdata;
+  std::vector<Local_rtop> ncsops;
   std::vector<rflcyinf> rfldata;
 };
 

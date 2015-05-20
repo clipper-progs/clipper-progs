@@ -332,24 +332,47 @@ ParrotUtil::ParrotUtil( clipper::String title )
 {
   title_ = title;
   cyc = 0;
+  ncs_ha = ncs_mr = -1;
   ncsdata.resize(1);
   rfldata.resize(1);
 }
 
+void ParrotUtil::log_solvent_content( std::vector<std::pair<double,double> > solcs )
+{
+  solcdata = solcs;
+  int nncs( solcs[0].first );
+  printf("\nSolvent content estimation from sequence:\n");
+  printf(" N(NCS)   Solvent_fraction    Probability\n");
+  for ( int n = 1; n < solcs.size(); n++ )
+    printf("    %2i       %8.3f         %8.3f\n",
+           n, solcs[n].second, solcs[n].first );
+  std::cout << std::endl << "Solvent content from sequence: " << solcs[nncs].second
+            << "   (assuming " << nncs << " copies per asymmetric unit)."
+            << std::endl << std::endl;
+  if ( solcs.size() > 2 && solcs[nncs].first < 0.98 && solcs[nncs].second != solcs[0].second )
+    std::cout << "$TEXT:Warning: $$ $$" << std::endl
+              << "WARNING: Assuming " << nncs << "-fold NCS. "
+              << "This is only a guess." << std::endl
+              << "Consider other possibilities "
+              << "and set solvent content accordingly" << std::endl
+              << "$$" << std::endl;
+}
+
 void ParrotUtil::log_ncs_operator( Local_rtop nxop )
 {
-      clipper::Polar_ccp4 polar = nxop.rot().polar_ccp4();
-      clipper::Euler_ccp4 euler = nxop.rot().euler_ccp4();
-      std::cout << " Polar rotation/deg: "
-                << clipper::Util::rad2d(polar.omega()) << ","
-                << clipper::Util::rad2d(polar.phi() ) << ","
-                << clipper::Util::rad2d(polar.kappa()) << std::endl;
-      std::cout << " Euler rotation/deg: "
-                << clipper::Util::rad2d(euler.alpha()) << ","
-                << clipper::Util::rad2d(euler.beta() ) << ","
-                << clipper::Util::rad2d(euler.gamma()) << std::endl;
-      std::cout << " Source: " << nxop.src().format() << std::endl;
-      std::cout << " Target: " << nxop.tgt().format() << std::endl;
+  clipper::Polar_ccp4 polar = nxop.rot().polar_ccp4();
+  clipper::Euler_ccp4 euler = nxop.rot().euler_ccp4();
+  std::cout << " Polar rotation/deg: "
+            << clipper::Util::rad2d(polar.omega()) << ","
+            << clipper::Util::rad2d(polar.phi() ) << ","
+            << clipper::Util::rad2d(polar.kappa()) << std::endl;
+  std::cout << " Euler rotation/deg: "
+            << clipper::Util::rad2d(euler.alpha()) << ","
+            << clipper::Util::rad2d(euler.beta() ) << ","
+            << clipper::Util::rad2d(euler.gamma()) << std::endl;
+  std::cout << " Source: " << nxop.src().format() << std::endl;
+  std::cout << " Target: " << nxop.tgt().format() << std::endl;
+  ncsops.push_back( nxop );
 }
 
 void ParrotUtil::log_cycle( int c )
@@ -571,9 +594,20 @@ void ParrotUtil::xml( clipper::String xml ) const
   FILE *f = fopen( xmltmp.c_str(), "w" );
   if ( f == NULL ) clipper::Message::message( clipper::Message_fatal( "Error: Could not open xml temporary file: "+xmltmp ) );
   fprintf( f, "<ParrotResult>\n" );
+  // solvent
+  fprintf( f, " <SolventContent>\n" );
+  fprintf( f, " <NMolsFromSequence>%i</NMolsFromSequence>\n", int(solcdata[0].first) );
+  fprintf( f, " <SolventContent>%6.4f</SolventContent>\n", solcdata[0].second );
+  for ( int n = 1; n < solcdata.size(); n++ ) {
+    fprintf( f, "<NMols><N>%i</N><SolventContent>%6.4f</SolventContent><Probability>%6.4f</Probability></NMols>\n",n,solcdata[n].second,solcdata[n].first );
+  }
+  fprintf( f, " </SolventContent>\n" );
+  // cycles
   fprintf( f, " <Title>%s</Title>\n", title_.c_str() );
   // initial
   fprintf( f, " <Nncs>%i</Nncs>\n", nncs );
+  if ( ncs_ha >= 0 ) fprintf( f, " <NncsHA>%i</NncsHA>\n", ncs_ha );
+  if ( ncs_mr >= 0 ) fprintf( f, " <NncsMR>%i</NncsMR>\n", ncs_mr );
   // by cycle
   fprintf( f, " <Cycles>\n" );
   for ( int c = 0; c < rfldata.size(); c++ ) {
