@@ -145,7 +145,7 @@ int main( int argc, char** argv )
 
   // first pass read to get crystal data and reflection list
   unsigned int nullhash(12345678);
-  unsigned int sgrphash(nullhash), pgrphash(nullhash);
+  unsigned int sgrphash(nullhash), pgrphash(nullhash), lgrphash(nullhash);
   std::vector<std::vector<clipper::String> > cols_all;
   std::vector<clipper::String> types_all;
   for ( int i = 0; i < ipfiles.size(); i++ ) {
@@ -182,9 +182,15 @@ int main( int argc, char** argv )
     types_all.push_back( types );
     // check spacegroup
     bool isphase = (types.find("P")!=std::string::npos) || (types.find("A")!=std::string::npos);
+    bool isrefln = (types.find("I")==std::string::npos);
     unsigned int shash = mtzin.spacegroup().hash();
     unsigned int phash = mtzin.spacegroup().generator_ops().pgrp_ops().hash();
-    if ( pgrphash != nullhash && pgrphash != phash ) {
+    unsigned int lhash = mtzin.spacegroup().generator_ops().laue_ops().hash();
+    if (            lgrphash != nullhash && lgrphash != lhash ) {
+      std::cout << "Laue group mismatch in " << ipfiles[i] << std::endl;
+      std::cerr << "Laue group mismatch in " << ipfiles[i] << std::endl;
+    }
+    if ( isrefln && pgrphash != nullhash && pgrphash != phash ) {
       std::cout << "Pointgroup mismatch in " << ipfiles[i] << std::endl;
       std::cerr << "Pointgroup mismatch in " << ipfiles[i] << std::endl;
       return 2;
@@ -194,7 +200,8 @@ int main( int argc, char** argv )
       std::cerr << "Spacegroup mismatch in " << ipfiles[i] << std::endl;
       return 2;
     }
-    if ( pgrphash == nullhash ) pgrphash = phash;
+    if ( lgrphash == nullhash ) lgrphash = lhash;
+    if ( isrefln && pgrphash == nullhash ) pgrphash = phash;
     if ( isphase && sgrphash == nullhash ) sgrphash = shash;
     if ( cell.is_null() ) cell = mtzin.cell();
     if ( spgr.is_null() ) spgr = mtzin.spacegroup();
@@ -205,7 +212,7 @@ int main( int argc, char** argv )
     mtzin.import_hkl_info( hkls, generate );
     for ( int h = 0; h < hkls.num_reflections(); h++ ) hkl_set.insert( hkls.hkl_of(h) );
     mtzin.close_read();
-    //std::cerr << i << " " << hkl_set.size() << std::endl;
+    //std::cerr << i << " " << hkl_set.size() << " " << hkls.num_reflections() << " " << hkls.spacegroup().symbol_hm() << " " << spgr.symbol_hm() << std::endl;
   }
   std::vector<clipper::HKL> hkl_list( hkl_set.begin(), hkl_set.end() );
   std::cerr << hkl_list.size() << std::endl;
@@ -220,6 +227,7 @@ int main( int argc, char** argv )
   std::vector<clipper::MTZcrystal> xtals;
   std::vector<clipper::MTZdataset> dsets;
   std::vector<clipper::HKL_data_base*> hkldata;
+  std::vector<clipper::Spacegroup> spgrs;
   for ( int i = 0; i < ipfiles.size(); i++ ) {
     clipper::MTZcrystal xtal;
     clipper::MTZdataset dset;
@@ -247,6 +255,7 @@ int main( int argc, char** argv )
       xtals.push_back( xtal );
       dsets.push_back( dset );
       hkldata.push_back( data );
+      spgrs.push_back( mtzin.spacegroup() );
     }
     mtzin.close_read();
   }
@@ -317,15 +326,39 @@ int main( int argc, char** argv )
 
 
   // check for unassigned free R flags
-  bool missing_flags = false;
+  int missing_flags = 0;
   for ( int i = 0; i < hkldata.size(); i++ ) {
     if ( hkldata[i]->type() == "FFlag" ) {
       HKL_data<FFlag>& free = *dynamic_cast<HKL_data<FFlag>*>(hkldata[i]);
+
+      // count missings
+      int s1 = 0;
       for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
-        if ( free[ih].missing() ) missing_flags = true;
+        if ( free[ih].missing() ) s1++;
+      std::cout << "Missing free flags before symmetry expansion: " << s1 << std::endl;
+
+      // symmetry expand
+      if ( s1 > 0 && spgrs[i].hash() != spgr.hash() ) {
+        for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() ) {
+          if ( free[ih].missing() ) {
+            for ( int j = 0; j < spgrs[i].num_primitive_symops(); j++ ) {
+              clipper::HKL h1 = ih.hkl().transform( spgrs[i].primitive_symop(j) );
+              FFlag f = free[h1];
+              if ( !f.missing() ) { free[ih] = f; break; }              
+            }
+          }
+        }
+      }
+
+      // count missings
+      int s2 = 0;
+      for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() )
+        if ( free[ih].missing() ) s2++;
+      std::cout << "Missing free flags after  symmetry expansion: " << s2 << std::endl;
+
+      missing_flags += s2;
     }
   }
-
 
   // now write out the lot
   clipper::CCP4MTZfile mtzout;
@@ -344,5 +377,5 @@ int main( int argc, char** argv )
 
 
   // return value for missing flags
-  if ( missing_flags ) return 101;
+  if ( missing_flags > 0 ) return 101;
 }
