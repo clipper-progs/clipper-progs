@@ -187,8 +187,18 @@ int main( int argc, char** argv )
     unsigned int phash = mtzin.spacegroup().generator_ops().pgrp_ops().hash();
     unsigned int lhash = mtzin.spacegroup().generator_ops().laue_ops().hash();
     if (            lgrphash != nullhash && lgrphash != lhash ) {
-      std::cout << "Laue group mismatch in " << ipfiles[i] << std::endl;
-      std::cerr << "Laue group mismatch in " << ipfiles[i] << std::endl;
+      // check that one Laue group is a subgroup of another
+      clipper::Spgr_descr::Symop_codes laue1 = spgr.generator_ops().laue_ops();
+      clipper::Spgr_descr::Symop_codes laue2 = mtzin.spacegroup().generator_ops().laue_ops();
+      int nmatch = 0;
+      for ( int l1 = 0; l1 < laue1.size(); l1++ )
+        for ( int l2 = 0; l2 < laue2.size(); l2++ )
+          if ( laue1[l1] == laue2[l2] ) nmatch++;
+      if ( nmatch < std::min( laue1.size(), laue2.size() ) ) {
+        std::cout << "Laue group mismatch in " << ipfiles[i] << std::endl;
+        std::cerr << "Laue group mismatch in " << ipfiles[i] << std::endl;
+        return 2;
+      }
     }
     if ( isrefln && pgrphash != nullhash && pgrphash != phash ) {
       std::cout << "Pointgroup mismatch in " << ipfiles[i] << std::endl;
