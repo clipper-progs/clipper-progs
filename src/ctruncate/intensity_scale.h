@@ -29,7 +29,7 @@ namespace ctruncate {
 								 clipper::Range<clipper::ftype> ) = 0;
 		const clipper::U_aniso_orth& u_aniso_orth( Scaling::TYPE t ) const;
 		const clipper::U_aniso_orth& u_aniso_orth() const { return u_i; }  //!< \deprecated
-		const clipper::ftype kscale() const { return bscale_; }
+		clipper::ftype kscale() const { return bscale_; }
 		//protected:
 		const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
 		const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
@@ -430,7 +430,7 @@ namespace ctruncate {
 		
 		const clipper::U_aniso_orth& u_aniso_orth( Scaling::TYPE t ) const;
 		const clipper::U_aniso_orth& u_aniso_orth() const { return u_i; }  //!< \deprecated
-		const clipper::ftype kscale() const { return bscale_; }
+		clipper::ftype kscale() const { return bscale_; }
 		
 	protected:
 		const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }

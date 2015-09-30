@@ -39,6 +39,7 @@
 #include "ctruncate_parity.h"
 #include "ctruncate_moments.h"
 #include "ctruncate_analyse.h"
+#include "ctruncate_aniso.h"
 #include "ctruncate_matthews.h"
 #include "ctruncate_wilson.h"
 #include "best.h"
@@ -56,9 +57,9 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.16.9";
-    clipper::String prog_date = "$Date: 2015/01/27";
-    CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
+    clipper::String prog_vers = "1.17.2";
+    clipper::String prog_date = "$Date: 2015/07/01";
+	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
     clipper::String outfile = "ctruncate_out.mtz";
@@ -100,11 +101,6 @@ int main(int argc, char **argv)
     clipper::Resolution reso_trunc;
     
     clipper::Resolution reso_u1, reso_u2, reso_u3;
-    
-    // clipper seems to use its own column labels, then append yours
-    
-    CCP4MTZfile mtzfile, mtzout;
-    HKL_info hklinf;
     
     //time information
     time_t now = std::time(0);
@@ -193,11 +189,24 @@ int main(int argc, char **argv)
         }
         
     }
+	
+	
+	//is colin likeley to be anomalous or not (using , seperator)
+	if (refl_mean) {
+		int i(0),pos(0);
+		while ( (pos = meancol.find(',',++pos)) != std::string::npos ) {
+			++i;
+		}
+		anomalous = anomalous || (i == 3);
+		refl_mean = (i == 1);
+	}
+	
     if (anomalous) {
         clipper::CCP4MTZ_type_registry::add_group( "G_sigG_ano", "FANO" );
         clipper::CCP4MTZ_type_registry::add_group( "J_sigJ_ano", "IANO" );
         clipper::CCP4MTZ_type_registry::add_type( "ISym", "Y", 1.0);
         clipper::CCP4MTZ_type_registry::add_group( "ISym", "ISYM" );
+		if (anocols == "NONE") anocols = meancol;
     }
     if ( args.size() <= 1 || ( !refl_mean && !anomalous )) {
         CCP4::ccperror(1,"Usage: ctruncate -mtzin <filename>  -mtzout <filename>  -colin <colpath> -colano <colpath> ");
@@ -213,22 +222,26 @@ int main(int argc, char **argv)
     
     typedef clipper::HKL_data_base::HKL_reference_index HRI;
     
-    //mtzfile.open_read( args[1] );
+	CCP4MTZfile mtzfile;
+	HKL_info hklinf;
     mtzfile.open_read( ipfile );
-    mtzfile.import_hkl_info( hklinf );  
+
+    //mtzfile.import_hkl_info( hklinf,false ); // include missing reflections
+    mtzfile.import_hkl_info( hklinf,true);
     // allocate memory to isig by reading in hklinf before declaring isig
-    HKL_data<data32::I_sigI> isig(hklinf);   // raw I and sigma
+	HKL_data<data32::I_sigI> isig_import(hklinf); // raw I and sigma
+    HKL_data<data32::I_sigI> isig(hklinf);   // working I and sigma
     HKL_data<data32::I_sigI> jsig(hklinf);   // post-truncate I and sigma
     HKL_data<data32::F_sigF> fsig(hklinf);   // post-truncate F and sigma 
-    HKL_data<data32::J_sigJ_ano> isig_ano_import(hklinf);   // raw I(+) and sigma and I(-) and sigma
-    HKL_data<data32::J_sigJ_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
-    HKL_data<data32::G_sigG_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma 
-    HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
-    HKL_data<data32::ISym> freidal_sym(hklinf);
+    HKL_data<data32::I_sigI_ano> isig_ano_import(hklinf);   // raw I(+) and sigma and I(-) and sigma
+	HKL_data<data32::I_sigI_ano> isig_ano(hklinf); //working I(+) and sigma and I(-) and sigma
+    HKL_data<data32::I_sigI_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
+    HKL_data<data32::F_sigF_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma
     HKL_data<data32::Flag> free(hklinf);
     
     clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
     
+	
     if (amplitudes ) {
         if ( refl_mean ) {
 			mtzfile.import_hkl_data( fsig, meancol );
@@ -237,28 +250,18 @@ int main(int argc, char **argv)
             mtzfile.import_hkl_data( fsig_ano, anocols );
         }		
     } else {
-        if ( refl_mean ) mtzfile.import_hkl_data( isig, meancol );
+        if ( refl_mean ) mtzfile.import_hkl_data( isig_import, meancol );
         
         if (anomalous) {
             mtzfile.import_hkl_data( isig_ano_import, anocols );
         }
     }
+	ReflectionFile reflnfile(mtzfile,ipfile);
     if (freein) mtzfile.import_hkl_data( free, freecol );
     
 	clipper::String mcol = ( refl_mean ) ? meancol : anocols;
-	
-    prog.summary_beg();
-    printf("\nCRYSTAL INFO:\n\n");
-    std::cout << "Crystal/dataset names: " << mtzfile.assigned_paths()[0].notail() << "\n"; 
-    /*std::cout << mtzfile.assigned_paths()[0].notail().notail().tail() << "\n";  // crystal name
-     std::cout << mtzfile.assigned_paths()[0].notail().tail() << "\n";  //dataset name
-     String xtlname = mtzfile.assigned_paths()[0].notail().notail().tail();
-     String setname = mtzfile.assigned_paths()[0].notail().tail();*/
-    prog.summary_end();
-    printf("\n");
-    
-    // need this mumbo-jumbo in order to write to output file
-    
+		
+    // need this mumbo-jumbo in order to write to output file    
     if ( outcol[0] != '/' ) outcol = mtzfile.assigned_paths()[0].notail()+"/"+outcol;
     
     // hkl_list contains only those (h,k,l) for which at least data column is not NaN.
@@ -269,22 +272,6 @@ int main(int argc, char **argv)
     clipper::Cell      cell1 = mtzfile.cell();
     clipper::Resolution reso = mtzfile.resolution();
     
-	std::stringstream xml_rfile;
-	{
-		xml_rfile << "<ReflectionFile name=\"" << ipfile << "\">" << std::endl;
-		xml_rfile << "  <CrystalDatasetId>" << mtzfile.assigned_paths()[0].notail() << "</CrystalDatasetId>" << std::endl;
-		xml_rfile << "  <cell>" << std::endl;
-		xml_rfile << "    <a>" << cell1.a() << "</a>" << std::endl;
-		xml_rfile << "    <b>" << cell1.b() << "</b>" << std::endl;
-		xml_rfile << "    <c>" << cell1.c() << "</c>" << std::endl;
-		xml_rfile << "    <alpha>" << cell1.alpha() << "</alpha>" << std::endl;
-		xml_rfile << "    <beta>" << cell1.beta() << "</beta>" << std::endl;
-		xml_rfile << "    <gamma>" << cell1.gamma() << "</gamma>" << std::endl;
-		xml_rfile << "  </cell>" << std::endl;
-		xml_rfile << "  <SpacegroupName>" << spgr.symbol_hm() << "</SpacegroupName>" << std::endl;
-		xml_rfile << "</ReflectionFile>" << std::endl;
-	}
-	
     // limit resolution for truncation, and hence output
     reso_trunc = clipper::Resolution(  reso.limit()  );
     
@@ -301,6 +288,8 @@ int main(int argc, char **argv)
     
     mtzfile.close_read();
 	
+	reflnfile.output();
+	
 	// reconstruct Imean if it was not given
     if ( refl_mean ) {
 		if (amplitudes) {
@@ -308,52 +297,71 @@ int main(int argc, char **argv)
 				if ( !fsig[ih].missing() )
 					isig[ih] = clipper::data32::I_sigI( fsig[ih].f()*fsig[ih].f(), 2.0*fsig[ih].f()*fsig[ih].sigf() );
 			}
-		}
-	} else {
-		if ( amplitudes) {
-			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-                                //this is none weighted mean
-				isig[ih].I() = clipper::Util::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2));
-				isig[ih].sigI() = clipper::Util::sig_mean(2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
-				//isig[ih].I() = ctruncate::Utils::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2),2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi());
-				//isig[ih].sigI() = ctruncate::Utils::sig_mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2),2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
-			}
 		} else {
-			for ( HRI ih = isig_ano_import.first(); !ih.last(); ih.next() ) {
-                                //this is none weighted mean
-				isig[ih].I() = clipper::Util::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi());
-				isig[ih].sigI() = clipper::Util::sig_mean(isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(), 0.0f );
-				//isig[ih].I() = ctruncate::Utils::mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi());
-				//isig[ih].sigI() = ctruncate::Utils::sig_mean(isig_ano_import[ih].I_pl(),isig_ano_import[ih].I_mi(),isig_ano_import[ih].sigI_pl(),isig_ano_import[ih].sigI_mi(),0.0f );
-				//isig[ih] = clipper::data32::I_sigI(isig_ano_import[ih].I(),isig_ano_import[ih].sigI());
-			}				
+			for ( HRI ih = isig_import.first(); !ih.last(); ih.next() ) {
+				isig[ih] = isig_import[ih];	
+				if ( isig[ih].sigI() <= 0.0 ) isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
+			}
+		}
+	}
+    if (anomalous) {
+        for ( HRI ih = isig_ano_import.first(); !ih.last(); ih.next() ) {
+            isig_ano[ih] = isig_ano_import[ih];
+            if (isig_ano[ih].sigI_mi() <= 0.0 )  isig_ano[ih].I_mi() = isig_ano[ih].sigI_mi() = clipper::Util::nan();
+            if (isig_ano[ih].sigI_pl() <= 0.0 )  isig_ano[ih].I_pl() = isig_ano[ih].sigI_pl() = clipper::Util::nan();
+        }
+        if (!refl_mean) {
+            if ( amplitudes) {
+                for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+                    //this is none weighted mean
+                    isig[ih].I() = clipper::Util::mean(std::pow(fsig_ano[ih].f_pl(),2),std::pow(fsig_ano[ih].f_mi(),2));
+                    isig[ih].sigI() = clipper::Util::sig_mean(2.0f*fsig_ano[ih].f_pl()*fsig_ano[ih].sigf_pl(),2.0f*fsig_ano[ih].f_mi()*fsig_ano[ih].sigf_mi(), 0.0f  );
+                }
+            } else {
+                for ( HRI ih = isig_ano.first(); !ih.last(); ih.next() ) {
+                    //this is none weighted mean
+                    //isig[ih].I() = clipper::Util::mean(isig_ano[ih].I_pl(),isig_ano[ih].I_mi());
+                    //isig[ih].sigI() = clipper::Util::sig_mean(isig_ano[ih].sigI_pl(),isig_ano[ih].sigI_mi(), 0.0f );
+                    if ( ( clipper::Util::is_nan(isig_ano[ih].I_pl() ) || isig_ano[ih].sigI_pl() <= 0.0 ) &&
+                        ( clipper::Util::is_nan(isig_ano[ih].I_mi() ) || isig_ano[ih].sigI_mi() <= 0.0 ) ) {
+                        isig[ih].I() = isig[ih].sigI() = clipper::Util::nan();
+                    } else if ( clipper::Util::is_nan(isig_ano[ih].I_pl() ) || isig_ano[ih].sigI_pl() <= 0.0 ) {
+                        isig[ih].I() = isig_ano[ih].I_mi();
+                        isig[ih].sigI() = isig_ano[ih].sigI_mi();
+                    } else if ( clipper::Util::is_nan(isig_ano[ih].I_mi() ) || isig_ano[ih].sigI_mi() <= 0.0 ) {
+                        isig[ih].I() = isig_ano[ih].I_pl();
+                        isig[ih].sigI() = isig_ano[ih].sigI_pl();
+                    } else {
+                        isig[ih].I() = 0.5*(isig_ano[ih].I_pl()+isig_ano[ih].I_mi() );
+                        isig[ih].sigI() = std::sqrt(0.5*(std::pow(isig_ano[ih].sigI_pl(),2)+std::pow(isig_ano[ih].sigI_mi(),2)) );
+                    }
+                }
+			}
 		}
 	}
 	
     
     int Ncentric = 0;
     int Nreflections = 0;
-    clipper::Range<clipper::ftype64> reso_range;
-	{
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ){
-				Nreflections++;
-				if ( ih.hkl_class().centric() ) Ncentric++;
-			}
+	
+	ReflectionData reflndata;
+    if ( refl_mean ) {
+		if (amplitudes) {
+			reflndata(fsig);
+		} else {
+			reflndata(isig);
 		}
-		
-		prog.summary_beg();
-		
-		reso_range = isig.invresolsq_range();
-		
-		printf("\nSpacegroup: %s (number %4d)\n", spgr.symbol_hm().c_str(), spgr.spacegroup_number() );
-		printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell1.a(), cell1.b(), cell1.c(), 
-			   Util::rad2d( cell1.alpha() ), Util::rad2d( cell1.beta() ), Util::rad2d( cell1.gamma() ) );
-		printf("\nMinimum resolution = %7.3f A\nMaximum resolution = %7.3f A\n",1.0/std::sqrt(reso_range.min() ),1.0/std::sqrt(reso_range.max()));
-		printf("\nTotal umber of reflections: %d (%d acentric, %d centric )\n", Nreflections,Nreflections-Ncentric,Ncentric);		
-
-		prog.summary_end();
-		
+	} else {
+		if ( amplitudes) {
+			reflndata(fsig_ano);
+		} else {
+			reflndata(isig_ano_import);
+		}
+	}
+	reflndata.output();
+	
+    //Cell contents analysis
+	{
 		if ( ipseq != "NONE" ) {
 			prog.summary_beg(); printf("CELL CONTENTS:\n\n");
 			
@@ -361,438 +369,76 @@ int main(int argc, char **argv)
 			seqf.read_file( ipseq );
 			
 			ctruncate::Matthews cmath(true,false);
-			int nmol = cmath(cell1, spgr, seqf, 1.0/sqrt(reso_range.max() ) );
+			int nmol = cmath(cell1, spgr, seqf, 1.0/sqrt(isig.invresolsq_range().max() ) );
 			std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
 			prog.summary_end();
 			cmath.summary();
 		} else if (nresidues > 0) {		
 			prog.summary_beg(); printf("CELL CONTENTS:\n\n");
 			ctruncate::Matthews cmath(true,false);
-			int nmol = cmath(cell1, spgr, nresidues, 1.0/sqrt(reso_range.max() ) );
+			int nmol = cmath(cell1, spgr, nresidues, 1.0/sqrt(isig.invresolsq_range().max() ) );
 			std::cout << "Expected number of molecules in ASU : " << nmol << std::endl;
 			prog.summary_end();
 			cmath.summary();
 		}
     }
 	
-	
-    //Completeness information
-    //what is our working resolution (85% of I/sigI > 3.0)
-    clipper::Range<double> active_range;
-    int NBINS = 60;
-    double ACCEPTABLE = 0.85;
-    ctruncate::Completeness<data32::I_sigI> compt(NBINS);
-    compt(isig);
-    compt.plot();
-    {
-        clipper::Range<double> range(reso_range.min(),reso_range.max() );
-        int i = 0;
-        for ( ; i != NBINS-1 ; ++i) {
-            if ( compt.completeness3(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
-        }
-        if ( i != (NBINS-1) ) {
-            int j = NBINS-1;
-            for ( ; j != 1 ; --j) {
-                if ( compt.completeness3(compt.bin2invresolsq(j)) > ACCEPTABLE && compt.completeness3(compt.bin2invresolsq(j-1)) > ACCEPTABLE ) break;
-            }
-            if (j != 0 )
-				if (i != 0) {
-					float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-					active_range.include(d);
-				} else {
-					active_range.include(reso_range.min() );
-				}
-            if (j != NBINS-1 ) {
-                float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                active_range.include(d);	
-            } else {
-                active_range.include(range.max() );
-            }
-        } else {
-			active_range = range;
-        }
-    }
-    
-    prog.summary_beg();
-    double rr = 0.0;
-    printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
-    if ( active_range.max() == -999999999 && active_range.min() == 999999999 ) {
-        printf("WARNING: The resolution range with I/sigI > 3  and completeness above %4.2f could not be\n",ACCEPTABLE);
-        printf("         determined.  This data is of poor quality.\n\n");
-    } else {
-        printf("\nUsing I/sigI > 3 with completeness above %4.2f, the estimated useful\nResolution Range ",ACCEPTABLE);
-        printf("of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
-        rr = 1.0/std::sqrt(active_range.min() ) - 1.0/std::sqrt(active_range.max() );
-    }
-    prog.summary_end();
-    printf("\n");
-	
-    // how big is active_range
-    {
-        float rmax = hklinf.resolution().limit();
-        float rmin = 1.0/std::sqrt(reso_range.min() );
-        float amax = 1.0/std::sqrt(active_range.max() );
-        if ( rr < 4.0 || amax > std::max(6.0,rmax+2.0)  ) {
-            active_range = clipper::Range<double>();
-            printf("WARNING: The resolution range with I/sigI > 3 with completeness above 0.85 is small\n");
-            do {
-                printf("         Recalculating using I/sigI > 2 with completeness aboue %4.2f for\n",ACCEPTABLE);
-                printf("         use in the following statistics, which must be treated with extreme caution\n");
-                int i = 0;
-                clipper::Range<double> range(reso_range.min(),reso_range.max() );
-                for ( ; i != NBINS-1 ; ++i) {
-                    if ( compt.completeness2(compt.bin2invresolsq(i)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(i+1)) > ACCEPTABLE ) break;
-                }
-                if ( i != (NBINS-1) ) {
-                    int j = NBINS-1;
-                    for ( ; j != 1 ; --j) {
-                        if ( compt.completeness2(compt.bin2invresolsq(j)) > ACCEPTABLE && compt.completeness2(compt.bin2invresolsq(j-1)) > ACCEPTABLE ) break;
-                    }
-                    if (j != 0 )
-                        if (i != 0) {
-                            float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-                            active_range.include(d);
-                        } else {
-                            active_range.include(range.min() );
-                        }
-                    if (j != NBINS-1 ) {
-                        float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                        active_range.include(d);
-                    } else {
-                        active_range.include(range.max() );
-                    }
-                }
-                amax = 1.0/std::sqrt(active_range.max() );
-                rr = ( active_range.max() == -999999999 && active_range.min() == 999999999 ) ? 0.0 : 1.0/std::sqrt(active_range.min() ) - amax;
-                ACCEPTABLE -= 0.1;
-                printf("         Resolution Range of this data for these values is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), amax );
-                if (ACCEPTABLE <= 0.40) break;
-            } while ( rr < 4.0 || amax > std::max(6.8,rmax+2.0) );
-            if (ACCEPTABLE <= 0.40) active_range = clipper::Range<double>();
-            
-            // try on Istandard
-            if (active_range.max() == -999999999 && active_range.min() == 999999999 ) {
-                printf("         Attempt resolution range estimate using Istandard < 1.0 (Ideally would use 0.2) \n");
-                int i = 0;
-                clipper::Range<double> range(reso_range.min(),reso_range.max() );
-                for ( ; i != NBINS-1 ; ++i) {
-                    if ( compt.standard(compt.bin2invresolsq(i)) < 1.0 && compt.standard(compt.bin2invresolsq(i+1)) < 1.0 ) break;
-                }
-                if ( i != (NBINS-1) ) {
-                    int j = NBINS-1;
-                    for ( ; j != 1 ; --j) {
-                        if ( compt.standard(compt.bin2invresolsq(j)) < 1.0 && compt.standard(compt.bin2invresolsq(j-1)) < 1.0 ) break;
-                    }
-                    if (j != 0 )
-                        if (i != 0) {
-                            float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
-                            active_range.include(d);
-                        } else {
-                            active_range.include(reso_range.min() );
-                        }
-                    if (j != NBINS-1 ) {
-                        float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
-                        active_range.include(d);
-                    } else {
-                        active_range.include(range.max() );
-                    }
-                } else {
-                    active_range = range;
-                }
-                if ( active_range.max() != -999999999 && active_range.min() != 999999999 ) {
-                    printf("         Resolution Range of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
-                }
-            }
-            
-            if (active_range.max() == -999999999 && active_range.min() == 999999999 ) {
-                active_range.include(reso_range.min() );
-                active_range.include(1.0/std::pow(rmax+2.0,2.0));
-                printf("WARNING: Arbitary resolution range of %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
-            }
-        }
-    }
-    printf("\nThe high resolution cut-off will be used in gathering the statistics for the dataset, however the full dataset will be output\n\n");
-	
-    // limit resolution of Patterson calculation for tNCS (default 4 A), or set to
-    // limit from completeness analysis
-    float invopt = active_range.max();
-    float resopt = 1.0/std::sqrt(invopt);
-    reso_Patt = clipper::Resolution( std::max( double(resopt), reso_Patt.limit() ) );
-    //user override of defaults
-    if (!reso_u1.is_null() ) {
-        reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_u1.limit() ) );
-    }
-	
-    std::stringstream xtncs;
-    
-    // check for pseudo translation (taken from cpatterson)
-    ctruncate::tNCS<float> tncs;
-    const std::vector<clipper::Symop>& cf = tncs(isig, reso_Patt );
-	
-    prog.summary_beg();
-    tncs.summary();
-    prog.summary_end();
-    printf("\n");
-    {
-        xtncs << "<tNCS>" << std::endl;
-        xtncs << "  <detected>" << ((tncs.hasNCS()) ? 1 : 0) << "</detected>" << std::endl;
-        xtncs << "</tNCS>" << std::endl;
-        
-    }
-	
-	//setup aniso copy of isig
-	HKL_data<data32::I_sigI> ianiso(hklinf);
-	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-		if (active_range.contains(ih.invresolsq() ) ) {
-			float I = isig[ih.hkl()].I();
-			float sigI = isig[ih.hkl()].sigI();
-			ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-		}
-	}
-	
-    // anisotropy estimation
-    clipper::U_aniso_orth uao;
-    clipper::U_aniso_orth uaoc(0,0,0,0,0,0);
-	bool anisobysymm(false);
-	bool anisodemo(false);
-    {
-		prog.summary_beg();
-		printf("\nANISOTROPY ANALYSIS (using intensities):\n");
-		
-		
-		
-		
-		clipper::U_aniso_orth uao_sum(1,3,5,7,11,13);
-		for (int i = 1; i != spgr.num_symops() ; ++i ) {
-			clipper::U_aniso_orth uao(1,3,5,7,11,13);
-			clipper::U_aniso_orth tmp = uao.transform(spgr.symop(i).rtop_orth(cell1) );
-			uao_sum = uao_sum + tmp;
-		}
-		
-		if (std::fabs(uao_sum.mat00() - uao_sum.mat11() ) > 0.5 || std::fabs(uao_sum.mat00() - uao_sum.mat22()) > 0.5 ) {
-			anisobysymm = true;
-			try { 
-				AnisoCorr<Iscale_logLikeAniso<float>, clipper::datatypes::I_sigI<float>, float > llscl(ianiso, false, false, active_range);
-				uao = -(llscl.u_aniso_orth(Scaling::I) );
-				uaoc = -(llscl.u_aniso_orth(Scaling::F) );
-			} catch (clipper::Message_fatal) {
-				CCP4::ccperror(1, "Anisotropy anlysis failed.");
-			}
-			
-			// Eigenvalue calculation
-			AnisoDirection<float> direction(uao);
-			
-			std::vector<float> v = direction.eigenValues();
-			float max = std::exp(direction.max() );
-			
-			printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", v[0],v[1],v[2]);
-			printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", std::exp(v[0])/max, std::exp(v[1])/max, std::exp(v[2])/max);
-			float ratio = std::exp(std::min(v[0],std::min(v[1],v[2]) ) );
-			if ( ratio < 0.5 ) printf("\nWARNING! WARNING! WARNING! Your data is severely anisotropic\n");
-			prog.summary_end();
-			printf("\n");
-			
-			printf("\nAnisotropic U (orthogonal coords):\n\n");
-			printf("| %8.4f %8.4f %8.4f |\n", uao(0,0) ,  uao(0,1) ,  uao(0,2)  );
-			printf("| %8.4f %8.4f %8.4f |\n", uao(1,0) ,  uao(1,1) ,  uao(1,2)  );
-			printf("| %8.4f %8.4f %8.4f |\n", uao(2,0) ,  uao(2,1) ,  uao(2,2)  );
-			
-			clipper::U_aniso_frac uaf = uao.u_aniso_frac( cell1 );
-			
-			printf("\nAnisotropic U scaling (fractional coords):\n\n"); 
-			
-			printf("| %11.3e %11.3e %11.3e |\n", uaf(0,0) ,  uaf(0,1) ,  uaf(0,2)  );
-			printf("| %11.3e %11.3e %11.3e |\n", uaf(1,0) ,  uaf(1,1) ,  uaf(1,2)  );
-			printf("| %11.3e %11.3e %11.3e |\n", uaf(2,0) ,  uaf(2,1) ,  uaf(2,2)  );
-			
-			printf("\nAnisotropic B scaling (fractional coords):\n\n"); 
-			
-			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(0,0) ), clipper::Util::u2b( uaf(0,1) ), clipper::Util::u2b( uaf(0,2) ) );
-			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(1,0) ), clipper::Util::u2b( uaf(1,1) ), clipper::Util::u2b( uaf(1,2) ) );
-			printf("| %11.3e %11.3e %11.3e |\n",clipper::Util::u2b( uaf(2,0) ), clipper::Util::u2b( uaf(2,1) ), clipper::Util::u2b( uaf(2,2) ) );
-			// demonstratable anisotropy
-			{
-				clipper::ftype v1(v[0]/max), v2(v[1]/max), v3(v[2]/max);
-				if (std::abs(v1-v2) > 0.01 || std::abs(v1-v3) > 0.01) anisodemo = true;
-			}
-		} else { 
-			printf("\nNo anisotropy by symmetry. \n");
-			prog.summary_end();
-		}
-		
-		
-		// falloff calculation (Yorgo Modis)
-		YorgoModis<data32::I_sigI> ym(resopt,60,uao);
-		ym(isig);
-		ym.plot();		
-	}
-	
-	//want to use anisotropy correction and resolution truncation for twinning tests
-	
-	float lval(0.0);
-    std::stringstream xtwin;
-    {
-		printf("\nTWINNING ANALYSIS:\n\n");
-        xtwin << "<twinning>\n";
-		
-		clipper::Range<clipper::ftype> range_Twin(active_range.min(),
-												  (!reso_u2.is_null() ) ? 
-												  std::min(active_range.max(),1.0/std::pow(reso_u2.limit(),2) ) :
-												  active_range.max() );
-		
-		printf("\nData has been truncated at %6.2f - %6.2f A resolution\n",1.0/std::sqrt(range_Twin.min()), 1.0/std::sqrt(range_Twin.max()));
-		printf("Anisotropy correction has been applied before calculating twinning tests\n\n");
-		
-		
-		
-		TwinSymops ts1(cell1,spgr);
-		
-		L_test ltest;
-		lval=ltest(ianiso,const_cast<std::vector<clipper::Symop> & >(cf), range_Twin);
-		ltest.summary();
-		ltest.loggraph();
-		
-		Moments<data32::I_sigI> m(isig,range_Twin);
-		m.loggraph();
-		
-		printf("\nMean acentric moments I from input data:\n\n");
-		printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_second(), m.theo_untwinned_acentric_second(), m.theo_perfect_acentric_second() );
-		printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_third(), m.theo_untwinned_acentric_third(), m.theo_perfect_acentric_third() );
-		printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", m.acentric_fourth(), m.theo_untwinned_acentric_fourth(), m.theo_perfect_acentric_fourth());
-		float m_fraction = m.fraction();
-		
-		if (anisobysymm && anisodemo) {
-			Moments<data32::I_sigI> mc(ianiso,range_Twin);
-			printf("\n\nMean acentric moments I from anisotropically corrected data:\n\n");
-			printf("  <I^2>/<I>^2 = %6.3f (Expected = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_second(), mc.theo_untwinned_acentric_second(), mc.theo_perfect_acentric_second() );
-			printf("  <I^3>/<I>^3 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_third(), mc.theo_untwinned_acentric_third(), mc.theo_perfect_acentric_third() );
-			printf("  <I^4>/<I>^4 = %6.3f (Expected value = %6.3f, Perfect Twin = %6.3f)\n", mc.acentric_fourth(), mc.theo_untwinned_acentric_fourth(), mc.theo_perfect_acentric_fourth());	
-			m_fraction = mc.fraction();
-		}
-		std::cout << std::endl << std::endl;
-		
-		std::vector<clipper::ftype> hval(ts1.size() );
-		std::vector<clipper::ftype> bval(ts1.size() );
-		std::vector<clipper::ftype> mval(ts1.size() );
-		std::vector<clipper::ftype> mrval(ts1.size() );
-		
-		std::vector<H_test> htests(ts1.size() );
-		for (int i = 0; i != ts1.size() ; ++i ) {
-			hval[i]=htests[i](ianiso,ts1[i],range_Twin);
-			//htests[i].summary();
-			htests[i].loggraph();
-		}
-		
-		std::vector<Britton_test> btests(ts1.size() );
-		for (int i = 0; i != ts1.size() ; ++i ) {
-			bval[i]=btests[i](ianiso,ts1[i],range_Twin);
-			//btests[i].summary();
-			btests[i].loggraph();
-		}
-		
-		std::vector<MLBritton_test> mdtests(ts1.size() );
-		for (int i = 0; i != ts1.size() ; ++i ) {
-			clipper::ftype product(0.0);
-			int jp;
-			if ( tncs.hasNCS() ) {
-				for (int j=0; j != tncs.numOps() ; ++j) {
-					clipper::Vec3<clipper::ftype> vect = tncs[i].rtop_orth(cell1).trn();
-					clipper::Mat33<int> tmp = ts1[i].rot(); 
-					clipper::Rotation rot(clipper::Mat33<clipper::ftype>(
-																		 clipper::ftype(tmp(0,0) )/12.0,
-																		 clipper::ftype(tmp(0,1) )/12.0,
-																		 clipper::ftype(tmp(0,2) )/12.0,
-																		 clipper::ftype(tmp(1,0) )/12.0,
-																		 clipper::ftype(tmp(1,1) )/12.0,
-																		 clipper::ftype(tmp(1,2) )/12.0,
-																		 clipper::ftype(tmp(2,0) )/12.0,
-																		 clipper::ftype(tmp(2,1) )/12.0,
-																		 clipper::ftype(tmp(2,2) )/12.0));
-					clipper::Vec3<clipper::ftype> vecr(rot.x(),rot.y(),rot.z() );
-					clipper::ftype p = vecr.unit()*vect.unit();
-					if (p > product) {
-						product = p;
-						jp = j;
-					}
-				}
-			}
-			if (product > 0.95 ) mval[i]=mdtests[i](ianiso,ts1[i],cf[jp],range_Twin);
-			else mval[i]=mdtests[i](ianiso,ts1[i],range_Twin);
-			mrval[i]=mdtests[i].deltaR();
-			//mdtests[i].summary();
-			//mdtests[i].loggraph();
-		}
-		
-		std::cout << "Twin fraction estimates excluding operators" << std::endl;
-		std::cout << "  Twin fraction estimate from L-test:  " << std::setw(4) << std::setprecision(2) << ltest.fraction() << std::endl;
-		std::cout << "  Twin fraction estimate from moments: " << std::setw(4) << std::setprecision(2) << m_fraction << std::endl << std::endl;
-		
-        {
-            xtwin << "  <L-test>" << ( (ltest.statistic() < 0.44) ? "Yes" : "No") << "</L-test>" << std::endl;
-        }
-        
-		std::cout << "Twin fraction estimates by operator" << std::endl << std::endl;
-		if ( ts1.size() > 0 ) {
-			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-			std::cout << "| " << std::setw(40) << "operator" <<         " | L-test | H-test | Murray | ML Britton    |" << std::endl;
-			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-			for (int i = 0; i != ts1.size() ; ++i ) {
-				std::cout << "| " << std::setw(40) << htests[i].description() << " |  " << ((0.1 <= ltest.statistic() && ltest.statistic() < 0.440) ? " Yes " : " No  " ) 
-				<< " |  " << std::setw(4) << std::setprecision(2) << hval[i] << "  |  " << bval[i] << "  |  " << mval[i] << " (";
-				if (mrval[i] == 100.0 ) std::cout << " N/A ";
-				else std::cout << std::setw(5) << mrval[i];
-				std::cout << ") |" << std::endl;
-			}
-			std::cout << "---------------------------------------------------------------------------------------" << std::endl;
-            {
-                for (int i = 0; i != ts1.size() ; ++i ) {
-                    xtwin << "  <H-test operator=\"" << std::setw(4) << std::setprecision(2) << htests[i].description() << "\"> " << hval[i] << " </H-test>" << std::endl;
-                }
-                for (int i = 0; i != ts1.size() ; ++i ) {
-                    xtwin << "  <ML-Britton operator=\"" << std::setw(4) << std::setprecision(2) << htests[i].description() << "\"> " << bval[i] << " </ML-Britton>" << std::endl;
-                }
-            }
-		} else {
-			std::cout << "  No operators found" << std::endl << std::endl;
-		}
-        
-		
-		prog.summary_beg();
-		if (ts1.size() == 0 ) twin_summary(0.0,lval);
-		else twin_summary((*(std::max_element(hval.begin(),hval.end()))),lval);
-		prog.summary_end(); 
-		printf("\n");
-		
-        xtwin << "</twinning>" << std::endl;
-		
-		//printf("Starting parity group analysis:\n");
-		
-		//Parity group analysis
-		
-		ctruncate::parity(ianiso, invopt, nbins);	
-    }
-    // Ice rings
-    ctruncate::Rings icerings;
-    icerings.DefaultIceRings();
-    icerings.ClearSums();
-	
+	    clipper::Range<double> active_range;
+
+	std::stringstream xml_comp;
+	ctruncate::Rings icerings;
 	{
-		ctruncate::IceRings_analyse ice;
-		bool icer=ice(isig,icerings);
-		
-        printf("\n");
-        prog.summary_beg();
-        printf("\nICE RINGS:\n\n");
-        if (icer) printf("Possible Ice Rings\n\n");
-        else printf("No Ice Rings detected\n\n");
-        prog.summary_end();
-        printf("\n");
-		
-		std::cout << ice.format() << std::endl;
-		
+		HKLAnalysis hklanalysis(isig);
+		hklanalysis.output();
+		active_range = hklanalysis.active_range();
+		icerings = hklanalysis.ice_rings();
+        hklanalysis.xml_output(xml_comp);
+		//std::cout << (hklanalysis.xml_output(xml_comp)).str() << std::endl;
 	}
 	
-	// if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
+    // anomalous signal
+	std::stringstream xml_anomstats;
+	if (anomalous ) {
+		if (amplitudes) {
+			AnomStats anomstats(fsig_ano);
+			anomstats.output();
+			/*if (outxml)*/ anomstats.xml_output(xml_anomstats);
+		} else {
+			AnomStats anomstats(isig_ano);
+			anomstats.output();
+			/*if (outxml)*/ anomstats.xml_output(xml_anomstats);
+		}
+	}
+    
+	std::stringstream xml_tncs;
+	std::vector<clipper::Symop> ncs_list;
+	bool hastncs(false);
+	{
+		// limit resolution of Patterson calculation for tNCS (default 4 A), or set to
+		// limit from completeness analysis
+		float invopt = active_range.max();
+		float resopt = 1.0/std::sqrt(invopt);
+		reso_Patt = clipper::Resolution( std::max( double(resopt), reso_Patt.limit() ) );
+		//user override of defaults
+		if (!reso_u1.is_null() ) {
+			reso_Patt = clipper::Resolution( clipper::Util::max( reso.limit(), reso_u1.limit() ) );
+		}
+		
+        
+		// check for pseudo translation (taken from cpatterson)
+		ctruncate::tNCS tncs;
+		ncs_list = tncs(isig, reso_Patt );
+		hastncs = tncs.hasNCS();
+		
+		prog.summary_beg();
+		tncs.output();
+		prog.summary_end();
+		printf("\n");
+		tncs.xml_output(xml_tncs);
+		//std::cout << xml_tncs.str() << std::endl;
+	}
+	
+    // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
 	// so only scale if B positive
 	float scalef = 1.0;
 	{
@@ -804,7 +450,7 @@ int main(int argc, char **argv)
 		WilsonB::MODE wilson_flag;
 		if (is_nucl) {
 			wilson_flag = WilsonB::RNA;
-		} else { 
+		} else {
 			wilson_flag = WilsonB::BEST;
 		}
 		WilsonB wilson( wilson_flag);
@@ -818,7 +464,7 @@ int main(int argc, char **argv)
 			wilson(isig,nresidues,&active_range, &icerings);
 		} else {
 			wilson(isig,&active_range,&icerings);
-		}		
+		}
 		
 		clipper::String comment("Smooth");
 		printf("\n");
@@ -830,7 +476,54 @@ int main(int argc, char **argv)
 		
 		if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
 	}
+
+	//setup aniso copy of isig
+	HKL_data<data32::I_sigI> ianiso(hklinf);
+	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
+		if (active_range.contains(ih.invresolsq() ) ) {
+			float I = isig[ih.hkl()].I();
+			float sigI = isig[ih.hkl()].sigI();
+			ianiso[ih] = clipper::data32::I_sigI( I, sigI );
+		}
+	}
 	
+    // anisotropy estimation
+	std::stringstream xml_aniso;
+    //clipper::U_aniso_orth uao;
+    clipper::U_aniso_orth uaoc(0,0,0,0,0,0);
+	bool anisobysymm(false);
+	bool anisodemo(false);
+    {
+		
+		AnisoAnalysis aa(isig,active_range);
+		anisobysymm=aa.allowed_by_symmetry();
+		anisodemo=aa.is_anisotropic();
+		aa.output();
+		aa.xml_output(xml_aniso);
+		//std::cout << xml_aniso.str() << std::endl;
+		
+		//set ianiso
+		uaoc=aa.u_aniso_orth_F();
+		clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,aa.u_aniso_orth_corr_F() );
+		ianiso.compute(ianiso, compute_s);
+	}
+	
+	//want to use anisotropy correction and resolution truncation for twinning tests
+	
+	float lval(0.0);
+    std::stringstream xml_twin;
+	{
+		clipper::Range<clipper::ftype> range_Twin(active_range.min(), (!reso_u2.is_null() ) ?  std::min(active_range.max(),1.0/std::pow(reso_u2.limit(),2) ) : active_range.max() );
+		std::vector<clipper::Symop> tt(ncs_list.size() );
+		for (int i= 0; i != tt.size() ; ++i ) tt[i] = ncs_list[i];
+		TwinAnalysis twins(ianiso,tt,range_Twin);
+		twins.output();
+		//std::stringstream xt;
+		//std::cout << (twins.xml_output(xml_twin) ).str() << std::endl;
+        twins.xml_output(xml_twin);
+		//Parity group analysis
+		ctruncate::parity(ianiso, active_range.max(), nbins);
+    }
 		
 	HKL_data<data32::I_sigI> xsig(hklinf);
 	//normal calculation
@@ -919,12 +612,7 @@ int main(int argc, char **argv)
 		if (aniso) {            
 			if (anisobysymm && anisodemo) {
 				clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
-				xsig.compute(xsig, compute_s);
-				//printf("\nAnisotropic U (orthogonal coords):\n\n");
-				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(0,0) ,  uaoc(0,1) ,  uaoc(0,2)  );
-				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(1,0) ,  uaoc(1,1) ,  uaoc(1,2)  );
-				//printf("| %8.4f %8.4f %8.4f |\n", uaoc(2,0) ,  uaoc(2,1) ,  uaoc(2,2)  );
-				
+				xsig.compute(xsig, compute_s);				
 			}
 		}		
 		
@@ -955,7 +643,7 @@ int main(int argc, char **argv)
 			reso_trunc = 
 			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
 		}
-		if ( prior == AUTO && (tncs.hasNCS() || 0.440 > lval) ) {
+		if ( prior == AUTO && (hastncs || 0.440 > lval) ) {
 			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
 			prior = FLAT;
 		}
@@ -966,21 +654,10 @@ int main(int argc, char **argv)
 			else truncate( isig, jsig, fsig, xsig, scalef, reso_trunc, nrej, debug );
 		}
 		if (anomalous) {
-			if (prior == FLAT ) truncate( isig_ano_import, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
-			else if (prior == SIVIA) truncate_sivia( isig_ano_import, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
-            else truncate( isig_ano_import, jsig_ano, fsig_ano, xsig, scalef, reso_trunc, nrej, debug );
+			if (prior == FLAT ) truncate( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+			else if (prior == SIVIA) truncate_sivia( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+            else truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, reso_trunc, nrej, debug );
 			int iwarn = 0;
-			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih].f_pl() )  &&  !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 0 :
-				( !Util::is_nan(fsig_ano[ih].f_pl() ) ) ? 1 :
-				( !Util::is_nan(fsig_ano[ih].f_mi() ) ) ? 2 : 0;
-				Dano[ih].d() = fsig_ano[ih].d();
-				Dano[ih].sigd() = fsig_ano[ih].sigd();
-				if ( ih.hkl_class().centric() ) {
-					Dano[ih].d() = 0.0;
-					Dano[ih].sigd() = 0.0;
-				}
-			}
 			// use for phil plot
 			if (!refl_mean ) {
 				for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -1003,32 +680,8 @@ int main(int argc, char **argv)
 	printf("\n");
 	
 	
-	// moments of E using clipper binning
-	// moments_Z(ianiso,resopt,nbins,prog);
-	
-	
-	// construct cumulative distribution function for intensity (using Z rather than E)
-	int ntw = cumulative_plot(isig, xsig);
-	
-	if (ntw > 2) {
-		prog.summary_beg();
-		printf("\nWARNING: ****  Cumulative Distribution shows Possible Twinning ****\n\n");
-		prog.summary_end();
-	}
-	
-	
-	// falloff calculation (Yorgo Modis)
-	//yorgo_modis_plot(fsig,maxres,60,prog,uao);
-	
-	// anomalous signal
-	if (anomalous ) {
-		if (amplitudes) AnomStats<float> anomstats(fsig_ano);
-        else AnomStats<float> anomstats(isig_ano_import);
-	}
-	
-	
 	{
-		ctruncate::PattPeak patt_peak(std::sqrt(reso_range.max() ));
+		ctruncate::PattPeak patt_peak(std::sqrt(isig.invresolsq_range().max() ));
 		
 		float opt_res = patt_peak(xsig);
 		
@@ -1128,14 +781,43 @@ int main(int argc, char **argv)
     
     // output data
     if (!amplitudes) {
+		CCP4MTZfile mtzout;
+		HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
+		HKL_data<data32::ISym> freidal_sym(hklinf);
+		HKL_data<data32::J_sigJ_ano> isig_ano_export(hklinf); // do not want to output cov term, so use 4 term ano
+		HKL_data<data32::G_sigG_ano> fsig_ano_export(hklinf); // do not want to output cov term
+		if (anomalous) {
+			for ( HRI ih = freidal_sym.first(); !ih.last(); ih.next() ) {
+				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0 :
+				( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() ) ) ? 1 :
+				( !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 2 : 0;
+            }
+            for ( HRI ih = Dano.first(); !ih.last(); ih.next() ) {
+                Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::fabs(fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
+				Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::sqrt(fsig_ano[ih.hkl()].sigf_pl()*fsig_ano[ih.hkl()].sigf_pl()+fsig_ano[ih.hkl()].sigf_mi()*fsig_ano[ih.hkl()].sigf_mi() ) : clipper::Util::nan();
+				if ( ih.hkl_class().centric() ) {
+					Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+					Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+				}
+			}
+			for ( HRI ih = isig_ano_export.first(); !ih.last(); ih.next() ) {
+				isig_ano_export[ih] = clipper::data32::J_sigJ_ano(isig_ano_import[ih.hkl()].I_pl(), isig_ano_import[ih.hkl()].I_mi(), isig_ano_import[ih.hkl()].sigI_pl(), isig_ano_import[ih.hkl()].sigI_mi() );
+			}
+			for ( HRI ih = fsig_ano_export.first(); !ih.last(); ih.next() ) {
+				fsig_ano_export[ih] = clipper::data32::G_sigG_ano(fsig_ano[ih.hkl()].f_pl(), fsig_ano[ih.hkl()].f_mi(), fsig_ano[ih.hkl()].sigf_pl(), fsig_ano[ih.hkl()].sigf_mi() );
+			}
+		}			
+		
         //mtzout.open_append( args[mtzinarg], outfile );
         mtzout.open_write( outfile );
         mtzout.export_crystal ( cxtl, outcol );
         mtzout.export_dataset ( cset, outcol );
+        //mtzout.export_hkl_info( hklinf );
         mtzout.export_hkl_info( hkl_list );
         //mtzout.export_hkl_data( jsig, outcol );
-        clipper::String labels;
+        //clipper::String labels;
 		if ( refl_mean ) {
+            clipper::String labels;
 			if (appendcol == "") labels = outcol + "[F,SIGF]";
 			else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
 			mtzout.export_hkl_data( fsig, labels );
@@ -1149,67 +831,77 @@ int main(int argc, char **argv)
         }
 		
         if (anomalous) {
+            clipper::String labels;
             if ( !refl_mean ) {
-                if (appendcol == "") labels = outcol + "[FMEAN,SIGFMEAN]";
-                else labels = outcol + "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
-                mtzout.export_hkl_data( fsig, labels );
+                if (appendcol == "") labels = "[FMEAN,SIGFMEAN]";
+                else labels = "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
+                mtzout.export_hkl_data( fsig, outcol+labels.tail() );
+                labels.clear();
             }
-            if (appendcol == "") labels = outcol + "[DANO,SIGDANO]";
-            else labels = outcol + "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
-            mtzout.export_hkl_data( Dano, labels );
-            if (appendcol == "") labels = outcol + "[F(+),SIGF(+),F(-),SIGF(-)]";
-            else labels = outcol + "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
-            mtzout.export_hkl_data( fsig_ano, labels );
-            if (appendcol == "") labels = outcol + "[ISYM]";
-            else labels = outcol + "[ISYM_" + appendcol + "]";
-            mtzout.export_hkl_data( freidal_sym, labels );
+            if (appendcol == "") labels = "[DANO,SIGDANO]";
+            else labels = "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+            mtzout.export_hkl_data( Dano, outcol+labels.tail() );
+            labels.clear();
+			if (appendcol == "") labels = "[F(+),SIGF(+),F(-),SIGF(-)]";
+            else labels = "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
+            mtzout.export_hkl_data( fsig_ano_export, outcol+labels.tail() );
+            labels.clear();
+            if (appendcol == "") labels = "[ISYM]";
+            else labels = "[ISYM_" + appendcol + "]";
+            mtzout.export_hkl_data( freidal_sym, outcol+labels.tail() );
         }
 		
 		//output original input
 		if ( refl_mean ) {
+            clipper::String labels;
+            labels = meancol;
 			if (appendcol != "") {
-				String::size_type loc = meancol.find(",",0);
-				meancol.insert(loc,"_"+appendcol);
-				loc = meancol.find("]",0);
-				meancol.insert(loc,"_"+appendcol);
+				String::size_type loc = labels.find(",",0);
+				labels.insert(loc,"_"+appendcol);
+				loc = labels.find("]",0);
+				labels.insert(loc,"_"+appendcol);
 			}
-			mtzout.export_hkl_data( isig, outcol + meancol.tail() );
+			mtzout.export_hkl_data( isig_import, outcol + labels.tail() );
+            labels.clear();
         }
 
 		// KDC hack to output Imean  if explicitly requested (should be combined with above)
 		if ( outImean ) mtzout.export_hkl_data( isig, outcol + appendcol + "_MEAN" );
 
         if (anomalous) {
+            clipper::String labels;
+            labels = anocols;
             if (appendcol != "") {
-                String::size_type loc = anocols.find("-",0);
-                anocols.insert(loc-1,"_"+appendcol);
-                loc = anocols.find(",",loc);
-				loc = anocols.find("-",loc);
-                //loc = anocols.find("-",loc+appendcol.size()+2 );
-                anocols.insert(loc-1,"_"+appendcol);
-                loc = anocols.find("+",0);
-                anocols.insert(loc-1,"_"+appendcol);
-                loc = anocols.find(",",loc);
-				loc = anocols.find("+",loc);
-                //loc = anocols.find("+",loc+appendcol.size()+2 );
-                anocols.insert(loc-1,"_"+appendcol);
+                String::size_type loc = labels.find("-",0);
+                labels.insert(loc-1,"_"+appendcol);
+                loc = labels.find(",",loc);
+                loc = labels.find("-",loc);
+                //loc = labels.find("-",loc+appendcol.size()+2 );
+                labels.insert(loc-1,"_"+appendcol);
+                loc = labels.find("+",0);
+                labels.insert(loc-1,"_"+appendcol);
+                loc = labels.find(",",loc);
+                loc = labels.find("+",loc);
+                //loc = labels.find("+",loc+appendcol.size()+2 );
+                labels.insert(loc-1,"_"+appendcol);
             }
-            mtzout.export_hkl_data( isig_ano_import, outcol + anocols.tail() );
+            mtzout.export_hkl_data( isig_ano_export, outcol + labels.tail() );
         }
 		
         //copy old history and say something about ctruncate run
         if (history.size() != 0 ) {
 			for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
-        } else {
-            char run_date[10];
-            CCP4::ccp4_utils_date(run_date);
-            char run_time[8];
-            CCP4::ccp4_utils_time(run_time);
-            clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
-			
-            clipper::String history = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
-            histin.push_back(history);
         }
+        //char run_date[10];
+        //CCP4::ccp4_utils_date(run_date);
+        //char run_time[8];
+        //CCP4::ccp4_utils_time(run_time);
+        clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
+        
+        //clipper::String chistory = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
+        clipper::String chistory = prog_string + " " + prog_vers + run_type + "run on " + date_time;
+        histin.push_back(chistory);
+    
         mtzout.set_history(histin);
 		
         mtzout.set_spacegroup_confidence(spgr_confidence);
@@ -1233,21 +925,25 @@ int main(int argc, char **argv)
 			strcpy(mtz->mtzsymm.spcgrpname,spacegroup);
 			CMtz::MtzPut( mtz, outfile.c_str() );
 			CMtz::MtzFree( mtz );
-		} 
+		}
     }
     
     if (outxml) {
         time_t now = std::time(0);
-        
+		std::stringstream ss1,ss2,ss3;
         std::ofstream xf;
         xf.open(xmlfile.c_str() );
-        xf << "<CTRUNCATE version=\"" << prog_vers <<  "\" RunTime=\"" << date_time << "\" >" << std::endl;
-		xf << xml_rfile.str();
-        xf << xtncs.str();
-        xf << xtwin.str();
-        xf << "</CTRUNCATE>" << std::endl;
-        
+        xf << prog.xml_start(ss1).str();
+		reflndata.xml_output(ss3);
+		xf << reflnfile.xml_output(ss3).str();
+		xf << xml_comp.str();
+        xf << xml_anomstats.str();
+        xf << xml_tncs.str();
+		xf << xml_aniso.str();
+        xf << xml_twin.str();
+        xf << prog.xml_end(ss2).str();
     }
+    
     prog.set_termination_message( "Normal termination" );
     
     return(0);

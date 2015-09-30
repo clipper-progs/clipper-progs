@@ -14,6 +14,7 @@
 #include "intensity_target.h"
 #include "best.h"
 #include "best_rna.h"
+#include <iomanip>
 
 namespace ctruncate {
 
@@ -562,7 +563,11 @@ namespace ctruncate {
 		clipper::mmdb::PPCAtom psel;
 		int hndl, nsel;
 		hndl = mmdb.NewSelection();
+//#ifdef MMDB2
 		mmdb.SelectAtoms( hndl, 0, 0, ::mmdb::SKEY_NEW );
+//#else
+//                mmdb.SelectAtoms( hndl, 0, 0, SKEY_NEW );
+//#endif
 		mmdb.GetSelIndex( hndl, psel, nsel );
 		clipper::MMDBAtom_list atoms( psel, nsel );
 		for ( int i = 0; i != atoms.size(); ++i ) {
@@ -633,13 +638,12 @@ namespace ctruncate {
 	const int WilsonB::Satoms[] = { 0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 };
 	const int WilsonB::Patoms[] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1 };
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
+	clipper::ftype WilsonB::operator()(const clipper::HKL_data_base& data, const clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
-		maxres = hklinf.resolution().invresolsq_limit();
-		intensity = &isig;
-		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
+		intensity = &data;
+		activeRange = ( range == NULL ) ? data.invresolsq_range() : *range;
 		
 		//nresidues = int(hklinf.cell().volume()/(nsym*157)); 
 		// using average MW of 307.3Da, and median inv. density of 2.34 A3/Da (64% solvent)
@@ -673,24 +677,23 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 		if (mode == BEST ) {
-			wilson_best(isig, activeRange, *ice);
+			wilson_best(data, activeRange, *ice);
 		} else if (mode == RNA ) {
-			wilson_rna(isig, activeRange, *ice);
+			wilson_rna(data, activeRange, *ice);
 		} else {
-			wilson_straight(isig, activeRange, *ice);
+			wilson_straight(data, activeRange, *ice);
 		}
 		
 		return this->B();
 	}
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
+	 clipper::ftype WilsonB::operator()(const clipper::HKL_data_base& data, int nresidues, const clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
 		nresidue_supplied = true;
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
-		maxres = hklinf.resolution().invresolsq_limit();
-		intensity = &isig;
-		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
+		intensity = &data;
+		activeRange = ( range == NULL ) ? data.invresolsq_range() : *range;
 		
 		if ( mode == RNA ) {   //9.6, 3.4, 6.4, 11.0, 0.0, 1.0
 			numatoms[0] = int(9.6*nresidues);
@@ -716,24 +719,23 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 			if (mode == BEST ) {
-				wilson_best(isig, activeRange, *ice);
+				wilson_best(data, activeRange, *ice);
 			} else if ( mode == RNA ) {
-				wilson_rna(isig, activeRange, *ice);
+				wilson_rna(data, activeRange, *ice);
 			} else {
-				wilson_straight(isig, activeRange, *ice);
+				wilson_straight(data, activeRange, *ice);
 			}
 		
 		return this->B();
 	}
 	
-	float WilsonB::operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
+	 clipper::ftype WilsonB::operator()(const clipper::HKL_data_base& data, clipper::MPolymerSequence& poly, const clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
 	{
 		nresidue_supplied = true;
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
-		maxres = hklinf.resolution().invresolsq_limit();
-		intensity = &isig;
-		activeRange = ( range == NULL ) ? isig.hkl_info().invresolsq_range() : *range;
+		intensity = &data;
+		activeRange = ( range == NULL ) ? data.invresolsq_range() : *range;
 		
 		clipper::String sequence = poly.sequence();
 		if ( mode == RNA ) {
@@ -774,19 +776,124 @@ namespace ctruncate {
 		if (ice == NULL ) ice = &icerings;
 			
 			if (mode == BEST ) {
-				wilson_best(isig, activeRange, *ice);
+				wilson_best(data, activeRange, *ice);
 			} else if ( mode == RNA ) {
-				wilson_rna(isig, activeRange, *ice);
+				wilson_rna(data, activeRange, *ice);
 			} else {
-				wilson_straight(isig, activeRange, *ice);
+				wilson_straight(data, activeRange, *ice);
 			}
 				
 		return this->B();
 	}
 	
+	void WilsonB::output()
+	{
+		summary();
+        std::cout << std::endl << "The isotropic Wilson temperature estimate (B-value) is an approximation to the fall-off of scattering with resolution.  This should be correlated with the refined atomic B-values.  This averages out any anisotropy in the experimental observations.  This approximation will be misleading for strongly anisotropic data." << std::endl << std::endl;
+		plot();
+        std::cout << std::endl << "The wilson plot shows the fall off of the mean intensity with resolution.   This is then used calculate an absolute scale and temperature factor for a set of observed intensities, using the theory of A C Wilson.  The reference_plot is based upon an analysis of high resolution datasets in the PDB (BEST), which takes into account the none random distribution of atoms within the crystal.  Some deviation from the reference plot is to be expected, however, significant deviation may indicate problems, such as ice rings, detector issues, or missprocessed." << std::endl << std::endl << std::endl;
+	}
+	
+	std::stringstream& WilsonB::xml_output(std::stringstream& ss)
+	{
+		const clipper::HKL_info& hklinf = intensity->hkl_info();
+		int nsym = hklinf.spacegroup().num_symops();
+		int nbins = 30;
+		
+		//book keeping for resolution values
+		std::vector<int> bins(nbins,0);
+		std::vector<clipper::ftype> rbins(nbins,0.0);
+		clipper::Resolution_ordinal s_ord;
+		s_ord.init(*intensity, intensity->base_cell(), 1.0);
+		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first_data(); !ih.last(); intensity->next_data(ih) ) {
+			if ( !(*intensity).missing(ih.index() ) ) {
+				int j = int(double(nbins)*s_ord.ordinal(ih.invresolsq() ) );
+				bins[j]++;
+				rbins[j] += ih.invresolsq();
+			}
+		}
+		
+		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
+		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first_data(); !ih.last(); intensity->next_data(ih) ) {
+			if ( !(*intensity).missing(ih.index() ) ) {
+				double reso = ih.invresolsq();
+				xsig[ih] = clipper::data32::I_sigI( obs((*intensity),ih), sigobs((*intensity),ih) );
+			}
+		}		
+		
+		//calc wilson plot (double handling unfortunately)
+		std::vector<double> params_init( nbins, 1.0 );
+		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
+		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
+		
+		ss << "<DataStatistics type=\"intensity\">" << std::endl;
+		ss << "  <WilsonB>" << this->B() << "</WilsonB>" << std::endl;
+        ss << "  <WilsonScale>" << this->intercept() << "</WilsonScale>" << std::endl;
+        ss << "  <Comment id=\"WilsonB\">" << std::endl;
+        ss << "The isotropic Wilson temperature estimate (B-value) is an approximation to the fall-off of scattering with resolution.  This should be correlated with the refined atomic B-values.  This averages out any anisotropy in the experimental observations.  This approximation will be misleading for strongly anisotropic data." << std::endl;
+        ss << "  </Comment>" << std::endl;
+		ss << "</DataStatistics>" << std::endl;
+		ss << "<CCP4Table groupID=\"graph\" id=\"WilsonB\" title=\"Wilson plot\">" << std::endl;
+		ss << "<plot>" << std::endl;
+		ss << "<title>Wilson B estimate, " << std::fixed << std::setprecision(2) << this->B() <<"</title>" << std::endl;
+		ss << "<xscale>oneoversqrt</xscale>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"3\" >" << std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>green</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"  1\" ycol=\"  2\" >" << std::endl;
+		
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>black</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "</plot>" << std::endl;
+		ss << "<headers separator=\" \">" << std::endl;
+		if (mode == BEST ) ss << " 1/resol^2 ln(I/I_th) Reference_prot" << std::endl;
+		else if (mode == RNA ) ss << " 1/resol^2 ln(I/I_th) Reference_RNA" << std::endl;
+		else ss << " 1/resol^2 ln(I/I_th)" << std::endl;
+		ss << "</headers>" << std::endl;
+		ss << "<data>" << std::endl;
+		for ( int i=0; i!=nbins; ++i ) {
+            float res = rbins[i]/bins[i]; 
+            float totalscat = 0;
+            for (int j=0;j!=5;++j) {
+                clipper::Atom atom(clipper::Atom::null() );
+                atom.set_occupancy(1.0);
+                atom.set_element(WilsonB::AtomNames[j]);
+                atom.set_u_iso(0.0);
+                atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
+                clipper::AtomShapeFn sf(atom);
+                float scat = sf.f(res);
+                totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
+            }
+			ss << std::fixed << std::setprecision(4) << " " << res;
+            if ( _a != -1.0) {
+				ss << "   "  << log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat);
+                if (mode == BEST) ss << "   "  << std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST(res)))-log(totalscat);
+				else if (mode == RNA ) ss << "   "  << std::log(exp(-_a*res-_b)*(_totalscat*ctruncate::BEST_rna(res)))-log(totalscat);
+			}
+			ss << std::endl;
+        }		
+		ss << "</data>" << std::endl;
+		ss << "</CCP4Table>" << std::endl;
+        ss << "<DataStatistics>" << std::endl;
+        ss << "  <Comment id=\"WilsonPlot\">" << std::endl;
+        ss << "The wilson plot shows the fall off of the mean intensity with resolution.   This is then used calculate an absolute scale and temperature factor for a set of observed intensities, using the theory of A C Wilson.  The reference_plot is based upon an analysis of high resolution datasets in the PDB (BEST or RNA equivalent), which takes into account the none random distribution of atoms within the crystal.  Some deviation from the reference plot is to be expected, however, significant deviation may indicate problems, such as ice rings, detector issues, or missprocessed." << std::endl;
+        ss << " </Comment>" << std::endl;
+        ss << " <Reference id=\"Best\">" << std::endl;
+        ss << "Popov and Bourenkov, Acta D (2003) D59, 1145" << std::endl;
+        ss << " </Reference>" << std::endl;
+        ss << "</DataStatistics>" << std::endl;
+
+									  
+		return ss;
+	}
+	
 	void WilsonB::summary()
 	{
-		printf("\n\nWILSON SCALING:\n");
+		printf("\n\nWILSON SCALING:\n\n");
 		if ( nresidue_supplied) {
 			printf("User supplied number of residues = %d\n",nresidues);
 		} else if ( sequence_supplied) {
@@ -796,12 +903,10 @@ namespace ctruncate {
 		} else {
 			printf("Estimated number of residues = %d\n",nresidues);
 		}
-		printf("\nResults Wilson plot:\n");
+		printf("\nResults Wilson B-factor:\n\n");
 		if ( _a != 0.0 ) {
-			if ( mode == BEST ) printf("Computed using Popov & Bourenkov, Acta D (2003) D59, 1145\n");
-			if ( mode == RNA ) printf("Computed using RNA reference set\n");
-			printf ("B = %6.3f intercept = %6.3f siga = %6.3f sigb = %6.3f\n",this->B(),_b,_siga,_sigb);
-			printf("scale factor on intensity = %10.4f\n\n",this->intercept());
+			printf("Estimate of Wilson B factor: %6.3f A^(-2), with sigma %6.3f\n",this->B(),2.0*_siga);
+			printf("Estimate of scale factor on intensity = %10.4f (intercept %6.3f, sigma %6.3f)\n\n",this->intercept(),-_b,_sigb);
 		} else {
 			printf("Too few high resolution points to determine B factor and Wilson scale factor\n");
 		}
@@ -817,18 +922,26 @@ namespace ctruncate {
 		std::vector<clipper::ftype> rbins(nbins,0.0);
 		clipper::Resolution_ordinal s_ord;
 		s_ord.init(*intensity, intensity->base_cell(), 1.0);
-		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first(); !ih.last(); ih.next() ) {
-			if ( !(*intensity)[ih].missing() ) {
+		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first_data(); !ih.last(); intensity->next_data(ih) ) {
+			if ( !(*intensity).missing(ih.index() ) ) {
 				int j = int(double(nbins)*s_ord.ordinal(ih.invresolsq() ) );
 				bins[j]++;
 				rbins[j] += ih.invresolsq();
 			}
 		}
 		
+		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
+		for ( clipper::HKL_data_base::HKL_reference_index ih = intensity->first_data(); !ih.last(); intensity->next_data(ih) ) {
+			if ( !(*intensity).missing(ih.index() ) ) {
+				double reso = ih.invresolsq();
+				xsig[ih] = clipper::data32::I_sigI( obs((*intensity),ih), sigobs((*intensity),ih) );
+			}
+		}		
+		
 		//calc wilson plot (double handling unfortunately)
 		std::vector<double> params_init( nbins, 1.0 );
-		clipper::BasisFn_binner basis_fo_wilson( *intensity, nbins, 1.0 );
-		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( *intensity, 1);
+		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
+		TargetFn_meanInth<clipper::data32::I_sigI> target_fo_wilson( xsig, 1);
 		clipper::ResolutionFn wilsonplot( hklinf, basis_fo_wilson, target_fo_wilson, params_init );
 		
 		printf("$TABLE: Wilson plot:\n");
@@ -836,8 +949,8 @@ namespace ctruncate {
 		//printf(": Wilson plot:0|0.1111x-7|-5:1,2:\n$$");  // limits hardwired
 		if ( _a != -1.0 ) {
             printf(": Wilson plot - estimated B factor = %5.1f :A:1,2,3:\n$$", this->B());  
-            if (mode == BEST ) printf(" 1/resol^2 ln(I/I_th) Best $$\n$$\n");
-			else if (mode == RNA ) printf(" 1/resol^2 ln(I/I_th) RNA $$\n$$\n");
+            if (mode == BEST ) printf(" 1/resol^2 ln(I/I_th) Reference_prot $$\n$$\n");
+			else if (mode == RNA ) printf(" 1/resol^2 ln(I/I_th) Reference_NA $$\n$$\n");
             else printf(" 1/resol^2 ln(I/I_th) linear $$\n$$\n");
         } else {
             printf(": Wilson plot :A:1,2:\n$$");  
@@ -869,25 +982,87 @@ namespace ctruncate {
         }
         
         printf("$$\n\n");
-        
+        if ( mode == BEST ) printf("Computed using Popov & Bourenkov, Acta D (2003) D59, 1145\n");
+        if ( mode == RNA ) printf("Computed using RNA reference set\n");
     }
 	
-	void WilsonB::wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
+	clipper::ftype  WilsonB::obs(const clipper::HKL_data_base& hkldata, const clipper::HKL_data_base::HKL_reference_index& ih)
+	{
+		clipper::ftype a;
+		clipper::xtype working[hkldata.data_size()];
+		hkldata.data_export(ih.hkl(),working);
+		if (hkldata.data_size() == 2) {
+			a = working[0];
+		} else {
+			clipper::ftype a1(working[0]);
+			clipper::ftype a2(working[2]);
+			clipper::ftype s1(working[1]);
+			clipper::ftype s2(working[2]);
+			if (!clipper::Util::is_nan(a1) && !clipper::Util::is_nan(a2) ) {
+				a = 0.5*(a1+a2);
+			} else if (!clipper::Util::is_nan(a1) ) {
+				a = a2;
+			} else if (!clipper::Util::is_nan(a2) ) {
+				a = a1;
+			}
+		}
+		
+		bool  is_intensity(hkldata.type() == "I_sigI_ano" || hkldata.type() == "J_sigJ_ano" || hkldata.type() == "I_sigI");
+		if (!is_intensity) a *= a;
+		return a;		
+	}
+	
+	clipper::ftype  WilsonB::sigobs(const clipper::HKL_data_base& hkldata, const clipper::HKL_data_base::HKL_reference_index& ih)
+	{
+		clipper::ftype a;
+		clipper::ftype s;
+		clipper::xtype working[hkldata.data_size()];
+		hkldata.data_export(ih.hkl(),working);
+		if (hkldata.data_size() == 2) {
+			a = working[0];
+			s = working[1];
+		} else {
+			clipper::ftype a1(working[0]);
+			clipper::ftype a2(working[2]);
+			clipper::ftype s1(working[1]);
+			clipper::ftype s2(working[2]);
+			if (!clipper::Util::is_nan(a1) && !clipper::Util::is_nan(a2) ) {
+				a = 0.5*(a1+a2);
+				s = 0.5*sqrt(s1*s1+s2*s2);
+			} else if (!clipper::Util::is_nan(a1) ) {
+				a = a2;
+				s = s2;
+			} else if (!clipper::Util::is_nan(a2) ) {
+				a = a1;
+				s = s2;
+			}
+		}
+			
+		bool  is_intensity(hkldata.type() == "I_sigI_ano" || hkldata.type() == "J_sigJ_ano" || hkldata.type() == "I_sigI");
+		if (!is_intensity) s *= 2.0*a;
+		return s;
+	}
+	
+	void WilsonB::wilson_straight(const clipper::HKL_data_base& data, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		// Wilson plot
 		int nbins = 60;
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		
 		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.hkl().invresolsq(hklinf.cell());
-			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
-			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( icerings.InRing(reso) != -1 ) 
-				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		for ( HRI ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
+			if (!data.missing(ih.index() ) ) {
+				double reso = ih.hkl().invresolsq(hklinf.cell());
+				xsig[ih] = clipper::data32::I_sigI( obs(data,ih), sigobs(data,ih) );
+				if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+				if ( icerings.InRing(reso) != -1 ) 
+					if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+			} else {
+				xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
+			}
 		}		
 		
 		std::vector<double> params_init( nbins, 1.0 );
@@ -901,8 +1076,9 @@ namespace ctruncate {
         const float res_scaling = 0.0625;      // 4 Angstroms
 		const float maxres_scaling = 0.0816;    // 3.5 Angstroms
 		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( resfilter.contains(ih.invresolsq() ) && !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			if ( resfilter.contains(ih.invresolsq() ) && !xsig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+                float eps = ih.hkl_class().epsilon();
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
@@ -919,12 +1095,12 @@ namespace ctruncate {
 				}
 				lnS += log(totalscat);
 				
-				if (res > minres_scaling && ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell() ) ) == -1 ) ) {  
+				if (res > minres_scaling && ( icerings.InRing(ih.hkl().invresolsq(xsig.base_cell() ) ) == -1 ) ) {  
 					xi.push_back(res);
 					yi.push_back(lnS);
-					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*xsig[ih].sigI() : xsig[ih].sigI();
 					if (weight > 0.0) {
-						wi.push_back(1.0/weight);
+						wi.push_back(std::sqrt(eps)/weight);
 					}
 					else {
 						wi.push_back(0.0);
@@ -948,24 +1124,28 @@ namespace ctruncate {
 	}
 	
 	
-	void WilsonB::wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
+	void WilsonB::wilson_best(const clipper::HKL_data_base& data, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		// Wilson plot
 		int nbins = 60;
                 const float res_scaling = 0.04;   // 7.5 Angstrom
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		
 		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.hkl().invresolsq(hklinf.cell());
-			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
-			//if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( icerings.InRing(reso) != -1 ) 
-				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-		}		
+		for ( HRI ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
+			if (!data.missing(ih.index() ) ) {
+				double reso = ih.hkl().invresolsq(hklinf.cell());
+				xsig[ih] = clipper::data32::I_sigI( obs(data,ih), sigobs(data,ih) );
+				if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+				if ( icerings.InRing(reso) != -1 ) 
+					if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+			} else {
+				xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
+			}
+		}			
 		
 		std::vector<double> params_init( nbins, 1.0 );
 		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
@@ -975,20 +1155,21 @@ namespace ctruncate {
 		std::vector<clipper::ftype> xi, yi, wi, xxi, yyi, yy2i; 
 		float totalscat; 
 		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( resfilter.contains(ih.invresolsq() ) && !isig[ih].missing() && wilsonplot.f(ih) > 0.0 ) {
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			if ( resfilter.contains(ih.invresolsq() ) && !xsig[ih].missing() && wilsonplot.f(ih) > 0.0 ) {
+                float eps = ih.hkl_class().epsilon();
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
 				totalscat = _totalscat*ctruncate::BEST(res);
 				lnS += log(totalscat);
 				
-				if ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell()  ) == -1 ) ) {  
+				if ( icerings.InRing(ih.hkl().invresolsq(xsig.base_cell()  ) == -1 ) ) {  
 					xi.push_back(res);
 					yi.push_back(lnS);
-					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();  //poorer fit at resolution below 7.5A
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*xsig[ih].sigI() : xsig[ih].sigI();  //poorer fit at resolution below 7.5A
 					if (weight > 0.0) {
-						wi.push_back(1.0/weight);
+						wi.push_back(std::sqrt(eps)/weight);
 					}
 					else {
 						wi.push_back(0.0);
@@ -1010,24 +1191,28 @@ namespace ctruncate {
 		}
 	}
 	
-	void WilsonB::wilson_rna(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
+	void WilsonB::wilson_rna(const clipper::HKL_data_base& data, clipper::Range<clipper::ftype>& resfilter, ctruncate::Rings& icerings)
 	// common part
 	{
 		typedef clipper::HKL_data_base::HKL_reference_index HRI;
 		// Wilson plot
 		int nbins = 60;
 		const float res_scaling = 0.04;   // 7.5 Angstrom
-		const clipper::HKL_info& hklinf = isig.hkl_info();
+		const clipper::HKL_info& hklinf = data.hkl_info();
 		int nsym = hklinf.spacegroup().num_symops();
 		
 		clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.hkl().invresolsq(hklinf.cell());
-			xsig[ih] = clipper::data32::I_sigI( (isig[ih].I()), isig[ih].sigI() );
-			//if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( icerings.InRing(reso) != -1 ) 
-				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-		}		
+		for ( HRI ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
+			if (!data.missing(ih.index() ) ) {
+				double reso = ih.hkl().invresolsq(hklinf.cell());
+				xsig[ih] = clipper::data32::I_sigI( obs(data,ih), sigobs(data,ih) );
+				if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+				if ( icerings.InRing(reso) != -1 ) 
+					if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+			} else {
+				xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
+			}
+		}			
 		
 		std::vector<double> params_init( nbins, 1.0 );
 		clipper::BasisFn_binner basis_fo_wilson( xsig, nbins, 1.0 );
@@ -1037,20 +1222,21 @@ namespace ctruncate {
 		std::vector<clipper::ftype> xi, yi, wi, xxi, yyi, yy2i; 
 		float totalscat; 
 		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( resfilter.contains(ih.invresolsq() )  && !isig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			if ( resfilter.contains(ih.invresolsq() )  && !xsig[ih].missing() && wilsonplot.f(ih) > 0.0) {
+                float eps = ih.hkl_class().epsilon();
 				float lnS = -log(wilsonplot.f(ih));
 				float res = ih.invresolsq();
 				
 				totalscat = _totalscat*ctruncate::BEST_rna(res);
 				lnS += log(totalscat);
 				
-				if ( icerings.InRing(ih.hkl().invresolsq(isig.base_cell()  ) == -1 ) ) {  
+				if ( icerings.InRing(ih.hkl().invresolsq(xsig.base_cell()  ) == -1 ) ) {  
 					xi.push_back(res);
 					yi.push_back(lnS);
-					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*isig[ih].sigI() : isig[ih].sigI();  //poorer fit at resolution below 7.5A
+					float weight = ( res < res_scaling ) ? std::pow(res_scaling/res, 2.0f)*xsig[ih].sigI() : xsig[ih].sigI();  //poorer fit at resolution below 7.5A
 					if (weight > 0.0) {
-						wi.push_back(1.0/weight);
+						wi.push_back(std::sqrt(eps)/weight);
 					}
 					else {
 						wi.push_back(0.0);

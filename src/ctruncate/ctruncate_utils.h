@@ -16,6 +16,71 @@ void straight_line_fit(std::vector<clipper::ftype>& x, std::vector<clipper::ftyp
 
 namespace ctruncate {
 	
+	//! class for program start and end.  Extend for some html
+	class CCP4Program
+	{
+	public:
+		CCP4Program( const char* name, const char* vers, const char* rcsdate );
+		~CCP4Program();
+		void summary_beg() const;
+		void summary_end() const;
+		void set_termination_message( std::string msg ) { msg_ = msg; }
+		std::stringstream& xml_start(std::stringstream&) const;
+		std::stringstream& xml_end(std::stringstream&) const;
+	private:
+		bool html, summ;
+		std::string name_, msg_, vers_, rundate_;
+	};
+	
+	//warning, cfile_ may go out of scope
+	class ReflectionFile
+	{
+	public:
+		ReflectionFile() : cfile_(NULL) {}
+		ReflectionFile(clipper::CCP4MTZfile& cfile, std::string& cfilename) : cfile_(&cfile), cfilename_(cfilename)
+		{ cell_ = cfile_->cell(); spgr_ = cfile_->spacegroup(); cdname_ = cfile_->assigned_paths()[0].notail(); }
+		~ReflectionFile() {}
+		
+		void operator()(clipper::CCP4MTZfile& cfile, std::string& cfilename) 
+		{ cfile_ = &cfile; cfilename_ = cfilename; cell_ = cfile_->cell(); spgr_ = cfile_->spacegroup(); cdname_ = cfile_->assigned_paths()[0].notail(); return; }
+		
+		void output() const;
+		std::stringstream& xml_output(std::stringstream&) const;
+		
+	private:
+		clipper::CCP4MTZfile* cfile_;
+		std::string cfilename_;
+		std::string cdname_;
+		clipper::Cell cell_;
+		clipper::Spacegroup spgr_;
+	};
+	
+	//warning, cdata_ may go out of scope
+	class ReflectionData
+	{
+	public:
+		ReflectionData() : cdata_(NULL) {}
+		ReflectionData(clipper::HKL_data_base& cdata) : cdata_(&cdata) {}
+		~ReflectionData() {}
+		
+		void operator()(clipper::HKL_data_base& cdata) { cdata_ = &cdata; return; }
+		//wrap HKL_data_base functions
+		clipper::String type() const { return cdata_->type(); }
+		int num_obs() const;
+		int num_reflections() const { return cdata_->num_obs(); }
+		int num_centric() const;
+		int num_acentric() const;
+		clipper::Range<clipper::ftype> invresolsq_range() const { return cdata_->invresolsq_range(); }
+        clipper::HKL max_hkl() const;
+        clipper::HKL max_sym_hkl() const;
+	
+		void output() const;
+		std::stringstream& xml_output(std::stringstream&) const;
+		
+	private:
+		clipper::HKL_data_base* cdata_;
+	};
+	
 	class Utils
 	{
 		
@@ -176,6 +241,61 @@ namespace ctruncate {
 		
 		void CheckRing(const int& Iring) const;
 	};
+	
+	
+	//! Resolution ordinal gernerator
+	/*! This class is a helper class for functions which need to divide
+	 reflections up by resolution whilst guaranteeing a certain
+	 distribution of number of reflections per range. It takes a list
+	 of reflections, one at a time, and calculates a function to get
+	 the approximate ordinal number of a reflection in a list sorted by
+	 resolution.
+	 */
+	class ResolutionRange_ordinal : public clipper::Generic_ordinal
+	{
+	public:
+		//! initialiser: takes an HKL_info and uses all reflections.
+		template<class T> void init( const clipper::HKL_info& hklinfo, const clipper::Range<T>&, const clipper::ftype& power );
+		//! initialiser: takes an HKL_data & uses non-missing reflections.
+		template<class T> void init( const clipper::HKL_data_base& hkldata, const clipper::Range<T>&, const clipper::ftype& power );
+		//! initialiser: takes an HKL_data + Cell & uses non-missing reflections.
+		template<class T> void init( const clipper::HKL_data_base& hkldata, const clipper::Cell& cell, const clipper::Range<T>&, const clipper::ftype& power );
+	};
+	
+	// resolution ordinal
+	
+	template <class T> void ResolutionRange_ordinal::init( const clipper::HKL_info& hklinfo, const clipper::Range<T>& range, const clipper::ftype& power )
+	{
+		clipper::Generic_ordinal::init( range, 1000 );
+		for (clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next() ) 
+			if (range.contains(ih.invresolsq() ) ) accumulate( ih.invresolsq() );
+		prep_ordinal();
+		
+		for ( int i = 0; i < hist.size(); i++ )
+			hist[i] = pow( hist[i], 1.0/power );
+	}
+	
+	template<class T> void ResolutionRange_ordinal::init( const clipper::HKL_data_base& hkldata, const clipper::Range<T>& range, const clipper::ftype& power )
+	{
+		Generic_ordinal::init( range, 1000 );
+		for (clipper::HKL_info::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) )
+			if (range.contains(ih.invresolsq() ) ) accumulate( ih.invresolsq() );
+		prep_ordinal();
+		
+		for ( int i = 0; i < hist.size(); i++ )
+			hist[i] = pow( hist[i], 1.0/power );
+	}
+	
+	template<class T> void ResolutionRange_ordinal::init( const clipper::HKL_data_base& hkldata, const clipper::Cell& cell, const clipper::Range<T>& range, const clipper::ftype& power )
+	{
+		Generic_ordinal::init( range, 1000 );
+		for (clipper::HKL_info::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) )
+			if (range.contains(ih.invresolsq() ) ) accumulate( ih.hkl().invresolsq( cell ) );
+		prep_ordinal();
+		
+		for ( int i = 0; i < hist.size(); i++ )
+			hist[i] = pow( hist[i], 1.0/power );
+	}
 	
 	
 }

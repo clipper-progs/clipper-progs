@@ -15,59 +15,16 @@
 #include "clipper/clipper-ccp4.h"
 #include "alt_hkl_datatypes.h"
 #include "intensity_scale.h"
+#include "intensity_target.h"
+#include "ctruncate_wilson.h"
+#include "cpsf_utils.h"
 
 namespace ctruncate {
 	
 	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::ResolutionFn& Sigma);
 	
 	int cumulative_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma);
-	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0));
-	
-	//void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog);
-	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0) );
-	
-	//--------------------------------------------------------------
-	
-	template<class D> class YorgoModis
-	{
-	public:
-		enum TYPE { F, I };
-		YorgoModis( clipper::ftype maxres=3.0, int nbins=60, clipper::U_aniso_orth uao = clipper::U_aniso_orth(1.0) ) : _nbins(nbins), _uao(uao),
-		_somov(nbins,0.0), _somsdov(nbins,0.0), _numov(nbins,0), _enumov(nbins,0.0),
-		_somdir(3*nbins,0.0), _somsddir(3*nbins,0.0), _numdir(3*nbins,0.0), _enumdir(3*nbins,0.0)
-		{}
-		void operator() (clipper::HKL_data<D>& fo, clipper::Resolution reso=clipper::Resolution());
-		void plot();
-		
-	private:
-		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
-		template<class T> const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
-		template<class T> const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
-		template<class T> const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
-		template<class T> TYPE type( const clipper::datatypes::F_sigF<T>& f ) { return F; }
-		template<class T> TYPE type( const clipper::datatypes::I_sigI<T>& f ) { return I; }
-		
-		TYPE _t;
-		clipper::Resolution _reso;       //resolution in calculation
-		int _nbins;                    //number of bins
-		clipper::U_aniso_orth _uao;   //anisotropy matrix for directions
-		
-		clipper::Mat33<clipper::ftype> _e123; //directions
-		
-		std::vector<clipper::ftype> _somov;
-		std::vector<clipper::ftype> _somsdov;
-		std::vector<int> _numov;
-		std::vector<clipper::ftype> _enumov;
-		std::vector<clipper::ftype> _somdir;    
-		std::vector<clipper::ftype> _somsddir;
-		std::vector<int>  _numdir;
-		std::vector<clipper::ftype>  _enumdir;
 			
-		int _nzerosigma;
-	};
-		
 	//--------------------------------------------------------------
 	
 	template<class D> class Completeness
@@ -105,62 +62,43 @@ namespace ctruncate {
 		std::vector<clipper::ftype> _standard;
 	};
 	
-	//--------------------------------------------------------------
-	
-	template<class T> class AnisoPlot
-	{
-	public:
-		AnisoPlot( clipper::U_aniso_orth& uao);
-		AnisoPlot( clipper::ftype scale, clipper::U_aniso_orth& uao);
-		void loggraph();
-		
-	private:
-		std::vector<T> _eigen; //eigenvalues
-		clipper::Mat33<T> _e123; //directions
-		
-		std::vector<std::vector<clipper::Coord_orth> > _isoline1;
-		std::vector<std::vector<clipper::Coord_orth> > _isoline2;
-		std::vector<std::vector<clipper::Coord_orth> > _isoline3;
-		
-		std::vector<clipper::Coord_orth> isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-					 clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac=1.0/1.17741, int steps=60);
-		
-		clipper::Coord_orth point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-								  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac=1.0/1.17741);
-		
-		void ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
-					 clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav);
-	};
 		
 	//--------------------------------------------------------------
 	//! Check for tNCS using patterson map
 	/*! Use patterson map to check for tNCA
 	 \ingroup g_funcobj */
 	
-	template<class T> class tNCS
+	class tNCS
 	{
 	public:
 		//! operator
-		const std::vector<clipper::Symop>& operator()(clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution reso=clipper::Resolution(4.0));
+		template <class T, template<class> class D> const std::vector<clipper::Symop>& operator()(clipper::HKL_data<D<T> >& hkldata, clipper::Resolution reso=clipper::Resolution(4.0));
 		//! has tNCS test
-		bool hasNCS() { return peaks.size() != 0; }
+		bool hasNCS() const { return _peaks.size() != 0; }
 		//! number of operators
-		int numOps() { return peaks.size(); } 
+		int numOps() const { return _peaks.size(); } 
 		//! return peak height
-		clipper::ftype height(int i) { return peak_height[i]; }
+		clipper::ftype height(int i) const { return _peak_height[i]; }
 		//! return peak prob
-		clipper::ftype prob(int i) { return peak_prob[i]; }
+		clipper::ftype prob(int i) const { return _peak_prob[i]; }
 		//! print out text summary
-		void summary();
+		void output()const;
+		//! output stringstream with xml
+		std::stringstream& xml_output(std::stringstream&) const ;
         //! return tNCS operator as fractional coordinate
-        const clipper::Symop& operator[](const int i) { return peaks[i]; }
+        const clipper::Symop& operator[](const int i) const { return _peaks[i]; }
 		
-	private:
-		clipper::HKL_data<clipper::datatypes::I_sigI<T> >* intensity; //!< dataset
-		clipper::Resolution reso; //!< resolution limits
-		std::vector<clipper::Symop> peaks; //!< located peaks
-		std::vector<T> peak_height; //!< height of located peaks as fraction of origin
-		std::vector<T> peak_prob; //!< Zwartz estimation of probability
+	private:		
+		template<class T> const T&    I( const clipper::datatypes::F_sigF<T>& f ) { return f.f()*f.f(); }
+		template<class T> const T&    I( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		template<class T> const T&    I( const clipper::datatypes::F_sigF_ano<T>& f ) { return f.f()*f.f(); }
+		template<class T> const T&    I( const clipper::datatypes::I_sigI_ano<T>& f ) { return f.I(); }
+		
+		clipper::HKL_data_base *_base;; //!< dataset
+		clipper::Resolution _reso; //!< resolution limits
+		std::vector<clipper::Symop> _peaks; //!< located peaks
+		std::vector<clipper::ftype> _peak_height; //!< height of located peaks as fraction of origin
+		std::vector<clipper::ftype> _peak_prob; //!< Zwartz estimation of probability
 		
 	};
 	
@@ -194,97 +132,129 @@ namespace ctruncate {
 		std::vector<float> _patterson;
 	};
 	
-    //---------Calculate anisotropy-------------------------------------
-    
-    //! Compute anisotropy correction
-    /*! Perform calculation using ML with spherical restraint or hybrid wilson plus correction method
+	//ResolStats_base------------------------------------------------
+	//! Base class for anomalous diffraction statistics
+    /*! Gives resolution bins
      */
-    template <class SCALER, class DATA, class T> class AnisoCorr {
-    public:
-        //enum TYPE { F, I };
-        //! empty constructor
-        AnisoCorr() : _is_protein(false), _is_nucl(false) {}
-		//! set reso range
-		explicit AnisoCorr(clipper::Range<clipper::ftype>& reso) : _is_protein(false), _is_nucl(false), _range(reso) {}
-		//! set reso range
-		explicit AnisoCorr(bool protein, bool rna) : _is_protein(protein), _is_nucl(rna) {}
-        //! constructor using observation, I_sigI or F_sigF
-        AnisoCorr(clipper::HKL_data<DATA>& observed, bool protein=false, bool rna=false, clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>() ) 
-		: _observed(&observed), _is_protein(protein), _is_nucl(rna), _range(reso) { calc(observed); }
-        //! destructor
-        ~AnisoCorr() { }
-        //! perform calculation returing the U_aniso_orth
-        const clipper::U_aniso_orth& operator()(clipper::HKL_data<DATA>& observed, bool protein=true, bool rna=false, 
-												clipper::Range<clipper::ftype> reso = clipper::Range<clipper::ftype>());
-        //! return the U_aniso_orth
-        const clipper::U_aniso_orth& u_aniso_orth( Scaling::TYPE t ) const;
-        //! return the scale factor
-		const T kscale() const { return _iscale.kscale(); }
-
-    protected:
-        //! routines to allow use of F_sigF and I_sigI
-        const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
-        const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
-        const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
-        const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
-        
-        //! calculate anisotropy correction, eigenvalues and directional vector
-        void calc(clipper::HKL_data<DATA>& observed);
-                  
-    private:   
-        clipper::HKL_data<DATA>* _observed; //!< pointer for observed data
-        bool _is_protein;                //!< cell contains protein
-        bool _is_nucl;                    //!< cell contains rna/dna
-		clipper::Range<clipper::ftype> _range; //!< active reso range
-        SCALER _iscale;                        //!< scaling object
-        //clipper::U_aniso_orth _U_f;      //!< computed correction structure factors
-        //clipper::U_aniso_orth _U_i;      //!< computed correction intensity
-        //clipper::ftype _scale;           //!< computed scale factor
-    };
-    
-    //! Compute eigenvalues and eigenvectors associated with an U_aniso_orth
-    /*! Store eigenvalues and eigenvectors for U_ansio_orth decomposition.
-     Store in a*, b*, c* order, but also reference max eigenvalue
-     */
-    template <class T> class AnisoDirection  {
-    public:
-        //! construct from UAO
-        explicit AnisoDirection(clipper::U_aniso_orth& uao);
-        //! return eigenvalues, sorted closest to a*,b*,c*
-        const std::vector<T>& eigenValues() const 
-        { return _eigenvalues; }
-        //! return eigenvectors, sorted closest to a*,b*,c*
-        const std::vector<clipper::Vec3<T> >& eigenVectors() const 
-        { return _eigenvectors; }
-        //! return max eigenvalue
-         T max() { return _max; }
-        
-    private:
-        clipper::U_aniso_orth* _uao;       //!< reference setup UAO
-        std::vector<T> _eigenvalues; //!< sorted eigenvalues
-        std::vector<clipper::Vec3<T> > _eigenvectors; //!< sorted eigenvalues
-        T _max;               //!< max eigenvalue
-    };
-
-// vs resolution and half dataset CC
-template<class T> class AnomStats
+	class ResolStats_base {
+	public:
+		ResolStats_base(const clipper::HKL_data_base& hkldata, const bool missing = true, const int nrefln = 500) {
+            clipper::Range<clipper::ftype> range;
+            if (missing) {
+                //_s_ord.init( hkldata, 1.0 );
+                for (clipper::HKL_data_base::HKL_reference_index  ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) )
+                    range.include( ih.invresolsq() );
+            } else {
+                //_s_ord.init( hkldata.hkl_info(), 1.0);
+                for (clipper::HKL_data_base::HKL_reference_index  ih = hkldata.hkl_info().first(); !ih.last(); ih.next() )
+                    range.include( ih.invresolsq() );
+            }
+			init(hkldata,range,missing,nrefln);
+		}
+        template <class T> ResolStats_base(const clipper::HKL_data_base& hkldata, const clipper::Range<T>& range, const bool missing = true, const int nrefln = 500) {
+            clipper::Range<clipper::ftype> tmp = range;
+            tmp.include(range.max() ); tmp.include(range.min() );
+            init(hkldata,tmp,missing,nrefln);
+        }
+		ResolStats_base(const ResolStats_base& base) {
+			init(base);
+		}
+		ResolStats_base() {}
+		~ResolStats_base() {}
+		int operator()(const clipper::ftype) const;
+		virtual clipper::ftype operator[](int index) const;
+		ResolStats_base& operator=(const ResolStats_base&); 
+		int size() const { return _b_reso.size(); }
+		const clipper::HKL_data_base* parent() { return _base; }
+        clipper::Range<clipper::ftype> binRange(const int i) {
+            return _b_range[i];
+        }
+        clipper::ftype binContains(const int i) {
+            return _b_contains[i];
+        }
+	protected:
+		void init(const clipper::HKL_data_base& hkldata, const clipper::Range<clipper::ftype>&, const bool, const int);
+		void init(const ResolStats_base&);
+		bool is_intensity() { return _base->type() == "I_sigI_ano" || _base->type() == "J_sigJ_ano" || _base->type() == "I_sigI"; }
+		bool is_anomalous() { return _base->type() == "I_sigI_ano" || _base->type() == "J_sigJ_ano" || _base-> type() == "F_sigF_ano"; }
+	private:
+		clipper::Generic_ordinal _s_ord;    //<! ordinal
+        clipper::Range<clipper::ftype> _range; //<! range of analysis
+		std::vector<clipper::ftype> _b_reso;   //<! mean resolution in bin
+        std::vector<clipper::ftype> _b_contains; //<! total number in bin
+        std::vector<clipper::Range<clipper::ftype> > _b_range; //< ! reso range of bin
+		clipper::HKL_data_base *_base;
+	};
+	
+	class AnomStats_measurability : public ResolStats_base {
+	public:
+		AnomStats_measurability(const clipper::HKL_data_base& hkldata);
+		AnomStats_measurability(const ResolStats_base&);
+		AnomStats_measurability() {}
+		~AnomStats_measurability() {}
+		clipper::ftype operator[](int index) const;
+		AnomStats_measurability& operator=(const AnomStats_measurability&); 
+	private:
+		std::vector<clipper::ftype> _meas;
+		
+		void calc(const clipper::HKL_data_base& hkldata);
+	};
+	
+	class AnomStats_bijveot : public ResolStats_base {
+	public:
+		AnomStats_bijveot(const clipper::HKL_data_base& hkldata);
+		AnomStats_bijveot(const ResolStats_base&);
+		AnomStats_bijveot() {}
+		~AnomStats_bijveot() {}
+		clipper::ftype operator[](int index) const;
+		AnomStats_bijveot& operator=(const AnomStats_bijveot&); 
+	private:
+		std::vector<clipper::ftype> _meandI;
+		
+		void calc(const clipper::HKL_data_base& hkldata);
+	};
+	
+	class AnomStats_signoise : public ResolStats_base {
+	public:
+		AnomStats_signoise(const clipper::HKL_data_base&);
+		AnomStats_signoise(const ResolStats_base&);
+		AnomStats_signoise() {}
+		~AnomStats_signoise() {}
+		clipper::ftype operator[](int index) const;
+		AnomStats_signoise& operator=(const AnomStats_signoise&); 
+	private:
+		std::vector<clipper::ftype> _meandI;
+		
+		void calc(const clipper::HKL_data_base& hkldata);
+	};
+	
+//! Perform analysis of Anomalous data
+	/*! Wrap anomalous output
+	 */
+class AnomStats
 {
 public:
-    enum TYPE { F, I };
-    AnomStats(clipper::HKL_data<clipper::datatypes::J_sigJ_ano<T> >& hkl_data, int nbins=60);
-    AnomStats(clipper::HKL_data<clipper::datatypes::G_sigG_ano<T> >& hkl_data, int nbins=60);
-protected:
-    const T&    obs_pl( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.I_pl(); }
-    const T&    obs_mi( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.I_mi(); }
-    const T& sigobs_pl( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.sigI_pl(); }
-    const T& sigobs_mi( const clipper::datatypes::J_sigJ_ano<T>& f ) { return f.sigI_mi(); }
-    const T&    obs_pl( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.f_pl(); }
-    const T&    obs_mi( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.f_mi(); }
-    const T& sigobs_pl( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.sigf_pl(); }
-    const T& sigobs_mi( const clipper::datatypes::G_sigG_ano<T>& f ) { return f.sigf_mi(); }
-
+	//construct with data
+    AnomStats(const clipper::HKL_data_base& hkldata);
+	//return bijveot range
+	const clipper::Range<clipper::ftype>& bijveot_range() { return _bij_range; }
+	//return anomalous signal to noise
+	const clipper::Range<clipper::ftype>& anom_signal_range() { return _signoise_range; }
+	//return measureability
+	const clipper::Range<clipper::ftype>& measurability_range() { return _meas_range; }
+	//return output
+	void output();
+	//return xml
+	std::stringstream& xml_output(std::stringstream&);
+	//return data type (intensity or amplitudes)
+	bool is_intensity() { return _base->type() == "I_sigI_ano" || _base->type() == "J_sigJ_ano"; }
 private:
-    int _nbins;
+	clipper::HKL_data_base *_base;  //!< parent data object
+	clipper::Range<clipper::ftype> _bij_range, _signoise_range, _meas_range;  //!< computed ranges
+	ResolStats_base _binner; //!< resolution bins
+	AnomStats_measurability _meas;  //!< measureability object
+	AnomStats_bijveot _bij;         //!< biojvet object
+	AnomStats_signoise _signoise;   //!< signal to noise object
 };
 
 	//--------------------------------------------------------------
@@ -319,34 +289,510 @@ private:
 		clipper::ftype _cc; //!< average CC
 	};
 	
-	//----Rings analysis----------------------------------------------
-	//! Analyse for rings
-	class IceRings_analyse
+	//NonAnomAnalysis-------------------------------------------------
+	//! analyse data for completeness
+	class HKLStats_completeness : public ResolStats_base {
+	public: 
+		HKLStats_completeness(const clipper::HKL_data_base& hkldata, clipper::ftype val=-99.0);
+		HKLStats_completeness(const ResolStats_base&, clipper::ftype val=-99.0);
+		HKLStats_completeness(clipper::ftype val=-99.0) { _val=val; }
+		~HKLStats_completeness() {}
+		clipper::ftype operator[](int index) const;
+		clipper::ftype IoversigI() { return _val; }
+		HKLStats_completeness& operator=(const HKLStats_completeness&); 
+	private:
+		std::vector<clipper::ftype> _completeness;  //!< completeness stats
+		clipper::ftype _val;                //!< reference value
+		
+		void calc(const clipper::HKL_data_base& hkldata);
+	};
+
+	//NonAnomAnalysis-------------------------------------------------
+	//! analyse data for completeness
+	class HKLStats_Rstandard : public ResolStats_base {
+	public: 
+		HKLStats_Rstandard(const clipper::HKL_data_base& hkldata, clipper::ftype val=-99.0);
+		HKLStats_Rstandard(const ResolStats_base&, clipper::ftype val=-99.0);
+		HKLStats_Rstandard() {  }
+		~HKLStats_Rstandard() {}
+		clipper::ftype operator[](int index) const;
+		HKLStats_Rstandard& operator=(const HKLStats_Rstandard&); 
+	private:
+		std::vector<clipper::ftype> _Rstandard;  //!< completeness stats
+		
+		void calc(const clipper::HKL_data_base& hkldata);
+	};
+	
+    //----bins analysis----------------------------------------------
+	//! Analyse for bins
+	class Rings_analyse
 	{
 	public:
 		//! contructor
-		IceRings_analyse(clipper::ftype tol=4.0) : _iceTolerance(tol) { }
-                ~IceRings_analyse() { }
+		Rings_analyse(clipper::ftype tol=4.0) : _zTolerance(tol) { }
+        ~Rings_analyse() { }
 		//! check for presence of  rings
-		template <class T> bool operator()(clipper::HKL_data<T>& data, ctruncate::Rings& rings);
-		//!output summary
-		std::string format();
+		template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >&, Rings&);
 		
 	private:
-		template <class T> clipper::ftype obs(clipper::HKL_data<T>& f );
-		template <class T> clipper::ftype sigobs(clipper::HKL_data<T>& f );
+		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
+		template<class T> const T&    obs( const clipper::datatypes::I_sigI<T>& f ) { return f.I(); }
+		template<class T> const T&    obs( const clipper::datatypes::F_sigF_ano<T>& f ) { return f.f(); }
+		template<class T> const T&    obs( const clipper::datatypes::I_sigI_ano<T>& f ) { return f.I(); }
+		template<class T> const T& sigobs( const clipper::datatypes::F_sigF<T>& f ) { return f.sigf(); }
+		template<class T> const T& sigobs( const clipper::datatypes::I_sigI<T>& f ) { return f.sigI(); }
+		template<class T> const T& sigobs( const clipper::datatypes::F_sigF_ano<T>& f ) { return f.sigf(); }
+		template<class T> const T& sigobs( const clipper::datatypes::I_sigI_ano<T>& f ) { return f.sigI(); }
 		
+    protected:
 		ctruncate::Rings _ideal_rings;              //!< expected values in rings
 		std::vector<clipper::ftype > _comp;        //!< completeness
 		
-		clipper::HKL_data_base *_data;              //!< pointer to data
+		const clipper::HKL_data_base *_data;              //!< pointer to data
 		ctruncate::Rings* _rings;                  //!< pointer to rings data
 		
-		clipper::ftype _iceTolerance;              //!< tolerance for Z-score
+		clipper::ftype _zTolerance;              //!< tolerance for Z-score
 	};
+
+	//----Rings analysis----------------------------------------------
+	//! Analyse for ice rings
+	class IceRings_analyse : public Rings_analyse
+	{
+	public:
+		//! contructor
+		IceRings_analyse(clipper::ftype tol=4.0) : Rings_analyse(tol) {
+            _ice.DefaultIceRings();
+            _ice.ClearSums();
+        }
+        ~IceRings_analyse() { }
+		//! check for presence of  rings
+		template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
+		//!output summary
+		std::string output();
+		//!output xml
+		std::stringstream& xml_output(std::stringstream&);
+		//!ice rings?
+		bool present();
+        //!return rings data
+        ctruncate::Rings& rings() { return _ice; }
 		
+	private:
+		ctruncate::Rings _ice;                  //!< pointer to rings data
+	};
+    
+    //----Rings analysis----------------------------------------------
+	//! Analyse for outlier rings
+	class OutlierRings_analyse : public Rings_analyse
+	{
+	public:
+		//! contructor
+		OutlierRings_analyse(clipper::ftype tol=4.0) : Rings_analyse(tol) {}
+        ~OutlierRings_analyse() { }
+		//! check for presence of  rings
+         template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data); 
+		//!output summary
+		std::string output();
+		//!output xml
+		std::stringstream& xml_output(std::stringstream&);
+		//!ice rings?
+		bool present();
+        //!return rings data
+        ctruncate::Rings& rings() { return _outliers; }
+		
+	private:
+		ctruncate::Rings _outliers;                  //!< pointer to rings data
+	};
+
+	//NonAnomAnalysis-------------------------------------------------
+	//! analyse data for completeness, wilson temp and ice rings
+	class HKLAnalysis {
+	public:
+		//constructor
+		inline HKLAnalysis() {}
+		template<class T, template<class> class D> HKLAnalysis(const clipper::HKL_data< D<T> >&);
+		//return an estimate of the active range
+		const clipper::Range<clipper::ftype>& active_range();
+		//output to std::out
+		void output();
+		//return xml
+		std::stringstream& xml_output(std::stringstream&);
+		//return data type (intensity or amplitudes)
+		bool is_intensity() { return _data->type() == "I_sigI_ano" || _data->type() == "J_sigJ_ano" || _data->type() == "I_sigI"; }
+		bool is_anomalous() { return _data->type() == "I_sigI_ano" || _data->type() == "J_sigJ_ano" || _data-> type() == "F_sigF_ano"; }
+		//return has ice rings
+		bool is_iced() { return _ira.present();}
+		//return ice rings
+		Rings& ice_rings() { return _ira.rings(); }
+	private:
+		const clipper::HKL_data_base *_data;              //!< pointer to data
+		
+		ResolStats_base _binner; //!< resolution bins
+		std::vector<HKLStats_completeness> _completeness;  //!< completeness object
+		std::vector<clipper::Range<clipper::ftype> > _activerange; //!< resolution range over which we have 85% of data
+		HKLStats_Rstandard _Rstandard; //!< rstandard object
+        ResolStats_base _lb; //!< low resolution bins
+        HKLStats_completeness _lcompleteness; //!< low resolution completeness object
+		
+		IceRings_analyse _ira; //!< analysis of ice rings
+        
+        OutlierRings_analyse _ora; //!< analysis for outliers
+		
+		static clipper::ftype ACCEPTABLE;       //!< acceptable stat for active range
+		clipper::Range<clipper::ftype> _active; //!< store active range
+		
+		WilsonB _wilsonB; //!<< wilson B plot
+	};
 	
 	
+	   
+	//template members----------------------------------------------
+	/*! constructor for the HKL analysis.
+     \param hkldata Experimental intensities
+     \return type HKLAnalysis */
+    template<class T, template<class> class D> HKLAnalysis::HKLAnalysis( const clipper::HKL_data< D<T> >& hkldata ) {
+		_data = &hkldata;
+		_completeness.resize(7);
+		_activerange.resize(7);
+		
+		bool missing=false;
+		_binner  = ResolStats_base(hkldata,missing);
+		_completeness[0]    = HKLStats_completeness(_binner);
+		_completeness[1]    = HKLStats_completeness(_binner,1.0);
+		_completeness[2]    = HKLStats_completeness(_binner,2.0);
+		_completeness[3]    = HKLStats_completeness(_binner,3.0);
+		_completeness[4]    = HKLStats_completeness(_binner,5.0);
+		_completeness[5]    = HKLStats_completeness(_binner,10.0);
+		_completeness[6]    = HKLStats_completeness(_binner,15.0);
+		_Rstandard = HKLStats_Rstandard(_binner);
+				
+        int nbins = _binner.size();
+		
+		int NBINS = _binner.size();
+		for (int ii=0; ii != _completeness.size() ; ++ii) {
+			if ((_completeness[ii])[0] >= ACCEPTABLE) _activerange[ii].include(hkldata.invresolsq_range().min());
+			if ((_completeness[ii])[NBINS-1] >= ACCEPTABLE) _activerange[ii].include(hkldata.invresolsq_range().max());
+			for ( int i=1 ; i != NBINS ; ++i) {
+				int i1=i-1;
+				if ( (_completeness[ii])[i] >= ACCEPTABLE && (_completeness[ii])[i1] < ACCEPTABLE ) {
+                    //_activerange[ii].include(0.5*(_binner[i]+_binner[i1]) );
+					_activerange[ii].include(
+                                             _binner[i1]+(ACCEPTABLE-(_completeness[ii])[i1])/((_completeness[ii])[i]-(_completeness[ii])[i1])*(_binner[i]-_binner[i1])
+                    );
+				} else if ( (_completeness[ii])[i] < ACCEPTABLE && (_completeness[ii])[i1] >= ACCEPTABLE ) {
+					//_activerange[ii].include(0.5*(_binner[i]+_binner[i1]) );
+                    _activerange[ii].include(
+                                             _binner[i1]+(ACCEPTABLE-(_completeness[ii])[i1])/((_completeness[ii])[i]-(_completeness[ii])[i1])*(_binner[i]-_binner[i1]) );
+				}
+			}
+		}
+		
+        {
+            clipper::Range<clipper::ftype> lrange;
+            lrange.include((_binner.binRange(0) ).min() );
+            if (_binner.size() > 2 ) lrange.include( (_binner.binRange(1) ).max() );
+            else lrange.include( (_binner.binRange(0) ).max() );
+            //low resolution completeness
+            _lb = ResolStats_base(hkldata,lrange,missing,100);
+            _lcompleteness = HKLStats_completeness(_lb);
+        }
+        
+		//ice rings
+		_ira(hkldata);
+		
+        Rings ice=_ira.rings();
+		//wilson plot (how to handle contents)
+		_wilsonB(hkldata,&(this->active_range()),&ice );
+        
+        _ora(hkldata);
+		
+		return;
+	}
+	
+    //----Ice Rings analysis----------------------------------------------
+	/*! operator to do ice rings analysis
+	 \param data Reflection data
+	 \param rings rings to be analysed
+	 \return rings rejected?
+	 */
+	template<class T, template<class> class D> bool IceRings_analyse::operator()(const clipper::HKL_data< D<T> >& data)
+	{
+        for (int i = 0; i != _ice.Nrings(); ++i) _ice.SetReject(i, true);
+        return this->Rings_analyse::operator()(data,_ice);
+    }
+    
+	//----Rings analysis----------------------------------------------
+	/*! operator to do rings analysis
+	 \param data Reflection data
+	 \param rings rings to be analysed
+	 \return rings rejected?
+	 */
+	template<class T, template<class> class D> bool Rings_analyse::operator()(const clipper::HKL_data< D<T> >& data, Rings& rings)
+	{
+        _rings = &rings;
+        
+		typedef clipper::HKL_data_base::HKL_reference_index HRI;
+		
+		int nr = _rings->Nrings();
+		
+		_ideal_rings.Copy(*_rings);
+		_data = &data;
+		_comp.resize(_rings->Nrings());
+		
+		clipper::ftype maxres = data.hkl_info().resolution().invresolsq_limit();
+		
+		_rings->ClearSums();
+		_ideal_rings.ClearSums();
+		
+		clipper::HKL_data<D<T> > xsig(data.hkl_info() );
+		// dataset with all ice rings removed
+		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
+			double reso = ih.invresolsq();
+			xsig[ih] = D<T>( obs(data[ih]), sigobs(data[ih]) );
+			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
+			if ( _rings->InRing(reso) != -1 )
+				if ( _rings->Reject( _rings->InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+		}
+		
+		int nreflns=1000;
+		//int Ncentric = 0;
+		int Nreflections = 0;
+		int _nbins=60;
+        {
+			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+				clipper::ftype reso = ih.invresolsq();
+				if ( !xsig[ih].missing() ) ++Nreflections;
+			}
+			if ( _nbins == 0 && nreflns != 0 ) {
+				_nbins = std::max( Nreflections/nreflns , 1);
+			} else if ( nreflns == 0 && _nbins != 0 ) {
+				//nprm = nbins;
+			} else {
+				_nbins = std::max( Nreflections/nreflns , _nbins);
+				/*
+				 double np1(nbins+0.499);
+				 double np2(nuse/nrefln);
+				 double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+				 _nbins = std::max( int(np), 1 );
+				 */
+			}
+        }
+		
+		std::vector<float> summeas(_nbins,0.0), sumov(_nbins,0.0), sumI(_nbins,0.0);
+		
+		for ( HRI ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+			clipper::ftype reso = ih.invresolsq();
+			clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+			int ring=_rings->InRing(reso);
+			if ( ring == -1 ) {
+				int bin = int( double(_nbins) * reso / maxres - 0.001);
+				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
+				if ( bin < _nbins && bin >= 0 ) {
+					sumov[bin] += mult;
+					if ( !data[ih].missing() ) {
+						summeas[bin] += mult;
+						sumI[bin] += mult*data[ih].I();
+					}
+				}
+			} else {
+				if (!ih.hkl_class().centric() )
+					if ( ring <  _rings->Nrings() && ring >= 0 ) {
+						_rings->AddObs(ring,data[ih],reso,mult);
+					}
+			}
+		}
+		
+		
+		//smoothing
+		{
+			float tmp1, tmp2, tmp3, tmp4;
+			tmp1 = sumov[0];
+			tmp2 = summeas[0];
+			for (int ii = 0 ; ii != _nbins ; ++ii) {
+				if (ii == 0 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
+				} else if ( ii == _nbins-1 ) {
+					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
+					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
+				} else {
+					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
+					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
+				}
+				tmp1 = sumov[ii];
+				tmp2 = summeas[ii];
+				sumov[ii] = tmp3;
+				summeas[ii] = tmp4;
+			}
+		}
+		
+		for (int i=0 ; i != _rings->Nrings() ; ++ i) {
+			float reso = _rings->MeanSSqr(i);
+			if ( reso <= maxres ) {
+				int bin = int( double(_nbins) * reso / maxres - 0.001);
+				_comp[i] = summeas[bin]/sumov[bin];
+			}
+		}
+		
+		std::vector<double> params_ice( _nbins, 1.0 );
+		clipper::BasisFn_spline basis_ice( xsig, _nbins, 2.0 );
+		TargetFn_meanInth<D<T> > target_ice( xsig, 1 );
+		clipper::ResolutionFn mean( xsig.hkl_info(), basis_ice, target_ice, params_ice );
+		
+		
+		// repeat with ibest
+		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+			clipper::ftype reso = ih.invresolsq();
+			clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+			int ring=_ideal_rings.InRing(reso);
+			if ( ring != -1 ) {
+				if (!ih.hkl_class().centric() )
+					if ( ring <  _rings->Nrings() && ring >= 0 ) {
+						D<T> tmp = D<T>(ih.hkl_class().epsilon()*mean.f(ih),0.0);
+						_ideal_rings.AddObs(ring,tmp,reso,mult);
+					}
+			}
+		}
+		
+		for (int i = 0; i != _rings->Nrings(); ++i) {
+			bool reject = false;
+			float reso = _rings->MeanSSqr(i);
+			if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
+				if (std::abs(_rings->MeanI(i)-_ideal_rings.MeanI(i))/_rings->MeanSigI(i) > _zTolerance) reject = true;
+			}
+			_rings->SetReject(i, reject);
+		}
+		
+		
+		bool icer = false;
+        for ( int i = 0; i != nr; ++i) if (_rings->Reject(i) ) icer = true;
+		
+		return icer;
+	}
+	
+	//-------tNCS peak search-------------------------------------------
+	
+	template <class T, template<class> class D> const std::vector<clipper::Symop>& tNCS::operator() (clipper::HKL_data<D<T> >& hkldata, clipper::Resolution r)
+	{
+		_base = &hkldata;
+		_reso = r;
+		
+		clipper::HKL_info hklinf(hkldata.hkl_info());
+		clipper::Cell cell = hklinf.cell();
+		clipper::Spacegroup spgr = hklinf.spacegroup();
+		
+		// check for pseudo translation (taken from cpatterson)
+		// get Patterson spacegroup
+		clipper::HKL_info hklp;
+		clipper::Spacegroup
+		pspgr( clipper::Spgr_descr( spgr.generator_ops().patterson_ops() ) );
+		hklp.init( pspgr, cell, _reso, true );
+		
+		// make patterson coeffs
+		clipper::HKL_data<clipper::datatypes::F_phi<T> > fphi( hklp );
+		for ( clipper::HKL_data_base::HKL_reference_index  ih = fphi.first(); !ih.last(); ih.next() ) {
+			D<T> i = hkldata[ih.hkl()];
+			if ( !i.missing() ) {
+				fphi[ih].f() = I(i);
+				fphi[ih].phi() = 0.0 ;
+			}
+		}
+		
+		// make grid if necessary
+		clipper::Grid_sampling grid( pspgr, cell, _reso );
+		
+		// make xmap
+		clipper::Xmap<float> patterson( pspgr, cell, grid );
+		patterson.fft_from( fphi );
+		
+		//peak search in patterson
+		PeakSearch pksch;                      // peak search object
+		
+		int npeak = 10;
+		
+		const std::vector<int>& ppks = pksch( patterson );
+		
+		if (ppks.size() == 0 || ppks.size() == 1 ) return _peaks;
+		
+		clipper::ftype rho0 = pksch.zero();
+		clipper::ftype top_peak = patterson.get_data( ppks[0] ) - rho0;
+		int i = 0;
+		clipper::ftype pval(0.0);
+		
+		for (int i = 1 ; i != ppks.size() ; ++i ) {
+			clipper::ftype next_peak = patterson.get_data( ppks[i] ) - rho0;
+			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid);
+			clipper::ftype ratio = next_peak/top_peak;
+			clipper::ftype dist2 = std::sqrt(c0.lengthsq(cell) );
+			// look for peaks > 20% of origin peak and at least 14A distant from origin
+			// precentage estimate is Zwartz CCP4 Newsletter 42
+			if (dist2 > 14.0 ) {
+				const clipper::ftype aval = 0.0679;
+				const clipper::ftype bval = 3.56;
+				pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;
+				if (pval < 1.0) {
+					//clipper::Rtop<clipper::ftype> tmp;
+					_peaks.push_back(clipper::Symop(clipper::RTop_frac(clipper::Mat33<clipper::ftype>::identity(), c0) ) );
+					_peak_prob.push_back(pval);
+					_peak_height.push_back(ratio);
+				}
+			}	
+		} 
+		
+		return _peaks;
+	}
+	
+    //----Rings analysis----------------------------------------------
+	/*! operator to do ice rings analysis
+	 \param data Reflection data
+	 \param rings rings to be analysed
+	 \return rings rejected?
+	 */
+    template<class T, template<class> class D> bool OutlierRings_analyse::operator()(const clipper::HKL_data< D<T> >& data)
+	{
+        clipper::Range<clipper::ftype> range=data.invresolsq_range();
+        std::cout << range.max() << " " << range.min() << std::endl;
+        clipper::Generic_ordinal s_ord;
+        s_ord.init( range, 1000 );
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+                s_ord.accumulate( ih.invresolsq() );
+        }
+        s_ord.prep_ordinal();
+        
+        int nbins(0);
+        int Nreflections(0);
+        int nreflns(200);
+        
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() )
+            ++Nreflections;
+        
+        {
+            if ( nbins == 0 && nreflns != 0 ) {
+                nbins = std::max( Nreflections/nreflns , 1);
+                //} else if ( nreflns == 0 && nprm2 != 0 ) {
+                //nprm = nbins;
+            } else {
+                //nprm2 = std::max( Nreflections/nreflns , nprm2);
+                double np1(nbins+0.499);
+                double np2(Nreflections/nreflns);
+                double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+                nbins = std::max( int(np), 1 );
+            }
+        }
+        
+        std::vector<clipper::ftype> bmax(nbins,0.0), bmin(nbins,99999.0);
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+            clipper::ftype s = ih.invresolsq();
+            int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( s ) ), nbins-1 );
+            if ( s > bmax[bin] ) bmax[bin] = s;
+            if ( s < bmin[bin] ) bmin[bin] = s;
+        }
+        
+        for (int i=0 ; i != nbins; ++i ) _outliers.AddRing( (0.5*(1.0/std::sqrt(bmax[i])+1.0/std::sqrt(bmin[i]) ) ), std::fabs(0.5*(bmax[i]-bmin[i])) );
+        
+        _outliers.ClearSums();
+        return this->Rings_analyse::operator()(data,_outliers);
+    }
+
 }
 
 #endif

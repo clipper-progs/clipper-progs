@@ -64,11 +64,11 @@ namespace ctruncate {
 		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0)
 		{ numatoms.resize(6); }
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
+		clipper::ftype operator()(const clipper::HKL_data_base& data, const clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, int nresidues, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
+		clipper::ftype operator()(const clipper::HKL_data_base& data, int nresidues, const clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
-		float operator()(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::MPolymerSequence& poly, clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
+		clipper::ftype operator()(const clipper::HKL_data_base& data, clipper::MPolymerSequence& poly, const clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
 		
 		float a() {return _a;}
 		float b() {return _b;}
@@ -79,6 +79,8 @@ namespace ctruncate {
 		
 		void summary();
 		void plot (int nbins = 60);
+		void output();
+		std::stringstream& xml_output(std::stringstream&);
 		
 	private:			
 		MODE mode;
@@ -86,7 +88,7 @@ namespace ctruncate {
         clipper::ftype _b;  // intercept
         clipper::ftype _siga; // uncertainty in intercept
         clipper::ftype _sigb; //uncertainty in b-value
-		clipper::HKL_data<clipper::data32::I_sigI>* intensity;
+		const clipper::HKL_data_base* intensity;
 		clipper::Range<clipper::ftype> activeRange; //range of data used in calculation
         
         
@@ -106,9 +108,11 @@ namespace ctruncate {
 		static const int Satoms[];         // number of S per residue
 		static const int Patoms[];         // number of P per residue
 		
-		void wilson_straight(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
-		void wilson_best(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
-		void wilson_rna(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
+		clipper::ftype obs(const clipper::HKL_data_base&, const clipper::HKL_data_base::HKL_reference_index&);              // return observed value as I or f*f
+		clipper::ftype sigobs(const clipper::HKL_data_base&, const clipper::HKL_data_base::HKL_reference_index&);           // return suitable sigma
+		void wilson_straight(const clipper::HKL_data_base&, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
+		void wilson_best(const clipper::HKL_data_base&, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
+		void wilson_rna(const clipper::HKL_data_base&, clipper::Range<clipper::ftype>& range, ctruncate::Rings& ice);
 	};
 		
 }

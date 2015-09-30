@@ -58,9 +58,10 @@ bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
 	src/caniso$(EXEEXT) src/convert2mtz$(EXEEXT) \
 	src/csymmatch$(EXEEXT) src/cmaplocal$(EXEEXT) \
 	src/cncsfrommodel$(EXEEXT) src/cmodeltoseq$(EXEEXT) \
-	src/cmapcut$(EXEEXT) src/comit$(EXEEXT) src/cmapcoeff$(EXEEXT) src/cmtzsplit$(EXEEXT) \
-	src/cmtzjoin$(EXEEXT) src/ctruncate/ctruncate$(EXEEXT) \
-	src/pirate/cpirate$(EXEEXT) src/pirate/cmakereference$(EXEEXT) \
+	src/cmapcut$(EXEEXT) src/comit$(EXEEXT) src/cmapcoeff$(EXEEXT) \
+	src/cmtzsplit$(EXEEXT) src/cmtzjoin$(EXEEXT) \
+	src/ctruncate/ctruncate$(EXEEXT) src/pirate/cpirate$(EXEEXT) \
+	src/pirate/cmakereference$(EXEEXT) \
 	src/buccaneer/cbuccaneer$(EXEEXT) \
 	src/buccaneer/csequins$(EXEEXT) src/parrot/cparrot$(EXEEXT) \
 	src/sloop/csloop$(EXEEXT) src/nautilus/cnautilus$(EXEEXT)
@@ -149,6 +150,11 @@ am_src_cinvfft_OBJECTS = src/cinvfft.$(OBJEXT)
 src_cinvfft_OBJECTS = $(am_src_cinvfft_OBJECTS)
 src_cinvfft_LDADD = $(LDADD)
 src_cinvfft_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_cmapcoeff_OBJECTS = src/cmapcoeff.$(OBJEXT)
+src_cmapcoeff_OBJECTS = $(am_src_cmapcoeff_OBJECTS)
+src_cmapcoeff_LDADD = $(LDADD)
+src_cmapcoeff_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_src_cmapcut_OBJECTS = src/cmapcut.$(OBJEXT)
 src_cmapcut_OBJECTS = $(am_src_cmapcut_OBJECTS)
 src_cmapcut_LDADD = $(LDADD)
@@ -182,10 +188,6 @@ am_src_comit_OBJECTS = src/comit.$(OBJEXT)
 src_comit_OBJECTS = $(am_src_comit_OBJECTS)
 src_comit_LDADD = $(LDADD)
 src_comit_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_src_cmapcoeff_OBJECTS = src/cmapcoeff.$(OBJEXT)
-src_cmapcoeff_OBJECTS = $(am_src_cmapcoeff_OBJECTS)
-src_cmapcoeff_LDADD = $(LDADD)
-src_cmapcoeff_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_src_convert2mtz_OBJECTS = src/convert2mtz.$(OBJEXT)
 src_convert2mtz_OBJECTS = $(am_src_convert2mtz_OBJECTS)
 src_convert2mtz_LDADD = $(LDADD)
@@ -232,7 +234,9 @@ am_src_ctruncate_ctruncate_OBJECTS =  \
 	src/ctruncate/ctruncate_matthews.$(OBJEXT) \
 	src/ctruncate/ctruncate_wilson.$(OBJEXT) \
 	src/ctruncate/intensity_scale.$(OBJEXT) \
-	src/ctruncate/best.$(OBJEXT) src/ctruncate/best_rna.$(OBJEXT)
+	src/ctruncate/best.$(OBJEXT) src/ctruncate/best_rna.$(OBJEXT) \
+	src/ctruncate/alt_hkl_datatypes.$(OBJEXT) \
+	src/ctruncate/ctruncate_aniso.$(OBJEXT)
 src_ctruncate_ctruncate_OBJECTS =  \
 	$(am_src_ctruncate_ctruncate_OBJECTS)
 src_ctruncate_ctruncate_LDADD = $(LDADD)
@@ -333,14 +337,14 @@ SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
 	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
 	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
-	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
-	$(src_cmodeltoseq_SOURCES) $(src_cmtzjoin_SOURCES) \
-	$(src_cmtzsplit_SOURCES) $(src_cncsfrommodel_SOURCES) \
-	$(src_comit_SOURCES) $(src_cmapcoeff_SOURCES) $(src_convert2mtz_SOURCES) \
-	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
-	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
-	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
-	$(src_ctruncate_ctruncate_SOURCES) \
+	$(src_cmapcoeff_SOURCES) $(src_cmapcut_SOURCES) \
+	$(src_cmaplocal_SOURCES) $(src_cmodeltoseq_SOURCES) \
+	$(src_cmtzjoin_SOURCES) $(src_cmtzsplit_SOURCES) \
+	$(src_cncsfrommodel_SOURCES) $(src_comit_SOURCES) \
+	$(src_convert2mtz_SOURCES) $(src_cpatterson_SOURCES) \
+	$(src_cphasecombine_SOURCES) $(src_cphasematch_SOURCES) \
+	$(src_csfcalc_SOURCES) $(src_csigmaa_SOURCES) \
+	$(src_csymmatch_SOURCES) $(src_ctruncate_ctruncate_SOURCES) \
 	$(src_nautilus_cnautilus_SOURCES) \
 	$(src_parrot_cparrot_SOURCES) \
 	$(src_pirate_cmakereference_SOURCES) \
@@ -349,14 +353,14 @@ DIST_SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
 	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
 	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
-	$(src_cmapcut_SOURCES) $(src_cmaplocal_SOURCES) \
-	$(src_cmodeltoseq_SOURCES) $(src_cmtzjoin_SOURCES) \
-	$(src_cmtzsplit_SOURCES) $(src_cncsfrommodel_SOURCES) \
-	$(src_comit_SOURCES) $(src_cmapcoeff_SOURCES) $(src_convert2mtz_SOURCES) \
-	$(src_cpatterson_SOURCES) $(src_cphasecombine_SOURCES) \
-	$(src_cphasematch_SOURCES) $(src_csfcalc_SOURCES) \
-	$(src_csigmaa_SOURCES) $(src_csymmatch_SOURCES) \
-	$(src_ctruncate_ctruncate_SOURCES) \
+	$(src_cmapcoeff_SOURCES) $(src_cmapcut_SOURCES) \
+	$(src_cmaplocal_SOURCES) $(src_cmodeltoseq_SOURCES) \
+	$(src_cmtzjoin_SOURCES) $(src_cmtzsplit_SOURCES) \
+	$(src_cncsfrommodel_SOURCES) $(src_comit_SOURCES) \
+	$(src_convert2mtz_SOURCES) $(src_cpatterson_SOURCES) \
+	$(src_cphasecombine_SOURCES) $(src_cphasematch_SOURCES) \
+	$(src_csfcalc_SOURCES) $(src_csigmaa_SOURCES) \
+	$(src_csymmatch_SOURCES) $(src_ctruncate_ctruncate_SOURCES) \
 	$(src_nautilus_cnautilus_SOURCES) \
 	$(src_parrot_cparrot_SOURCES) \
 	$(src_pirate_cmakereference_SOURCES) \
@@ -571,6 +575,8 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/intensity_scale.cpp \
 				  src/ctruncate/best.cpp \
                                   src/ctruncate/best_rna.cpp \
+                                  src/ctruncate/alt_hkl_datatypes.cpp \
+                                  src/ctruncate/ctruncate_aniso.cpp \
 				  src/ctruncate/ctruncate_utils.h \
 				  src/ctruncate/cpsf_utils.h \
 				  src/ctruncate/twinlaws.h \
@@ -585,7 +591,8 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/best.h \
                                   src/ctruncate/best_rna.h \
 				  src/ctruncate/intensity_target.h \
-				  src/ctruncate/alt_hkl_datatypes.h
+				  src/ctruncate/alt_hkl_datatypes.h \
+                                  src/ctruncate/ctruncate_aniso.h
 
 src_pirate_cpirate_SOURCES = src/pirate/cpirate.cpp \
 			     src/pirate/simulate-lib.cpp \
@@ -877,6 +884,11 @@ src/cinvfft.$(OBJEXT): src/$(am__dirstamp) \
 src/cinvfft$(EXEEXT): $(src_cinvfft_OBJECTS) $(src_cinvfft_DEPENDENCIES) $(EXTRA_src_cinvfft_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/cinvfft$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_cinvfft_OBJECTS) $(src_cinvfft_LDADD) $(LIBS)
+src/cmapcoeff.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/cmapcoeff$(EXEEXT): $(src_cmapcoeff_OBJECTS) $(src_cmapcoeff_DEPENDENCIES) $(EXTRA_src_cmapcoeff_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/cmapcoeff$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_cmapcoeff_OBJECTS) $(src_cmapcoeff_LDADD) $(LIBS)
 src/cmapcut.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/cmapcut$(EXEEXT): $(src_cmapcut_OBJECTS) $(src_cmapcut_DEPENDENCIES) $(EXTRA_src_cmapcut_DEPENDENCIES) src/$(am__dirstamp)
@@ -911,10 +923,6 @@ src/comit.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/comit$(EXEEXT): $(src_comit_OBJECTS) $(src_comit_DEPENDENCIES) $(EXTRA_src_comit_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/comit$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_comit_OBJECTS) $(src_comit_LDADD) $(LIBS)
-src/cmapcoeff.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/cmapcoeff$(EXEEXT): $(src_cmapcoeff_OBJECTS) $(src_cmapcoeff_DEPENDENCIES) $(EXTRA_src_cmapcoeff_DEPENDENCIES) src/$(am__dirstamp)
-	@rm -f src/cmapcoeff$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(src_cmapcoeff_OBJECTS) $(src_cmapcoeff_LDADD) $(LIBS)
 src/convert2mtz.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/convert2mtz$(EXEEXT): $(src_convert2mtz_OBJECTS) $(src_convert2mtz_DEPENDENCIES) $(EXTRA_src_convert2mtz_DEPENDENCIES) src/$(am__dirstamp)
@@ -991,6 +999,12 @@ src/ctruncate/intensity_scale.$(OBJEXT):  \
 src/ctruncate/best.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
 	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
 src/ctruncate/best_rna.$(OBJEXT): src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/alt_hkl_datatypes.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
+	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
+src/ctruncate/ctruncate_aniso.$(OBJEXT):  \
+	src/ctruncate/$(am__dirstamp) \
 	src/ctruncate/$(DEPDIR)/$(am__dirstamp)
 src/ctruncate/ctruncate$(EXEEXT): $(src_ctruncate_ctruncate_OBJECTS) $(src_ctruncate_ctruncate_DEPENDENCIES) $(EXTRA_src_ctruncate_ctruncate_DEPENDENCIES) src/ctruncate/$(am__dirstamp)
 	@rm -f src/ctruncate/ctruncate$(EXEEXT)
@@ -1113,6 +1127,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cinvfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcoeff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcut.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmaplocal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmodeltoseq.Po@am__quote@
@@ -1120,7 +1135,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmtzsplit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cncsfrommodel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/comit.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcoeff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/convert2mtz.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cpatterson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cphasecombine.Po@am__quote@
@@ -1149,11 +1163,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/csequins.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simplex-lib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/buccaneer/$(DEPDIR)/simulate-lib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/alt_hkl_datatypes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/best.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/best_rna.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/cpsf_utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_analyse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_aniso.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_matthews.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_moments.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ctruncate/$(DEPDIR)/ctruncate_parity.Po@am__quote@
@@ -1169,9 +1185,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-sequence.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-ss-find.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-target.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tidy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tools.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-util.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nautilus-tidy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/nautilus/$(DEPDIR)/nucleicacid_db.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/cparrot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/parrot/$(DEPDIR)/parrot-lib.Po@am__quote@
