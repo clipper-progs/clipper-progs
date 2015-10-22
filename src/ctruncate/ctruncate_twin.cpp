@@ -352,13 +352,13 @@ namespace ctruncate {
             printf("First principles calculation has found no potential twinning operators\n\n");
         else
             printf("First principles calculation has found %d potential twinning operators\n\n", size() );
-            /*clipper::String s;
+            clipper::String s;
             MatrixToString(twinoper,s);
             std::cout << "Twinning operator: " << s << std::endl;
             std::cout << "      Obliquity of the twin operator is " << sc_c[k] << " degrees" << std::endl;
-            std::cout << "      (above 2 degrees probably be ignored)" << std::endl;*/
+            std::cout << "      (above 2 degrees probably be ignored)" << std::endl;
 
-        /*} else {
+        } else {
             printf("The tablulated operators give %d potential twinning operators\n\n", size() );
         }
     }*/

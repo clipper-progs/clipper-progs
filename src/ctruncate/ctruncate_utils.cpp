@@ -285,14 +285,14 @@ namespace ctruncate
 			if (cdata_->data_size() == 2) {
 				a = working[0];
 				s = working[1];
-				if (!clipper::Util::is_nan(a) && ! s >= 0.0 ) ++num;
+				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;
 			} else {
 				a = working[0];
 				s = working[1];
-				if (!clipper::Util::is_nan(a) && ! s >= 0.0 ) ++num;
+				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;
 				a = working[2];
 				s = working[3];
-				if (!clipper::Util::is_nan(a) && ! s >= 0.0 ) ++num;	}
+				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;	}
 		}
 		return num;
 	}
