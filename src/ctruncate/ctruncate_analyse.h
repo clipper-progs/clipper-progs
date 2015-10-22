@@ -423,6 +423,10 @@ private:
 		bool is_iced() { return _ira.present();}
 		//return ice rings
 		Rings& ice_rings() { return _ira.rings(); }
+        //return wilson B factor
+        clipper::ftype wilson_Bfactor() { return _wilsonB.B(); }
+        //return wilson intercept
+        clipper::ftype wilson_intercept() { return _wilsonB.intercept(); }
 	private:
 		const clipper::HKL_data_base *_data;              //!< pointer to data
 		

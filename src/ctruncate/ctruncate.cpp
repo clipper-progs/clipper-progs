@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.2";
-    clipper::String prog_date = "$Date: 2015/07/01";
+    clipper::String prog_vers = "1.17.3";
+    clipper::String prog_date = "$Date: 2015/10/23";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -387,12 +387,16 @@ int main(int argc, char **argv)
 
 	std::stringstream xml_comp;
 	ctruncate::Rings icerings;
+    clipper::ftype scalef=1.0;
 	{
 		HKLAnalysis hklanalysis(isig);
 		hklanalysis.output();
 		active_range = hklanalysis.active_range();
 		icerings = hklanalysis.ice_rings();
         hklanalysis.xml_output(xml_comp);
+        // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
+        // so only scale if B positive
+        if ( hklanalysis.wilson_intercept() > 0 ) scalef = sqrt(hklanalysis.wilson_intercept() );
 		//std::cout << (hklanalysis.xml_output(xml_comp)).str() << std::endl;
 	}
 	
@@ -438,45 +442,6 @@ int main(int argc, char **argv)
 		//std::cout << xml_tncs.str() << std::endl;
 	}
 	
-    // if something went wrong with Wilson scaling, B could be negative, giving exponentially large scaled SF's
-	// so only scale if B positive
-	float scalef = 1.0;
-	{
-		//Wilson plot
-		//std::vector<float> wilson(2,0.0f);
-		//nprm = 60*std::max(int(sqrt(float(Nreflections))),nbins );
-		clipper::MMoleculeSequence seq;
-		
-		WilsonB::MODE wilson_flag;
-		if (is_nucl) {
-			wilson_flag = WilsonB::RNA;
-		} else {
-			wilson_flag = WilsonB::BEST;
-		}
-		WilsonB wilson( wilson_flag);
-		if ( ipseq != "NONE" ) {
-			clipper::SEQfile seqf;
-			seqf.read_file( ipseq );
-			seqf.import_molecule_sequence( seq );
-			MPolymerSequence poly = seq[0];
-			wilson(isig,poly,&active_range, &icerings);
-		} else if (nresidues > 0) {
-			wilson(isig,nresidues,&active_range, &icerings);
-		} else {
-			wilson(isig,&active_range,&icerings);
-		}
-		
-		clipper::String comment("Smooth");
-		printf("\n");
-		prog.summary_beg();
-		wilson.summary();
-		prog.summary_end();
-		printf("\n");
-		wilson.plot();
-		
-		if ( wilson.intercept() > 0 ) scalef = sqrt(wilson.intercept() );
-	}
-
 	//setup aniso copy of isig
 	HKL_data<data32::I_sigI> ianiso(hklinf);
 	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
