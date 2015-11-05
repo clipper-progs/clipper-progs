@@ -754,7 +754,6 @@ private:
     template<class T, template<class> class D> bool OutlierRings_analyse::operator()(const clipper::HKL_data< D<T> >& data)
 	{
         clipper::Range<clipper::ftype> range=data.invresolsq_range();
-        std::cout << range.max() << " " << range.min() << std::endl;
         clipper::Generic_ordinal s_ord;
         s_ord.init( range, 1000 );
         for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {

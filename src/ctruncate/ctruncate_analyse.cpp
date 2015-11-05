@@ -1493,13 +1493,13 @@ namespace ctruncate {
             clipper::ftype rmax = _data->hkl_info().resolution().limit();
             clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
             clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
-            std::cout << "    " << int(_completeness[ii].IoversigI()) <<  "        ";
+            std::cout << "    " << std::setw(3) << int(_completeness[ii].IoversigI()) <<  "        ";
             if ((_activerange[ii]).min() < (_activerange[ii]).max() )
                 std::cout << "    " << std::fixed << std::setprecision(2) << rmin << " - " << amax << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
             else
                 std::cout << "   NaN - NaN" << std::endl;
         }
-        std::cout << "    N/A        ";
+        std::cout << "     N/A           ";
         if ((_activerange[0]).min() < (_activerange[0]).max() )
             std::cout << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - " << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
         else
