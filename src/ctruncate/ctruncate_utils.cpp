@@ -282,17 +282,18 @@ namespace ctruncate
 		clipper::ftype a,s;
 		clipper::xtype working[cdata_->data_size()];
 		for ( clipper::HKL_info::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) {
+                        cdata_->data_export(ih.hkl(),working);
 			if (cdata_->data_size() == 2) {
-				a = working[0];
-				s = working[1];
-				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;
+				a = clipper::ftype(working[0]);
+				s = clipper::ftype(working[1]);
+                                if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;
 			} else {
 				a = working[0];
 				s = working[1];
-				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;
+				if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;
 				a = working[2];
 				s = working[3];
-				if (!clipper::Util::is_nan(a) && (s > 0.0) ) ++num;	}
+				if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;	}
 		}
 		return num;
 	}
