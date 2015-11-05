@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.3";
-    clipper::String prog_date = "$Date: 2015/10/23";
+    clipper::String prog_vers = "1.17.4";
+    clipper::String prog_date = "$Date: 2015/11/05";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -475,7 +475,7 @@ int main(int argc, char **argv)
 	
 	//want to use anisotropy correction and resolution truncation for twinning tests
 	
-	float lval(0.0);
+	bool hastwin(false);
     std::stringstream xml_twin;
 	{
 		clipper::Range<clipper::ftype> range_Twin(active_range.min(), (!reso_u2.is_null() ) ?  std::min(active_range.max(),1.0/std::pow(reso_u2.limit(),2) ) : active_range.max() );
@@ -485,7 +485,7 @@ int main(int argc, char **argv)
 		twins.output();
 		//std::stringstream xt;
 		//std::cout << (twins.xml_output(xml_twin) ).str() << std::endl;
-        twins.xml_output(xml_twin);
+		twins.xml_output(xml_twin);
 		//Parity group analysis
 		ctruncate::parity(ianiso, active_range.max(), nbins);
     }
@@ -608,7 +608,7 @@ int main(int argc, char **argv)
 			reso_trunc = 
 			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
 		}
-		if ( prior == AUTO && (hastncs || 0.440 > lval) ) {
+		if ( prior == AUTO && (hastncs || hastwin ) ) {
 			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
 			prior = FLAT;
 		}

@@ -1563,7 +1563,19 @@ namespace ctruncate {
 		}
 	}*/
 	
-	
+        //-------bool if twinned or not---------------------------------------------
+        //currently H and L only, and strong twin
+        bool TwinAnalysis::hastwin() {
+            bool twinned(false);
+            clipper::ftype lval = _ltest.statistic();
+            clipper::ftype alpha(0.0);
+            for (int i = 0; i != _htests.size() ; ++ i) {
+               alpha = std::max(alpha,_htests[i].fraction() );
+            }
+            if ( alpha > 0.1 || 0.440 < lval ) twinned=true;
+            return true;
+        }	
+
 	//-------output to std::out-------------------------------------------------
 	
 	void TwinAnalysis::output() {

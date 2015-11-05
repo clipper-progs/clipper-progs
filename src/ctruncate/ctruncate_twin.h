@@ -405,6 +405,8 @@ namespace ctruncate {
         template<class T, template<class> class D >  TwinAnalysis(clipper::HKL_data< D<T> >&, std::vector<clipper::Symop>&);
         template<class T, template<class> class D, class TT >  TwinAnalysis(clipper::HKL_data< D<T> >&, std::vector<clipper::Symop>&, clipper::Range<TT>&);
         //template<class D, class TT >  TwinAnalysis(clipper::HKL_data< D >&, std::vector<clipper::Symop>&, clipper::Range<TT>&);
+        // return if twinned or not
+        bool hastwin();
         //print to std::out
         void output();
         //return xml
