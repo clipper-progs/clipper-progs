@@ -136,7 +136,8 @@ add_executable(csequins
  src/buccaneer/buccaneer-sequence.cpp
  src/buccaneer/simulate-lib.cpp
  src/buccaneer/buccaneer-prot.cpp
- src/buccaneer/buccaneer-lib.cpp)
+ src/buccaneer/buccaneer-lib.cpp
+ src/buccaneer/buccaneer-tidy.cpp)
 target_link_libraries(csequins ${CCP4_LIBRARIES})
 
 add_executable(cparrot
