@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.5";
-    clipper::String prog_date = "$Date: 2015/11/05";
+    clipper::String prog_vers = "1.17.6";
+    clipper::String prog_date = "$Date: 2015/11/27";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
 		//std::cout << xml_aniso.str() << std::endl;
 		
 		//set ianiso
-		uaoc=aa.u_aniso_orth_F();
+		uaoc=aa.u_aniso_orth_corr_F();
 		clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,aa.u_aniso_orth_corr_F() );
 		ianiso.compute(ianiso, compute_s);
 	}
@@ -758,7 +758,7 @@ int main(int argc, char **argv)
 				( !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 2 : 0;
             }
             for ( HRI ih = Dano.first(); !ih.last(); ih.next() ) {
-                Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::fabs(fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
+                Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? (fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
 				Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::sqrt(fsig_ano[ih.hkl()].sigf_pl()*fsig_ano[ih.hkl()].sigf_pl()+fsig_ano[ih.hkl()].sigf_mi()*fsig_ano[ih.hkl()].sigf_mi() ) : clipper::Util::nan();
 				if ( ih.hkl_class().centric() ) {
 					Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();

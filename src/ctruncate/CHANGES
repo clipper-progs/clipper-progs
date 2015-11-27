@@ -1,3 +1,6 @@
+1.17.6 (27/11/15)
+- fix DANO issue, plus overzealous anisotropy correction
+
 1.17.1
 - large changes for ccp4i2
 
