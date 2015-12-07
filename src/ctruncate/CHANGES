@@ -1,3 +1,6 @@
+1.17.7 (07/12/15)
+- use full range for moments plots
+
 1.17.6 (27/11/15)
 - fix DANO issue, plus overzealous anisotropy correction
 

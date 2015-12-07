@@ -1,6 +1,6 @@
 //
 //     CTRUNCATE
-//     Copyright (C) 2006-2013 Norman Stein, Charles Ballard
+//     Copyright (C) 2006-2015 Norman Stein, Charles Ballard
 //
 //     This code is distributed under the terms and conditions of the
 //     CCP4 Program Suite Licence Agreement as a CCP4 Application.
@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.6";
-    clipper::String prog_date = "$Date: 2015/11/27";
+    clipper::String prog_vers = "1.17.7";
+    clipper::String prog_date = "$Date: 2015/13/07";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -444,12 +444,10 @@ int main(int argc, char **argv)
 	
 	//setup aniso copy of isig
 	HKL_data<data32::I_sigI> ianiso(hklinf);
-	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) {  
-		if (active_range.contains(ih.invresolsq() ) ) {
-			float I = isig[ih.hkl()].I();
-			float sigI = isig[ih.hkl()].sigI();
-			ianiso[ih] = clipper::data32::I_sigI( I, sigI );
-		}
+	for ( HRI ih = ianiso.first(); !ih.last(); ih.next() ) { 
+		float I = isig[ih.hkl()].I();
+		float sigI = isig[ih.hkl()].sigI();
+		ianiso[ih] = clipper::data32::I_sigI( I, sigI );
 	}
 	
     // anisotropy estimation
