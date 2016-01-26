@@ -542,8 +542,6 @@ private:
 		_data = &data;
 		_comp.resize(_rings->Nrings());
 		
-		clipper::ftype maxres = data.hkl_info().resolution().invresolsq_limit();
-		
 		_rings->ClearSums();
 		_ideal_rings.ClearSums();
 		
@@ -552,93 +550,63 @@ private:
 		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
 			xsig[ih] = D<T>( obs(data[ih]), sigobs(data[ih]) );
-			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( _rings->InRing(reso) != -1 )
-				if ( _rings->Reject( _rings->InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+            int ring = _rings->InRing(reso);
+            if ( ring != -1 ) {
+				if ( _rings->Reject( _rings->InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
+            }
+            if ( ring <  _rings->Nrings() && ring >= 0 ) {
+                clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+                if (ih.hkl_class().centric() ) {
+                    _rings->AddObs(ring,D<T>(0.5*data[ih].I(),0.5*data[ih].sigI() ),reso,mult);
+                } else {
+                    _rings->AddObs(ring,data[ih],reso,mult);
+                }
+            }
 		}
 		
-		int nreflns=1000;
-		//int Ncentric = 0;
-		int Nreflections = 0;
-		int _nbins=60;
-        {
-			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-				clipper::ftype reso = ih.invresolsq();
-				if ( !xsig[ih].missing() ) ++Nreflections;
-			}
-			if ( _nbins == 0 && nreflns != 0 ) {
-				_nbins = std::max( Nreflections/nreflns , 1);
-			} else if ( nreflns == 0 && _nbins != 0 ) {
-				//nprm = nbins;
-			} else {
-				_nbins = std::max( Nreflections/nreflns , _nbins);
-				/*
-				 double np1(nbins+0.499);
-				 double np2(nuse/nrefln);
-				 double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
-				 _nbins = std::max( int(np), 1 );
-				 */
-			}
+        clipper::Range<clipper::ftype> range=data.invresolsq_range();
+        clipper::Generic_ordinal s_ord;
+        s_ord.init( range, 1000 );
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+            s_ord.accumulate( ih.invresolsq() );
         }
+        s_ord.prep_ordinal();
+        
+        int nbins(0);
+        int Nreflections(0);
+        int nreflns(500);
+        
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() )
+            ++Nreflections;
+        
+        nbins = std::max( Nreflections/nreflns , 1);
+        
+		std::vector<float> summeas(nbins,0.0), sumov(nbins,0.0);
 		
-		std::vector<float> summeas(_nbins,0.0), sumov(_nbins,0.0), sumI(_nbins,0.0);
-		
-		for ( HRI ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
-			clipper::ftype reso = ih.invresolsq();
-			clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
-			int ring=_rings->InRing(reso);
-			if ( ring == -1 ) {
-				int bin = int( double(_nbins) * reso / maxres - 0.001);
-				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-				if ( bin < _nbins && bin >= 0 ) {
-					sumov[bin] += mult;
-					if ( !data[ih].missing() ) {
-						summeas[bin] += mult;
-						sumI[bin] += mult*data[ih].I();
-					}
-				}
-			} else {
-				if (!ih.hkl_class().centric() )
-					if ( ring <  _rings->Nrings() && ring >= 0 ) {
-						_rings->AddObs(ring,data[ih],reso,mult);
-					}
-			}
-		}
-		
-		
-		//smoothing
-		{
-			float tmp1, tmp2, tmp3, tmp4;
-			tmp1 = sumov[0];
-			tmp2 = summeas[0];
-			for (int ii = 0 ; ii != _nbins ; ++ii) {
-				if (ii == 0 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
-				} else if ( ii == _nbins-1 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
-				} else {
-					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
-				}
-				tmp1 = sumov[ii];
-				tmp2 = summeas[ii];
-				sumov[ii] = tmp3;
-				summeas[ii] = tmp4;
-			}
-		}
-		
-		for (int i=0 ; i != _rings->Nrings() ; ++ i) {
-			float reso = _rings->MeanSSqr(i);
-			if ( reso <= maxres ) {
-				int bin = int( double(_nbins) * reso / maxres - 0.001);
-				_comp[i] = summeas[bin]/sumov[bin];
-			}
-		}
-		
-		std::vector<double> params_ice( _nbins, 1.0 );
-		clipper::BasisFn_spline basis_ice( xsig, _nbins, 2.0 );
+        // completeness
+        {
+            for ( HRI ih = xsig.hkl_info().first(); !ih.last(); ih.next() ) {
+                clipper::ftype reso = ih.invresolsq();
+                if ( _rings->InRing(reso) == -1 ) {
+                    clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    clipper::ftype s = ih.invresolsq();
+                    sumov[bin] += mult;
+                    if ( !xsig[ih].missing() ) {
+                        summeas[bin] += mult;
+                    }
+                }
+                
+                for (int i=0 ; i != _rings->Nrings() ; ++ i) {
+                    float reso = _rings->MeanSSqr(i);
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    _comp[i] = summeas[bin]/sumov[bin];
+                }
+            }
+        }
+        
+		std::vector<double> params_ice( nbins, 1.0 );
+		clipper::BasisFn_spline basis_ice( xsig, nbins, 2.0 );
 		TargetFn_meanInth<D<T> > target_ice( xsig, 1 );
 		clipper::ResolutionFn mean( xsig.hkl_info(), basis_ice, target_ice, params_ice );
 		
@@ -649,18 +617,18 @@ private:
 			clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
 			int ring=_ideal_rings.InRing(reso);
 			if ( ring != -1 ) {
-				if (!ih.hkl_class().centric() )
-					if ( ring <  _rings->Nrings() && ring >= 0 ) {
-						D<T> tmp = D<T>(ih.hkl_class().epsilon()*mean.f(ih),0.0);
-						_ideal_rings.AddObs(ring,tmp,reso,mult);
-					}
+                if (ih.hkl_class().centric() ) {
+                    _ideal_rings.AddObs(ring,D<T>(0.5*ih.hkl_class().epsilon()*mean.f(ih),0.0 ),reso,mult);
+                } else {
+                    _ideal_rings.AddObs(ring,D<T>(ih.hkl_class().epsilon()*mean.f(ih),0.0 ),reso,mult);
+                }
 			}
 		}
 		
 		for (int i = 0; i != _rings->Nrings(); ++i) {
 			bool reject = false;
 			float reso = _rings->MeanSSqr(i);
-			if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
+			if ( reso <= range.max() && _rings->MeanSigI(i) > 0.0f ) {
 				if (std::abs(_rings->MeanI(i)-_ideal_rings.MeanI(i))/_rings->MeanSigI(i) > _zTolerance) reject = true;
 			}
 			_rings->SetReject(i, reject);
