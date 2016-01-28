@@ -329,7 +329,7 @@ private:
 	{
 	public:
 		//! contructor
-		Rings_analyse(clipper::ftype tol=4.0) : _zTolerance(tol) { }
+		Rings_analyse() { }
         ~Rings_analyse() { }
 		//! check for presence of  rings
 		template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >&, Rings&);
@@ -350,8 +350,6 @@ private:
 		
 		const clipper::HKL_data_base *_data;              //!< pointer to data
 		ctruncate::Rings* _rings;                  //!< pointer to rings data
-		
-		clipper::ftype _zTolerance;              //!< tolerance for Z-score
 	};
 
 	//----Rings analysis----------------------------------------------
@@ -360,7 +358,7 @@ private:
 	{
 	public:
 		//! contructor
-		IceRings_analyse(clipper::ftype tol=4.0) : Rings_analyse(tol) {
+        IceRings_analyse(clipper::ftype tol=4.0, clipper::ftype ratioI=1.0, clipper::ftype ratioC=1.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {
             _ice.DefaultIceRings();
             _ice.ClearSums();
         }
@@ -378,6 +376,10 @@ private:
 		
 	private:
 		ctruncate::Rings _ice;                  //!< pointer to rings data
+        
+        clipper::ftype _zTolerance;              //!< tolerance for Z-score
+        clipper::ftype _ratioI;                  //!< ratio of intensities
+        clipper::ftype _ratioC;                  //!< ratio of completeness
 	};
     
     //----Rings analysis----------------------------------------------
@@ -386,7 +388,7 @@ private:
 	{
 	public:
 		//! contructor
-		OutlierRings_analyse(clipper::ftype tol=4.0) : Rings_analyse(tol) {}
+		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=1.0, clipper::ftype ratioC=1.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {}
         ~OutlierRings_analyse() { }
 		//! check for presence of  rings
          template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data); 
@@ -401,6 +403,10 @@ private:
 		
 	private:
 		ctruncate::Rings _outliers;                  //!< pointer to rings data
+        
+        clipper::ftype _zTolerance;              //!< tolerance for Z-score
+        clipper::ftype _ratioI;                  //!< ratio of intensities
+        clipper::ftype _ratioC;                  //!< ratio of completeness
 	};
 
 	//NonAnomAnalysis-------------------------------------------------
@@ -521,7 +527,21 @@ private:
 	template<class T, template<class> class D> bool IceRings_analyse::operator()(const clipper::HKL_data< D<T> >& data)
 	{
         for (int i = 0; i != _ice.Nrings(); ++i) _ice.SetReject(i, true);
-        return this->Rings_analyse::operator()(data,_ice);
+        this->Rings_analyse::operator()(data,_ice);
+        
+        for (int i = 0; i != _ice.Nrings(); ++i) {
+            bool reject = false;
+            float reso = _ice.MeanSSqr(i);
+            if ( reso > 0.0 ) {
+                if (std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) reject = true;
+            }
+            _ice.SetReject(i, reject);
+        }
+        
+        for ( int i = 0; i != _ice.Nrings(); ++i)
+            if (_rings->Reject(i) ) return true;
+        
+        return false;
     }
     
 	//----Rings analysis----------------------------------------------
@@ -619,21 +639,7 @@ private:
                 }
 			}
 		}
-		
-		for (int i = 0; i != _rings->Nrings(); ++i) {
-			bool reject = false;
-			float reso = _rings->MeanSSqr(i);
-			if ( reso <= range.max() && _rings->MeanSigI(i) > 0.0f ) {
-				if (std::abs(_rings->MeanI(i)-_ideal_rings.MeanI(i))/_rings->MeanSigI(i) > _zTolerance) reject = true;
-			}
-			_rings->SetReject(i, reject);
-		}
-		
-		
-		bool icer = false;
-        for ( int i = 0; i != nr; ++i) if (_rings->Reject(i) ) icer = true;
-		
-		return icer;
+        return true;
 	}
 	
 	//-------tNCS peak search-------------------------------------------
@@ -756,7 +762,22 @@ private:
         for (int i=0 ; i != nbins; ++i ) _outliers.AddRing( (0.5*(1.0/std::sqrt(bmax[i])+1.0/std::sqrt(bmin[i]) ) ), std::fabs(0.5*(bmax[i]-bmin[i])) );
         
         _outliers.ClearSums();
-        return this->Rings_analyse::operator()(data,_outliers);
+        this->Rings_analyse::operator()(data,_outliers);
+        
+        for (int i = 0; i != _outliers.Nrings(); ++i) {
+            bool reject = false;
+            float reso = _outliers.MeanSSqr(i);
+            if ( reso > 0.0 ) {
+                if (std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) reject = true;
+            }
+            _outliers.SetReject(i, reject);
+        }
+        
+        for ( int i = 0; i != _outliers.Nrings(); ++i)
+            if (_rings->Reject(i) ) return true;
+        
+        return false;
+
     }
 
 }
