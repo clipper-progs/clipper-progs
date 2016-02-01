@@ -1082,7 +1082,7 @@ namespace ctruncate {
 		
 		if ( _rings->MeanSSqr(0) <= maxres && _rings->MeanSigI(0) > 0.0f ) {
 			ss << "ICE RING SUMMARY:\n\n";
-			ss << " reso  ice_ring  mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n";
+			ss << " reso  ice_ring  mean_I mean_Sigma Estimated_I   Ratio Zscore Completeness Ave_Completeness\n";
 			for ( int i = 0; i != _rings->Nrings(); ++i) {
 				float reso = _rings->MeanSSqr(i);
 				if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
@@ -1093,8 +1093,9 @@ namespace ctruncate {
 					<< ( (_rings->Reject(i) ) ? "  yes  " : "  no   " )
 					<< std::setw(10) << imean << " " 
 					<< std::setw(10) << sigImean << " " 
-					<< std::setw(11) << _ideal_rings.MeanI(i) << " "
-					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
+					<< std::setw(11) << _ideal_rings.MeanI(i) << "  "
+                    << std::setw(6) << imean/_ideal_rings.MeanI(i) << " "
+					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << "    "
 					<< std::setw(8) << _rings->Comp(i) << " "
 					<< std::setw(8) << _comp[i] << std::endl;
 					//printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,_ideal_rings.MeanI(i),
@@ -1114,16 +1115,17 @@ namespace ctruncate {
 			float imean = _rings->MeanI(i);
 			float sigImean = _rings->MeanSigI(i);
             if ( reso <= maxres && sigImean > 0.0f ) {
-			ss << "  <Ring>" << std::endl;
-			ss << "    <Number>" << i+1 << "</Number>" << std::endl;
-			ss << "    <Resolution>" << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << "</Resolution>" << std::endl;
-			ss << "    <Reject>" << ( (_rings->Reject(i) ) ? "  yes  " : "  no   " ) << "</Reject>" << std::endl;
-		    ss << "    <Imean>" << std::setw(10) << imean << "</Imean>" << std::endl;
-			ss << "    <SigImean>" << sigImean << "</SigImean>" << std::endl;
-			ss << "    <Z-score>" << (imean-_ideal_rings.MeanI(i))/sigImean << "</Z-score>" << std::endl;
-			ss << "    <Completeness>" << _rings->Comp(i) << "</Completeness>" << std::endl;
-			ss << "    <ExpectCompleteness>" << _comp[i] << "</ExpectCompleteness>" << std::endl;
-			ss << "  </Ring>" << std::endl;
+                ss << "  <Ring>" << std::endl;
+                ss << "    <Number>" << i+1 << "</Number>" << std::endl;
+                ss << "    <Resolution>" << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << "</Resolution>" << std::endl;
+                ss << "    <Reject>" << ( (_rings->Reject(i) ) ? "  yes  " : "  no   " ) << "</Reject>" << std::endl;
+                ss << "    <Imean>" << std::setw(10) << imean << "</Imean>" << std::endl;
+                ss << "    <SigImean>" << sigImean << "</SigImean>" << std::endl;
+                ss << "    <Ratio>" << imean/_ideal_rings.MeanI(i) << "</Ratio" << std::endl;
+                ss << "    <Z-score>" << (imean-_ideal_rings.MeanI(i))/sigImean << "</Z-score>" << std::endl;
+                ss << "    <Completeness>" << _rings->Comp(i) << "</Completeness>" << std::endl;
+                ss << "    <ExpectCompleteness>" << _comp[i] << "</ExpectCompleteness>" << std::endl;
+                ss << "  </Ring>" << std::endl;
 		}
         }
         ss << "<Comment id='IceRingsAnalysis'>" << std::endl;

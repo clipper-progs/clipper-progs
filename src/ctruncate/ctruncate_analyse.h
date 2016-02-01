@@ -373,6 +373,15 @@ private:
 		bool present();
         //!return rings data
         ctruncate::Rings& rings() { return _ice; }
+        //!return or set tolerance for z score
+        clipper::ftype tolerance() const { return _zTolerance; }
+        void tolerance(clipper::ftype tol) { _zTolerance=tol; }
+        //!return or set test ratio of intensities
+        clipper::ftype ratioIntensity() const { return _ratioI; }
+        void ratioIntensity(clipper::ftype ratio) { _ratioI=ratio; }
+        //!return or set test ratio of completenesses
+        clipper::ftype ratioComp() const { return _ratioC; }
+        void ratioComp(clipper::ftype ratio) { _ratioC=ratio; }
 		
 	private:
 		ctruncate::Rings _ice;                  //!< pointer to rings data
@@ -414,8 +423,9 @@ private:
 	class HKLAnalysis {
 	public:
 		//constructor
-		inline HKLAnalysis() {}
+        HKLAnalysis() {}
 		template<class T, template<class> class D> HKLAnalysis(const clipper::HKL_data< D<T> >&);
+        ~HKLAnalysis() {}
 		//return an estimate of the active range
 		const clipper::Range<clipper::ftype>& active_range();
 		//output to std::out
@@ -507,6 +517,7 @@ private:
         }
         
 		//ice rings
+        _ira.tolerance(10.0);
 		_ira(hkldata);
 		
         Rings ice=_ira.rings();
@@ -527,13 +538,18 @@ private:
 	template<class T, template<class> class D> bool IceRings_analyse::operator()(const clipper::HKL_data< D<T> >& data)
 	{
         for (int i = 0; i != _ice.Nrings(); ++i) _ice.SetReject(i, true);
+        
         this->Rings_analyse::operator()(data,_ice);
         
         for (int i = 0; i != _ice.Nrings(); ++i) {
             bool reject = false;
             float reso = _ice.MeanSSqr(i);
             if ( reso > 0.0 ) {
-                if (std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) reject = true;
+                clipper::ftype r1 = _ice.MeanI(i)/_ideal_rings.MeanI(i);
+                clipper::ftype r2 = _ice.Comp(i)/_comp[i];
+                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) &&
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                    ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _ice.SetReject(i, reject);
         }
