@@ -333,6 +333,8 @@ private:
         ~Rings_analyse() { }
 		//! check for presence of  rings
 		template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >&, Rings&);
+        //! check for presence of  rings vs WilsonB
+        template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >&, Rings&, ctruncate::WilsonB&);
 		
 	private:
 		template<class T> const T&    obs( const clipper::datatypes::F_sigF<T>& f ) { return f.f(); }
@@ -365,6 +367,8 @@ private:
         ~IceRings_analyse() { }
 		//! check for presence of  rings
 		template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
+        //! check for presence of  rings against wilson B
+        template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data, ctruncate::WilsonB&);
 		//!output summary
 		std::string output();
 		//!output xml
@@ -400,7 +404,9 @@ private:
 		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=1.0, clipper::ftype ratioC=1.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {}
         ~OutlierRings_analyse() { }
 		//! check for presence of  rings
-         template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data); 
+        template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
+        //! check for presence of rings using wilson data
+        template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data, ctruncate::WilsonB&);
 		//!output summary
 		std::string output();
 		//!output xml
@@ -409,6 +415,16 @@ private:
 		bool present();
         //!return rings data
         ctruncate::Rings& rings() { return _outliers; }
+        //!return or set tolerance for z score
+        clipper::ftype tolerance() const { return _zTolerance; }
+        void tolerance(clipper::ftype tol) { _zTolerance=tol; }
+        //!return or set test ratio of intensities
+        clipper::ftype ratioIntensity() const { return _ratioI; }
+        void ratioIntensity(clipper::ftype ratio) { _ratioI=ratio; }
+        //!return or set test ratio of completenesses
+        clipper::ftype ratioComp() const { return _ratioC; }
+        void ratioComp(clipper::ftype ratio) { _ratioC=ratio; }
+
 		
 	private:
 		ctruncate::Rings _outliers;                  //!< pointer to rings data
@@ -524,7 +540,10 @@ private:
 		//wilson plot (how to handle contents)
 		_wilsonB(hkldata,&(this->active_range()),&ice );
         
-        _ora(hkldata);
+        //IceRings_analyse test;
+        //test(hkldata,_wilsonB);
+        
+        _ora(hkldata,_wilsonB);
 		
 		return;
 	}
@@ -559,6 +578,39 @@ private:
         
         return false;
     }
+    
+    //----Ice Rings analysis----------------------------------------------
+    /*! operator to do ice rings analysis
+     \param data Reflection data
+     \param rings rings to be analysed
+     \param wilsonB object
+     \return rings rejected?
+     */
+    template<class T, template<class> class D> bool IceRings_analyse::operator()(const clipper::HKL_data< D<T> >& data, ctruncate::WilsonB& wilson)
+    {
+        for (int i = 0; i != _ice.Nrings(); ++i) _ice.SetReject(i, true);
+        
+        this->Rings_analyse::operator()(data,_ice,wilson);
+        
+        for (int i = 0; i != _ice.Nrings(); ++i) {
+            bool reject = false;
+            float reso = _ice.MeanSSqr(i);
+            if ( reso > 0.0 ) {
+                clipper::ftype r1 = _ice.MeanI(i)/_ideal_rings.MeanI(i);
+                clipper::ftype r2 = _ice.Comp(i)/_comp[i];
+                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) &&
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                    ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
+            }
+            _ice.SetReject(i, reject);
+        }
+        
+        for ( int i = 0; i != _ice.Nrings(); ++i)
+            if (_rings->Reject(i) ) return true;
+        
+        return false;
+    }
+
     
 	//----Rings analysis----------------------------------------------
 	/*! operator to do rings analysis
@@ -613,17 +665,24 @@ private:
         
         nbins = std::max( (Nreflections/nreflns) , 1);
         
-		std::vector<float> summeas(nbins,0.0), sumov(nbins,0.0);
+		std::vector<float> summeas(nbins,0.0), sumov(nbins,0.0), mean1(nbins,0.0), means(nbins,0.0), var(nbins,0.0);
         // completeness
         {
             for ( HRI ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
                 clipper::ftype reso = ih.invresolsq();
                 if ( _rings->InRing(reso) == -1 ) {
-                    clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+                    clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
                     int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
                     clipper::ftype s = ih.invresolsq();
                     sumov[bin] += mult;
-                    if ( !xsig[ih].missing() ) {
+                    if ( !data[ih].missing() ) {
+                        if (ih.hkl_class().centric() ) {
+                            var[bin] += 0.5*mult*data[ih].I();
+                            means[bin] += 0.5*mult*data[ih].sigI()*data[ih].sigI();
+                        } else {
+                            var[bin] += mult*data[ih].I();
+                            means[bin] += mult*data[ih].sigI()*data[ih].sigI();
+                        }
                         summeas[bin] += mult;
                     }
                 }
@@ -653,11 +712,180 @@ private:
                 } else {
                     _ideal_rings.AddObs(ring,D<T>(eps*mean.f(ih),0.0 ),reso,mult);
                 }
-			}
+            }
 		}
+        
+        for ( HRI ih = xsig.hkl_info().first(); !ih.last(); ih.next() ) {
+            clipper::ftype reso = ih.invresolsq();
+            if ( _rings->InRing(reso) == -1 ) {
+                if ( !xsig[ih].missing() ) {
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    clipper::ftype mult=data.hkl_info().spacegroup().num_symops();
+                    if (ih.hkl_class().centric() ) {
+                        mean1[bin] += mult*0.5*mean.f(ih);
+                    } else {
+                        mean1[bin] += mult*mean.f(ih);
+                    }
+                }
+            }
+        }
+        clipper::ftype v1(0.0),z1(0.0);
+        for (int i=0 ; i != nbins; ++i ) {
+            //std::cout << mean1[i]/summeas[i] << " - " << var[i]/summeas[i] << " - " << std::sqrt(means[i]/summeas[i]) << " -- " << ((mean1[i]-var[i])/summeas[i])/std::sqrt(means[i]/summeas[i])  << std::endl;
+            clipper::ftype t =((mean1[i]-var[i])/summeas[i])/std::sqrt(means[i]/summeas[i]);
+            z1 += t;
+            v1 += t*t;
+        }
+        std::cout << "global stats: " << z1/nbins << " --- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
         return true;
 	}
 	
+    //----Rings analysis----------------------------------------------
+    /*! operator to do rings analysis
+     \param data Reflection data
+     \param rings rings to be analysed
+     \param wilson WilsonB object (must be after calculation)
+     \return rings rejected?
+     */
+    template<class T, template<class> class D> bool Rings_analyse::operator()(const clipper::HKL_data< D<T> >& data, Rings& rings, ctruncate::WilsonB& wilson)
+    {
+        _rings = &rings;
+        
+        typedef clipper::HKL_data_base::HKL_reference_index HRI;
+        
+        int nr = _rings->Nrings();
+        _ideal_rings.Copy(*_rings);
+        _data = &data;
+        _comp.resize(_rings->Nrings());
+        
+        //_rings->ClearSums();
+        _ideal_rings.ClearSums();
+        
+        int nbins(0);
+        int Nreflections(0);
+        int nreflns(500);
+        clipper::Range<clipper::ftype> range=data.invresolsq_range();
+        clipper::Generic_ordinal s_ord;
+        s_ord.init( range, 1000 );
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
+            clipper::ftype reso = ih.invresolsq();
+            int ring = _rings->InRing(reso);
+            if ( ring == -1 ) {
+                s_ord.accumulate( reso );
+            } else {
+                if ( !rings.Reject( ring ) ) s_ord.accumulate( reso );
+            }
+        }
+        s_ord.prep_ordinal();
+        
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
+            clipper::ftype reso = ih.invresolsq();
+            int ring = _rings->InRing(reso);
+            if ( ring == -1 ) {
+                if (!data[ih].missing()  ) ++Nreflections;
+            } else {
+                if ( !rings.Reject( ring ) && !data[ih].missing()  ) ++Nreflections;
+            }
+        }
+        nbins = std::max( (Nreflections/nreflns) , 1);
+        
+        std::vector<float> summeas(nbins,0.0), sumov(nbins,0.0), mean1(nbins,0.0), means(nbins,0.0), var(nbins,0.0);
+        // repeat with ibest
+        for ( HRI ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+            clipper::ftype reso = ih.invresolsq();
+            clipper::ftype eps = ih.hkl_class().epsilon();
+            clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/eps;
+            int ring=_ideal_rings.InRing(reso);
+            if ( ring != -1 ) {
+                if (ih.hkl_class().centric() ) {
+                    _ideal_rings.AddObs(ring,D<T>(0.5*eps*wilson.f(ih),0.0 ),reso,mult);
+                    _rings->AddObs(ring,D<T>(0.5*data[ih].I(),0.5*data[ih].sigI() ),reso,mult);
+                    
+                } else {
+                    _ideal_rings.AddObs(ring,D<T>(eps*wilson.f(ih),0.0 ),reso,mult);
+                    _rings->AddObs(ring,data[ih],reso,mult);
+                }
+                if ( !rings.Reject( ring )  && !data[ih].missing() ) {
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    clipper::ftype mult=data.hkl_info().spacegroup().num_symops();
+                    if (ih.hkl_class().centric() ) {
+                        mean1[bin] += mult*0.5*wilson.f(ih);
+                    } else {
+                        mean1[bin] += mult*wilson.f(ih);
+                    }
+                }
+            } else {
+                if ( !data[ih].missing() ) {
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    clipper::ftype mult=data.hkl_info().spacegroup().num_symops();
+                    if (ih.hkl_class().centric() ) {
+                        mean1[bin] += mult*0.5*wilson.f(ih);
+                    } else {
+                        mean1[bin] += mult*wilson.f(ih);
+                    }
+                }
+            }
+        }
+
+        // completeness
+        {
+            for ( HRI ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+                clipper::ftype reso = ih.invresolsq();
+                int ring = _rings->InRing(reso);
+                if ( ring == -1 ) {
+                    clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                    clipper::ftype s = ih.invresolsq();
+                    sumov[bin] += mult;
+                    if ( !data[ih].missing() ) {
+                        if (ih.hkl_class().centric() ) {
+                            var[bin] += 0.5*mult*data[ih].I();
+                            means[bin] += 0.5*mult*data[ih].sigI()*data[ih].sigI();
+                        } else {
+                            var[bin] += mult*data[ih].I();
+                            means[bin] += mult*data[ih].sigI()*data[ih].sigI();
+                        }
+                        summeas[bin] += mult;
+                    }
+                } else {
+                    if ( !rings.Reject( ring ) ) {
+                        clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
+                        int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                        clipper::ftype s = ih.invresolsq();
+                        sumov[bin] += mult;
+                        if ( !data[ih].missing() ) {
+                            if (ih.hkl_class().centric() ) {
+                                var[bin] += 0.5*mult*data[ih].I();
+                                means[bin] += 0.5*mult*data[ih].sigI()*data[ih].sigI();
+                            } else {
+                                var[bin] += mult*data[ih].I();
+                                means[bin] += mult*data[ih].sigI()*data[ih].sigI();
+                            }
+                            summeas[bin] += mult;
+                        }
+                    }
+                }
+            }
+            for (int i=0 ; i != _rings->Nrings() ; ++ i) {
+                float reso = _rings->MeanSSqr(i);
+                int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
+                //std::cout << "bin: " << summeas[bin] << " : " << sumov[bin] << std::endl;
+                if (bin == 0 ) _comp[0] = 0.5*(summeas[1]/sumov[1]+summeas[2]/sumov[2]);
+                else if (bin == (nbins-1)) _comp[nbins-1] = 0.5*(summeas[nbins-2]/sumov[nbins-2]+summeas[nbins-3]/sumov[nbins-3]);
+                else _comp[bin] = 0.5*(summeas[bin-1]/sumov[bin-1]+summeas[bin+1]/sumov[bin+1]);
+            }
+        }
+        clipper::ftype v1(0.0),z1(0.0);
+        for (int i=0 ; i != nbins; ++i ) {
+            //std::cout << mean1[i]/summeas[i] << " - " << var[i]/summeas[i] << " - " << std::sqrt(means[i]/summeas[i]) << " -- " << ((mean1[i]-var[i])/summeas[i])/std::sqrt(means[i]/summeas[i])  << std::endl;
+            clipper::ftype t =((mean1[i]-var[i])/summeas[i])/std::sqrt(means[i]/summeas[i]);
+            z1 += t;
+            v1 += t*t;
+        }
+        std::cout << "global stats: " << z1/nbins << " --wilson-- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
+        return true;
+    }
+
 	//-------tNCS peak search-------------------------------------------
 	
 	template <class T, template<class> class D> const std::vector<clipper::Symop>& tNCS::operator() (clipper::HKL_data<D<T> >& hkldata, clipper::Resolution r)
@@ -784,10 +1012,15 @@ private:
             bool reject = false;
             float reso = _outliers.MeanSSqr(i);
             if ( reso > 0.0 ) {
-                if (std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) reject = true;
+                clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
+                clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
+                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) &&
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                    ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _outliers.SetReject(i, reject);
         }
+
         
         for ( int i = 0; i != _outliers.Nrings(); ++i)
             if (_rings->Reject(i) ) return true;
@@ -796,6 +1029,77 @@ private:
 
     }
 
+    //----Rings analysis----------------------------------------------
+    /*! operator to do ice rings analysis
+     \param data Reflection data
+     \param rings rings to be analysed
+     \return rings rejected?
+     */
+    template<class T, template<class> class D> bool OutlierRings_analyse::operator()(const clipper::HKL_data< D<T> >& data, ctruncate::WilsonB& wilson)
+    {
+        clipper::Range<clipper::ftype> range=data.invresolsq_range();
+        clipper::Generic_ordinal s_ord;
+        s_ord.init( range, 1000 );
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+            s_ord.accumulate( ih.invresolsq() );
+        }
+        s_ord.prep_ordinal();
+        
+        int nbins(0);
+        int Nreflections(0);
+        int nreflns(200);
+        
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() )
+            ++Nreflections;
+        
+        {
+            if ( nbins == 0 && nreflns != 0 ) {
+                nbins = std::max( Nreflections/nreflns , 1);
+                //} else if ( nreflns == 0 && nprm2 != 0 ) {
+                //nprm = nbins;
+            } else {
+                //nprm2 = std::max( Nreflections/nreflns , nprm2);
+                double np1(nbins+0.499);
+                double np2(Nreflections/nreflns);
+                double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+                nbins = std::max( int(np), 1 );
+            }
+        }
+        
+        std::vector<clipper::ftype> bmax(nbins,0.0), bmin(nbins,99999.0);
+        for (clipper::HKL_data_base::HKL_reference_index ih = data.hkl_info().first(); !ih.last(); ih.next() ) {
+            clipper::ftype s = ih.invresolsq();
+            int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( s ) ), nbins-1 );
+            if ( s > bmax[bin] ) bmax[bin] = s;
+            if ( s < bmin[bin] ) bmin[bin] = s;
+        }
+        
+        for (int i=0 ; i != nbins; ++i ) _outliers.AddRing( (0.5*(1.0/std::sqrt(bmax[i])+1.0/std::sqrt(bmin[i]) ) ), std::fabs(0.5*(bmax[i]-bmin[i])) );
+        
+        _outliers.ClearSums();
+        this->Rings_analyse::operator()(data,_outliers,wilson);
+        
+        for (int i = 0; i != _outliers.Nrings(); ++i) {
+            bool reject = false;
+            float reso = _outliers.MeanSSqr(i);
+            if ( reso > 0.0 ) {
+                clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
+                clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
+                //std::cout << "test: " << 1.0/std::sqrt(reso) << " : " << _outliers.MeanI(i) << " -- " << _ideal_rings.MeanI(i) << " -- " << _outliers.MeanSigI(i) << " == " << (_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) << std::endl;
+                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) &&
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                    ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
+            }
+            _outliers.SetReject(i, reject);
+        }
+        
+        for ( int i = 0; i != _outliers.Nrings(); ++i)
+            if (_rings->Reject(i) ) return true;
+        
+        return false;
+        
+    }
+    
 }
 
 #endif

@@ -81,8 +81,11 @@ namespace ctruncate {
 		void plot (int nbins = 60);
 		void output();
 		std::stringstream& xml_output(std::stringstream&);
+        
+        clipper::ftype f(clipper::ftype);
+        clipper::ftype f(clipper::HKL_data_base::HKL_reference_index&);
 		
-	private:			
+	private:
 		MODE mode;
         clipper::ftype _a;  // slope
         clipper::ftype _b;  // intercept

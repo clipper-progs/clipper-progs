@@ -1259,5 +1259,31 @@ namespace ctruncate {
 		}
 	}
 	
+    clipper::ftype WilsonB::f(clipper::ftype invresolsq)
+    {
+        float totalscat(0.0);
+        if (mode != RNA && mode != BEST ) {
+        const clipper::HKL_info& hklinf = intensity->hkl_info();
+        int nsym = hklinf.spacegroup().num_symops();
+        
+        for (int j=0;j!=5;++j) {
+            clipper::Atom atom(clipper::Atom::null() );
+            atom.set_occupancy(1.0);
+            atom.set_element(WilsonB::AtomNames[j]);
+            atom.set_u_iso(0.0);
+            atom.set_u_aniso_orth( clipper::U_aniso_orth( clipper::U_aniso_orth::null() ) ); // need this o/w next line hangs
+            clipper::AtomShapeFn sf(atom);
+            float scat = sf.f(invresolsq);
+            totalscat +=  float( nsym * numatoms[j] ) * scat * scat;
+        }
+        }
+        return ( mode == BEST ) ? exp(-_a*invresolsq-_b)*_totalscat*ctruncate::BEST(invresolsq) :
+               ( mode == RNA ) ?  exp(-_a*invresolsq-_b)*_totalscat*ctruncate::BEST_rna(invresolsq) :   exp(-_a*invresolsq-_b )*totalscat;
+    }
+    
+    clipper::ftype WilsonB::f(clipper::HKL_data_base::HKL_reference_index& ih)
+    {
+        return f( ih.invresolsq() );
+    }
 			
 }

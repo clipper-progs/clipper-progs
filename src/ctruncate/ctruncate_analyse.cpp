@@ -1153,7 +1153,7 @@ namespace ctruncate {
 		if ( _rings->MeanSSqr(0) <= maxres && _rings->MeanSigI(0) > 0.0f ) {
 			ss << "OUTLIER RING SUMMARY:\n\n";
             if ( present() ) {
-                ss << " reso  mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n";
+                ss << " reso    mean_I mean_Sigma Estimated_I  Ratio Zscore Completeness Ave_Completeness\n";
                 for ( int i = 0; i != _rings->Nrings(); ++i) {
                     if ( _rings->Reject(i) && _rings->MeanSigI(i) > 0.0f ) {
                         float reso = _rings->MeanSSqr(i);
@@ -1164,6 +1164,7 @@ namespace ctruncate {
                         << std::setw(10) << imean << " "
                         << std::setw(10) << sigImean << " "
                         << std::setw(11) << _ideal_rings.MeanI(i) << " "
+                        << std::setw(6) << imean/_ideal_rings.MeanI(i) << " "
                         << std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
                         << std::setw(8) << _rings->Comp(i) << " "
                         << std::setw(8) << _comp[i] << std::endl;
