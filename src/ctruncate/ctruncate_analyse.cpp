@@ -1121,7 +1121,7 @@ namespace ctruncate {
                 ss << "    <Reject>" << ( (_rings->Reject(i) ) ? "  yes  " : "  no   " ) << "</Reject>" << std::endl;
                 ss << "    <Imean>" << std::setw(10) << imean << "</Imean>" << std::endl;
                 ss << "    <SigImean>" << sigImean << "</SigImean>" << std::endl;
-                ss << "    <Ratio>" << imean/_ideal_rings.MeanI(i) << "</Ratio" << std::endl;
+                ss << "    <Ratio>" << imean/_ideal_rings.MeanI(i) << "</Ratio>" << std::endl;
                 ss << "    <Z-score>" << (imean-_ideal_rings.MeanI(i))/sigImean << "</Z-score>" << std::endl;
                 ss << "    <Completeness>" << _rings->Comp(i) << "</Completeness>" << std::endl;
                 ss << "    <ExpectCompleteness>" << _comp[i] << "</ExpectCompleteness>" << std::endl;

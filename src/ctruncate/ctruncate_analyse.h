@@ -736,7 +736,7 @@ private:
             z1 += t;
             v1 += t*t;
         }
-        std::cout << "global stats: " << z1/nbins << " --- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
+        //std::cout << "global stats: " << z1/nbins << " --- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
         return true;
 	}
 	
@@ -882,7 +882,7 @@ private:
             z1 += t;
             v1 += t*t;
         }
-        std::cout << "global stats: " << z1/nbins << " --wilson-- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
+        //std::cout << "global stats: " << z1/nbins << " --wilson-- " << std::sqrt(nbins*v1-z1*z1)/nbins << std::endl;
         return true;
     }
 
