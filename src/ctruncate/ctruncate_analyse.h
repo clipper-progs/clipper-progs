@@ -359,8 +359,8 @@ private:
 	class IceRings_analyse : public Rings_analyse
 	{
 	public:
-		//! contructor
-        IceRings_analyse(clipper::ftype tol=4.0, clipper::ftype ratioI=1.0, clipper::ftype ratioC=1.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {
+		//! contruc
+        IceRings_analyse(clipper::ftype tol=4.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=1.25 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {
             _ice.DefaultIceRings();
             _ice.ClearSums();
         }
@@ -401,7 +401,7 @@ private:
 	{
 	public:
 		//! contructor
-		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=1.0, clipper::ftype ratioC=1.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {}
+		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=99.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {}
         ~OutlierRings_analyse() { }
 		//! check for presence of  rings
         template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
@@ -533,7 +533,6 @@ private:
         }
         
 		//ice rings
-        _ira.tolerance(10.0);
 		_ira(hkldata);
 		
         Rings ice=_ira.rings();
@@ -560,14 +559,18 @@ private:
         
         this->Rings_analyse::operator()(data,_ice);
         
+        if (_zTolerance < 1.0) _zTolerance = 1.0/_zTolerance;
+        if (_ratioI < 1.0) _ratioI = 1.0/_ratioI;
+        if (_ratioC < 1.0) _ratioI = 1.0/_ratioC;
+        
         for (int i = 0; i != _ice.Nrings(); ++i) {
             bool reject = false;
             float reso = _ice.MeanSSqr(i);
             if ( reso > 0.0 ) {
                 clipper::ftype r1 = _ice.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _ice.Comp(i)/_comp[i];
-                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) &&
-                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) ||
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) ||
                     ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _ice.SetReject(i, reject);
@@ -592,14 +595,18 @@ private:
         
         this->Rings_analyse::operator()(data,_ice,wilson);
         
+        if (_zTolerance < 1.0) _zTolerance = 1.0/_zTolerance;
+        if (_ratioI < 1.0) _ratioI = 1.0/_ratioI;
+        if (_ratioC < 1.0) _ratioI = 1.0/_ratioC;
+        
         for (int i = 0; i != _ice.Nrings(); ++i) {
             bool reject = false;
             float reso = _ice.MeanSSqr(i);
             if ( reso > 0.0 ) {
                 clipper::ftype r1 = _ice.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _ice.Comp(i)/_comp[i];
-                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) &&
-                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                if ((std::abs(_ice.MeanI(i)-_ideal_rings.MeanI(i))/_ice.MeanSigI(i) > _zTolerance) ||
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) ||
                     ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _ice.SetReject(i, reject);
@@ -869,7 +876,6 @@ private:
             for (int i=0 ; i != _rings->Nrings() ; ++ i) {
                 float reso = _rings->MeanSSqr(i);
                 int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
-                //std::cout << "bin: " << summeas[bin] << " : " << sumov[bin] << std::endl;
                 if (bin == 0 ) _comp[0] = 0.5*(summeas[1]/sumov[1]+summeas[2]/sumov[2]);
                 else if (bin == (nbins-1)) _comp[nbins-1] = 0.5*(summeas[nbins-2]/sumov[nbins-2]+summeas[nbins-3]/sumov[nbins-3]);
                 else _comp[bin] = 0.5*(summeas[bin-1]/sumov[bin-1]+summeas[bin+1]/sumov[bin+1]);
@@ -1007,6 +1013,10 @@ private:
         
         _outliers.ClearSums();
         this->Rings_analyse::operator()(data,_outliers);
+    
+        if (_zTolerance < 1.0) _zTolerance = 1.0/_zTolerance;
+        if (_ratioI < 1.0) _ratioI = 1.0/_ratioI;
+        if (_ratioC < 1.0) _ratioI = 1.0/_ratioC;
         
         for (int i = 0; i != _outliers.Nrings(); ++i) {
             bool reject = false;
@@ -1079,13 +1089,16 @@ private:
         _outliers.ClearSums();
         this->Rings_analyse::operator()(data,_outliers,wilson);
         
+        if (_zTolerance < 1.0) _zTolerance = 1.0/_zTolerance;
+        if (_ratioI < 1.0) _ratioI = 1.0/_ratioI;
+        if (_ratioC < 1.0) _ratioI = 1.0/_ratioC;
+        
         for (int i = 0; i != _outliers.Nrings(); ++i) {
             bool reject = false;
             float reso = _outliers.MeanSSqr(i);
             if ( reso > 0.0 ) {
                 clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
-                //std::cout << "test: " << 1.0/std::sqrt(reso) << " : " << _outliers.MeanI(i) << " -- " << _ideal_rings.MeanI(i) << " -- " << _outliers.MeanSigI(i) << " == " << (_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) << std::endl;
                 if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) &&
                     ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
                     ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
