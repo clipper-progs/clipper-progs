@@ -61,7 +61,7 @@ namespace ctruncate {
 	public:
 		enum MODE {STRAIGHT, BEST, RNA };
 		
-		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0)
+		WilsonB ( WilsonB::MODE _mode = BEST ) : mode(_mode), nresidue_supplied(false), sequence_supplied(false), _a(-1.0), _totalscat(0.0)
 		{ numatoms.resize(6); }
 		
 		clipper::ftype operator()(const clipper::HKL_data_base& data, const clipper::Range<clipper::ftype>* range = NULL, ctruncate::Rings* ice = NULL);
