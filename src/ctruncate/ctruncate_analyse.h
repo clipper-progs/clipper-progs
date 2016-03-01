@@ -360,7 +360,7 @@ private:
 	{
 	public:
 		//! contruc
-        IceRings_analyse(clipper::ftype tol=4.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=1.25 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {
+        IceRings_analyse(clipper::ftype tol=4.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=1.25 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC), _wB(NULL)  {
             _ice.DefaultIceRings();
             _ice.ClearSums();
         }
@@ -389,7 +389,7 @@ private:
 		
 	private:
 		ctruncate::Rings _ice;                  //!< pointer to rings data
-        
+        ctruncate::WilsonB* _wB;                 //!< pointer to optional WilsonB
         clipper::ftype _zTolerance;              //!< tolerance for Z-score
         clipper::ftype _ratioI;                  //!< ratio of intensities
         clipper::ftype _ratioC;                  //!< ratio of completeness
@@ -401,7 +401,7 @@ private:
 	{
 	public:
 		//! contructor
-		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=99.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC) {}
+		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=99.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC), _wB(NULL) {}
         ~OutlierRings_analyse() { }
 		//! check for presence of  rings
         template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
@@ -428,7 +428,7 @@ private:
 		
 	private:
 		ctruncate::Rings _outliers;                  //!< pointer to rings data
-        
+        ctruncate::WilsonB* _wB;                 //!< pointer to optional WilsonB
         clipper::ftype _zTolerance;              //!< tolerance for Z-score
         clipper::ftype _ratioI;                  //!< ratio of intensities
         clipper::ftype _ratioC;                  //!< ratio of completeness
@@ -591,6 +591,8 @@ private:
      */
     template<class T, template<class> class D> bool IceRings_analyse::operator()(const clipper::HKL_data< D<T> >& data, ctruncate::WilsonB& wilson)
     {
+        _wB = &wilson;
+        
         for (int i = 0; i != _ice.Nrings(); ++i) _ice.SetReject(i, true);
         
         this->Rings_analyse::operator()(data,_ice,wilson);
@@ -1047,6 +1049,8 @@ private:
      */
     template<class T, template<class> class D> bool OutlierRings_analyse::operator()(const clipper::HKL_data< D<T> >& data, ctruncate::WilsonB& wilson)
     {
+        _wB = &wilson;
+        
         clipper::Range<clipper::ftype> range=data.invresolsq_range();
         clipper::Generic_ordinal s_ord;
         s_ord.init( range, 1000 );
