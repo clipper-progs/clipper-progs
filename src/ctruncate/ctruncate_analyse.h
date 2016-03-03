@@ -401,7 +401,7 @@ private:
 	{
 	public:
 		//! contructor
-		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=2.0, clipper::ftype ratioC=99.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC), _wB(NULL) {}
+		OutlierRings_analyse(clipper::ftype tol=6.0, clipper::ftype ratioI=4.0, clipper::ftype ratioC=99.0 ) : _zTolerance(tol), _ratioI(ratioI), _ratioC(ratioC), _wB(NULL) {}
         ~OutlierRings_analyse() { }
 		//! check for presence of  rings
         template <class T, template <class> class D> bool operator()(const clipper::HKL_data<D<T> >& data);
@@ -875,12 +875,13 @@ private:
                     }
                 }
             }
+            
             for (int i=0 ; i != _rings->Nrings() ; ++ i) {
                 float reso = _rings->MeanSSqr(i);
                 int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
-                if (bin == 0 ) _comp[0] = 0.5*(summeas[1]/sumov[1]+summeas[2]/sumov[2]);
-                else if (bin == (nbins-1)) _comp[nbins-1] = 0.5*(summeas[nbins-2]/sumov[nbins-2]+summeas[nbins-3]/sumov[nbins-3]);
-                else _comp[bin] = 0.5*(summeas[bin-1]/sumov[bin-1]+summeas[bin+1]/sumov[bin+1]);
+                if (bin == 0 ) _comp[i] = 0.5*(summeas[1]/sumov[1]+summeas[2]/sumov[2]);
+                else if (bin == (nbins-1)) _comp[i] = 0.5*(summeas[nbins-2]/sumov[nbins-2]+summeas[nbins-3]/sumov[nbins-3]);
+                else _comp[i] = 0.5*(summeas[bin-1]/sumov[bin-1]+summeas[bin+1]/sumov[bin+1]);
             }
         }
         clipper::ftype v1(0.0),z1(0.0);
@@ -1026,8 +1027,8 @@ private:
             if ( reso > 0.0 ) {
                 clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
-                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) &&
-                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) ||
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) ||
                     ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _outliers.SetReject(i, reject);
@@ -1103,8 +1104,8 @@ private:
             if ( reso > 0.0 ) {
                 clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
-                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) &&
-                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) &&
+                if ((std::abs(_outliers.MeanI(i)-_ideal_rings.MeanI(i))/_outliers.MeanSigI(i) > _zTolerance) ||
+                    ( r1 >= _ratioI || 1.0/r1 > _ratioI) ||
                     ( r2 >= _ratioC || 1.0/r2 > _ratioC) ) reject = true;
             }
             _outliers.SetReject(i, reject);
