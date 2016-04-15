@@ -32,6 +32,8 @@ namespace ctruncate {
         clipper::ftype numAtoms(const std::string&) const;
         clipper::ftype numAtoms(int) const;
         
+        clipper::ftype numResidues() const { return numresidues; }
+        
         clipper::ftype f(const clipper::ftype invresolsq, clipper::ftype power=2.0) const;
         
         clipper::ftype operator()(const clipper::HKL_data_base& data, const int nres, clipper::ftype power=2.0);
@@ -69,6 +71,7 @@ namespace ctruncate {
 		std::vector<std::string> atomtype;            // name of scatterer
 		std::vector<clipper::ftype> scattering;       // number of electrons per scatter
         std::vector<clipper::ftype> numatoms;         // number of atomtype in unit cell
+        clipper::ftype numresidues;                   // number of residues
 		
 	};
 	

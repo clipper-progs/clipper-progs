@@ -495,6 +495,7 @@ namespace ctruncate {
     
     clipper::ftype Scattering::operator()(const int nres, const clipper::Spacegroup& spg, clipper::ftype power)
     {
+        numresidues = nres;
         clipper::ftype  nsym = spg.num_symops();
         if ( _mode == PROTEIN ) {
             numatoms[Scattering::C] = nsym*int(nres*ProteinComp[0]);
@@ -530,6 +531,7 @@ namespace ctruncate {
     {
         clipper::ftype  nsym = spg.num_symops();
         clipper::String sequence = poly.sequence();
+        numresidues = sequence.length();
         if ( _mode == PROTEIN ) {
             for (int i=0; i != sequence.length(); ++i) {
                 for (int j=0; j!= 20; ++j) {
@@ -585,12 +587,12 @@ namespace ctruncate {
         // Kantardjieff and Rupp, Protein Science (2003) 12:1865
         // values are for monophosphate RNA
         if ( _mode == NUCLEIC ) {   //9.6, 3.4, 6.4, 11.0, 0.0, 1.0
-            clipper::ftype nres = int((1.0-solvent)*cell.volume()/(nsym*(307.3/1.1871) ) );
-            numatoms[Scattering::C] = nsym*int(nres*NucleicComp[0]);
-            numatoms[Scattering::N] = nsym*int(nres*NucleicComp[1]);
-            numatoms[Scattering::O] = nsym*int(nres*NucleicComp[2]);
-            numatoms[Scattering::H] = nsym*int(nres*NucleicComp[3]);
-            numatoms[Scattering::P] = nsym*int(nres*NucleicComp[4]);
+            numresidues = int((1.0-solvent)*cell.volume()/(nsym*(307.3/1.1871) ) );
+            numatoms[Scattering::C] = nsym*int(numresidues*NucleicComp[0]);
+            numatoms[Scattering::N] = nsym*int(numresidues*NucleicComp[1]);
+            numatoms[Scattering::O] = nsym*int(numresidues*NucleicComp[2]);
+            numatoms[Scattering::H] = nsym*int(numresidues*NucleicComp[3]);
+            numatoms[Scattering::P] = nsym*int(numresidues*NucleicComp[4]);
             return numatoms[Scattering::C]*std::pow(scattering[Scattering::C],power)
             +numatoms[Scattering::N]*std::pow(scattering[Scattering::N],power)
             +numatoms[Scattering::O]*std::pow(scattering[Scattering::O],power)
@@ -599,13 +601,13 @@ namespace ctruncate {
         } else {
             // using average MW of 136.8Da, and median inv. density of 2.52 A3/Da (47% solvent)
             // Kantardjieff and Rupp, Protein Science (2003) 12:1865
-            clipper::ftype nres = int((1.0-solvent)*cell.volume()/(nsym*(136.8/0.7487) ) );
-            numatoms[Scattering::C] = nsym*int(nres*ProteinComp[0]);
-            numatoms[Scattering::N] = nsym*int(nres*ProteinComp[1]);
-            numatoms[Scattering::O] = nsym*int(nres*ProteinComp[2]);
-            numatoms[Scattering::H] = nsym*int(nres*ProteinComp[3]);
-            numatoms[Scattering::S] = nsym*int(nres*ProteinComp[4]);
-            numatoms[Scattering::S] = nsym*int(nres*ProteinComp[4]);
+            numresidues = int((1.0-solvent)*cell.volume()/(nsym*(136.8/0.7487) ) );
+            numatoms[Scattering::C] = nsym*int(numresidues*ProteinComp[0]);
+            numatoms[Scattering::N] = nsym*int(numresidues*ProteinComp[1]);
+            numatoms[Scattering::O] = nsym*int(numresidues*ProteinComp[2]);
+            numatoms[Scattering::H] = nsym*int(numresidues*ProteinComp[3]);
+            numatoms[Scattering::S] = nsym*int(numresidues*ProteinComp[4]);
+            numatoms[Scattering::S] = nsym*int(numresidues*ProteinComp[4]);
             return numatoms[Scattering::C]*std::pow(scattering[Scattering::C],power)
             +numatoms[Scattering::N]*std::pow(scattering[Scattering::N],power)
             +numatoms[Scattering::O]*std::pow(scattering[Scattering::O],power)
@@ -756,6 +758,8 @@ namespace ctruncate {
         //ctruncate::Scattering scattering( (mode == RNA ) ? Scattering::NUCLEIC : Scattering::PROTEIN );
         _totalscat[0] = scattering(data,0.47,2.0);
         
+        nresidues = scattering.numResidues();
+        
         ctruncate::Rings icerings;
         icerings.DefaultIceRings();
         
@@ -772,16 +776,17 @@ namespace ctruncate {
         return this->B();
     }
     
-    clipper::ftype WilsonB::operator()(const clipper::HKL_data_base& data, int nresidues, const clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
+    clipper::ftype WilsonB::operator()(const clipper::HKL_data_base& data, int nres, const clipper::Range<clipper::ftype>* range, ctruncate::Rings *ice)
     {
         nresidue_supplied = true;
         const clipper::HKL_info& hklinf = data.hkl_info();
         int nsym = hklinf.spacegroup().num_symops();
         intensity = &data;
         activeRange = ( range == NULL ) ? data.invresolsq_range() : *range;
+        nresidues = nres;
         
         //ctruncate::Scattering scattering( (mode == RNA ) ? Scattering::NUCLEIC : Scattering::PROTEIN );
-        _totalscat[0] = scattering(data,nresidues,2.0);
+        _totalscat[0] = scattering(data,nres,2.0);
         
         ctruncate::Rings icerings;
         icerings.DefaultIceRings();
@@ -809,6 +814,8 @@ namespace ctruncate {
         
         //ctruncate::Scattering scattering( (mode == RNA ) ? Scattering::NUCLEIC : Scattering::PROTEIN );
         _totalscat[0] = scattering(data,poly,2.0);
+        
+        nresidues = scattering.numResidues();
         
         ctruncate::Rings icerings;
         icerings.DefaultIceRings();
