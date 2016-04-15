@@ -316,22 +316,9 @@ static float best[300] =
 		6981.484,
 		6899.487,
 		6920.931,
-		6939.107};
+		6939.107
+    };
 	
-	float BEST(float ssqr)
-	{
-		// magic scale factor to put best data on scale for average electron squared
-		const double k = 8.563714792513845e-06;
-		const double offset = 0.009; // low resolution shell at 10.5409 A resolution
-		const double step = 0.004091973;
-		int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
-        if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
-        if (s1 >= 299) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
-		//linear interpolation
-		double ssqr1 = s1*step + offset;
-		double frac = (ssqr - ssqr1)/step;
-		return k*((1.0-frac)*best[s1]+frac*best[s1+1]);
-	}
     
     clipper::ftype Best::invresolsq_min()
     {
@@ -340,19 +327,20 @@ static float best[300] =
     
     clipper::ftype Best::invresolsq_max()
     {
-        return 299.0*step+offset;
+        return (sizeof(best)/sizeof(float)-1.0)*step+offset;
     }
     
     bool Best::contains(const clipper::ftype ssqr)
     {
-        return (ssqr > offset && ssqr < offset+299.0*step);
+        return (ssqr > offset && ssqr < offset+(sizeof(best)/sizeof(float)-1.0)*step);
     }
     
     clipper::ftype Best::value(const clipper::ftype ssqr)
     {
         int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
         if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
-        if (s1 >= 299) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
+        const unsigned int best_limit = sizeof(best)/sizeof(float)-1;
+        if (s1 >= best_limit) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
         //linear interpolation
         double ssqr1 = s1*step + offset;
         double frac = (ssqr - ssqr1)/step;

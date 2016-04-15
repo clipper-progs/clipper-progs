@@ -744,7 +744,7 @@ namespace ctruncate {
 				
 				for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
 					T reso = ih.invresolsq();
-					Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST_rna(reso), 1.0f);
+                    Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::Best_rna::value(reso), 1.0f);
 				} // scale against BEST
 				
 			}

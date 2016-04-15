@@ -10,6 +10,7 @@
 //
 
 #include "clipper/core/clipper_util.h"
+
 namespace ctruncate {
 
     class Best {
@@ -29,6 +30,4 @@ namespace ctruncate {
         static const double step = 0.004091973;
     };
 
-    float BEST(float);
-
-}
+ }
