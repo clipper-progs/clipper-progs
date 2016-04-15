@@ -527,8 +527,10 @@ int main(int argc, char **argv)
 		
 		// calc scale
 		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-			double reso = ih.invresolsq();
-			tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::BEST(reso), 0.0);
+            double reso = ih.invresolsq();
+            if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+            if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+            tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::Best::value(reso), 0.0);
 		}		
 		
 		int nrej_pre(0);
@@ -556,7 +558,9 @@ int main(int argc, char **argv)
 			double reso(0.0);
 			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
 				reso = ih.invresolsq();
-				tr1[ih] = clipper::data32::I_sigI( ctruncate::BEST(reso), 0.0);
+                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+				tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
 			}					
 		}
 		std::vector<bool> mask(nprm2,false);

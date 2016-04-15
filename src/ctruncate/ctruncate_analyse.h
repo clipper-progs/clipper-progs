@@ -805,22 +805,24 @@ private:
             clipper::ftype eps = ih.hkl_class().epsilon();
             clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/eps;
             int ring=_ideal_rings.InRing(reso);
+            clipper::ftype val = wilson.f(reso);
+            if (clipper::Util::is_nan(val) ) continue;
             if ( ring != -1 ) {
                 if (ih.hkl_class().centric() ) {
-                    _ideal_rings.AddObs(ring,D<T>(0.5*eps*wilson.f(ih),0.0 ),reso,mult);
+                    _ideal_rings.AddObs(ring,D<T>(0.5*eps*val,0.0 ),reso,mult);
                     _rings->AddObs(ring,D<T>(0.5*data[ih].I(),0.5*data[ih].sigI() ),reso,mult);
                     
                 } else {
-                    _ideal_rings.AddObs(ring,D<T>(eps*wilson.f(ih),0.0 ),reso,mult);
+                    _ideal_rings.AddObs(ring,D<T>(eps*val,0.0 ),reso,mult);
                     _rings->AddObs(ring,data[ih],reso,mult);
                 }
                 if ( !rings.Reject( ring )  && !data[ih].missing() ) {
                     int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
                     clipper::ftype mult=data.hkl_info().spacegroup().num_symops();
                     if (ih.hkl_class().centric() ) {
-                        mean1[bin] += mult*0.5*wilson.f(ih);
+                        mean1[bin] += mult*0.5*val;
                     } else {
-                        mean1[bin] += mult*wilson.f(ih);
+                        mean1[bin] += mult*val;
                     }
                 }
             } else {
@@ -828,9 +830,9 @@ private:
                     int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * s_ord.ordinal( reso ) ), nbins-1 );
                     clipper::ftype mult=data.hkl_info().spacegroup().num_symops();
                     if (ih.hkl_class().centric() ) {
-                        mean1[bin] += mult*0.5*wilson.f(ih);
+                        mean1[bin] += mult*0.5*val;
                     } else {
-                        mean1[bin] += mult*wilson.f(ih);
+                        mean1[bin] += mult*val;
                     }
                 }
             }

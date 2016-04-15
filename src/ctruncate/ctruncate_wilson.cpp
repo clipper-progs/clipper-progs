@@ -901,7 +901,7 @@ namespace ctruncate {
             ss << std::fixed << std::setprecision(4) << " " << res;
             if ( _a != -1.0) {
                 ss << "   "  << log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat);
-                if (mode == BEST) ss << "   "  << std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::BEST(res)))-log(totalscat);
+                if (mode == BEST) ss << "   "  << std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::Best::value(res)))-log(totalscat);
                 else if (mode == RNA ) ss << "   "  << std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::BEST_rna(res)))-log(totalscat);
             }
             ss << std::endl;
@@ -995,7 +995,7 @@ namespace ctruncate {
                 printf("%10.5f %10.5f %10.5f \n",
                        res,
                        log(basis_fo_wilson.f_s( res, wilsonplot.params() ))-log(totalscat),
-                       ( mode == BEST ) ? std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::BEST(res)))-log(totalscat) :
+                       ( mode == BEST ) ? std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::Best::value(res)))-log(totalscat) :
                        ( mode == RNA ) ? std::log(exp(-_a*res-_b)*(_totalscat[0]*ctruncate::BEST_rna(res)))-log(totalscat) :  -_a*res-_b );
             else printf("%10.5f %10.5f \n",
                         res,
@@ -1146,6 +1146,9 @@ namespace ctruncate {
         const clipper::HKL_info& hklinf = data.hkl_info();
         int nsym = hklinf.spacegroup().num_symops();
         
+        clipper::Range<clipper::ftype> rfilter( (resfilter.min() > Best::invresolsq_min()) ? resfilter.min() : Best::invresolsq_min(),
+                                               (resfilter.max() < Best::invresolsq_max()) ? resfilter.max() : Best::invresolsq_max() );
+        
         clipper::HKL_data<clipper::data32::I_sigI> xsig(hklinf);  // knock out ice rings and centric
         for ( HRI ih = data.first_data(); !ih.last(); data.next_data(ih) ) {
             if (!data.missing(ih.index() ) ) {
@@ -1168,12 +1171,16 @@ namespace ctruncate {
         float totalscat; 
         
         for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-            if ( resfilter.contains(ih.invresolsq() ) && !xsig[ih].missing() && wilsonplot.f(ih) > 0.0 ) {
+            if ( rfilter.contains(ih.invresolsq() ) && !xsig[ih].missing() && wilsonplot.f(ih) > 0.0 ) {
                 float eps = ih.hkl_class().epsilon();
                 float lnS = -log(wilsonplot.f(ih));
                 float res = ih.invresolsq();
                 
-                totalscat = _totalscat[0]*ctruncate::BEST(res);
+                float best(0.0);
+                best = ctruncate::Best::value(res);
+                if ( clipper::Util::is_nan(best) ) continue;
+                totalscat = _totalscat[0]*ctruncate::Best::value(res);
+                
                 lnS += log(totalscat);
                 
                 if ( icerings.InRing(ih.hkl().invresolsq(xsig.base_cell()  ) == -1 ) ) {  
@@ -1241,6 +1248,7 @@ namespace ctruncate {
                 float res = ih.invresolsq();
                 
                 totalscat = _totalscat[0]*ctruncate::BEST_rna(res);
+                if (totalscat == clipper::Util::nan() ) continue;
                 lnS += log(totalscat);
                 
                 if ( icerings.InRing(ih.hkl().invresolsq(xsig.base_cell()  ) == -1 ) ) {  
@@ -1280,7 +1288,7 @@ namespace ctruncate {
             
             totalscat = scattering.f(invresolsq);
         }
-        return ( mode == BEST ) ? exp(-_a*invresolsq-_b)*_totalscat[0]*ctruncate::BEST(invresolsq) :
+        return ( mode == BEST ) ? exp(-_a*invresolsq-_b)*_totalscat[0]*ctruncate::Best::value(invresolsq) :
         ( mode == RNA ) ?  exp(-_a*invresolsq-_b)*_totalscat[0]*ctruncate::BEST_rna(invresolsq) :   exp(-_a*invresolsq-_b )*totalscat;
     }
     

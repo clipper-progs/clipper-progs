@@ -12,6 +12,7 @@
 
 #include "best.h"
 #include <cmath>
+//#include "clipper/core/clipper_util.h"
 
 namespace ctruncate {
 
@@ -324,12 +325,39 @@ static float best[300] =
 		const double offset = 0.009; // low resolution shell at 10.5409 A resolution
 		const double step = 0.004091973;
 		int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
-		if (s1 < 0) return k*best[0]; //lower than 10.5409 A resolution
-		if (s1 >= 299) return k*best[299]; //beyond highest resolution for BEST data (about 0.9 A)
+        if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
+        if (s1 >= 299) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
 		//linear interpolation
 		double ssqr1 = s1*step + offset;
 		double frac = (ssqr - ssqr1)/step;
 		return k*((1.0-frac)*best[s1]+frac*best[s1+1]);
 	}
+    
+    clipper::ftype Best::invresolsq_min()
+    {
+        return offset;
+    }
+    
+    clipper::ftype Best::invresolsq_max()
+    {
+        return 299.0*step+offset;
+    }
+    
+    bool Best::contains(const clipper::ftype ssqr)
+    {
+        return (ssqr > offset && ssqr < offset+299.0*step);
+    }
+    
+    clipper::ftype Best::value(const clipper::ftype ssqr)
+    {
+        int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
+        if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
+        if (s1 >= 299) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
+        //linear interpolation
+        double ssqr1 = s1*step + offset;
+        double frac = (ssqr - ssqr1)/step;
+        return k*((1.0-frac)*best[s1]+frac*best[s1+1]);
+    }
+
 	
 }
