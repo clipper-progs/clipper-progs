@@ -1158,7 +1158,11 @@ namespace ctruncate {
 		
 		std::stringstream ss;
 		
-		if ( _rings->MeanSSqr(0) <= maxres && _rings->MeanSigI(0) > 0.0f ) {
+        bool done(false);
+        for ( int i = 0; i != _rings->Nrings(); ++i) {
+            if (_rings->MeanSSqr(i) <= maxres && _rings->MeanSigI(i) > 0.0f) done = true;
+        }
+		if ( done ) {
 			ss << "OUTLIER RING SUMMARY:\n\n";
             if ( present() ) {
                 ss << " reso    mean_I mean_Sigma Estimated_I  Ratio Zscore Completeness Ave_Completeness\n";
