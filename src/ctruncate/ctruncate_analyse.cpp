@@ -1468,15 +1468,21 @@ namespace ctruncate {
 	const clipper::Range<clipper::ftype>& HKLAnalysis::active_range() {
 		if (_active.min() < _active.max() ) return _active;
         clipper::ftype rmax = _data->hkl_info().resolution().limit();
+        
+        std::vector<clipper::ftype> per(_activerange.size() );
+        
+        for (int i = 0; i != _activerange.size() ; ++i) per[i] = float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size();
+        
 		int ii(0);
         for (int i=0; i != _activerange.size(); ++i) {
             if ( int(_completeness[i].IoversigI() ) == 3 ) ii = i;
         }
+            
         for (; ii != 0 ; --ii) {
 			clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
 			clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
 			clipper::ftype rr = std::fabs(rmin-amax);
-			if ( rr > 4.0 && amax < rmax+0.5)  {
+            if ( ( rr > 4.0 && (amax < 3.0 || amax < rmax+0.5 ) && per[ii] > 0.2 ) || per[ii] > 0.85 )  {
 				_active = _activerange[ii];
 				break;
 			}
@@ -1505,28 +1511,28 @@ namespace ctruncate {
 			printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
 			printf("\nThe following uses I/sigI completeness levels, in particular targeting completeness above 85%%.  A better estimate is available using CC1/2.\n");
             std::cout << std::endl;
-            std::cout << "   I/sigI>N        range(A)   " << std::endl;
+            std::cout << "   I/sigI>N        range(A)       %refln" << std::endl;
         } else {
             printf("\nCOMPLETENESS ANALYSIS (using amplitudes):\n");
 			printf("\nThe following uses F/sigF completeness levels.  A better estimate is available using CC1/2.\n");
             std::cout << std::endl;
-			std::cout << "   F/sigF>N   range(A)   " << std::endl;
+			std::cout << "   F/sigF>N        range(A)       %refln" << std::endl;
         }
         for (int ii = _activerange.size()-1; ii != 0 ; --ii) {
             clipper::ftype rmax = _data->hkl_info().resolution().limit();
             clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
             clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
-            std::cout << "    " << std::setw(3) << int(_completeness[ii].IoversigI()) <<  "        ";
+            std::cout << "    " << std::fixed << std::setprecision(1) << std::setw(3) << float(_completeness[ii].IoversigI()) <<  "        ";
             if ((_activerange[ii]).min() < (_activerange[ii]).max() )
-                std::cout << "    " << std::fixed << std::setprecision(2) << rmin << " - " << amax << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
+                std::cout << "    " << std::fixed << std::setprecision(2) << rmin << " - " << amax << "    " << std::fixed << std::setprecision(2) << float(_binner(_activerange[ii].max() )-_binner(_activerange[ii].min() )+1 )/_binner.size() << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
             else
-                std::cout << "   NaN - NaN" << std::endl;
+                std::cout << "   NaN - NaN    0.0" << std::endl;
         }
         std::cout << "     N/A           ";
         if ((_activerange[0]).min() < (_activerange[0]).max() )
             std::cout << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - " << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
         else
-            std::cout << "   NaN - NaN" << std::endl;
+            std::cout << "   NaN - NaN    0.0" << std::endl;
         std::cout << std::endl;
         if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 ) {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
@@ -1615,9 +1621,10 @@ namespace ctruncate {
             ss << ">" << std::endl;
             if ( (_activerange[i]).min() < (_activerange[i]).max() )
                 ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_activerange[i]).min() ) << "</min>\n    <max>"
-                << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[i]).max() ) << "</max>" << std::endl;
+                << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[i]).max() ) << "</max>\n         <percentage>" <<
+                float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size() << "</percentage>" << std::endl;
             else
-                ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
+                ss <<"    <min> NaN</min>\n    <max> NaN</max>\n     <percentage> NaN</percentage>" << std::endl;
             ss << "  </ResolutionRange>" << std::endl;
         }
         ss << " <Comment id=\"CompletenessReso\">" << std::endl;

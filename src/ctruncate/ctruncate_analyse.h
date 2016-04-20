@@ -487,19 +487,18 @@ private:
      \return type HKLAnalysis */
     template<class T, template<class> class D> HKLAnalysis::HKLAnalysis( const clipper::HKL_data< D<T> >& hkldata ) {
 		_data = &hkldata;
-		_completeness.resize(7);
-		_activerange.resize(7);
+        float isig_val[] = {1.0,1.5,2.0,3.0,5.0,10.0,15.0};
+        int isig_size = sizeof(isig_val)/sizeof(float);
+		_completeness.resize(isig_size+1 );
+		_activerange.resize(isig_size+1 );
 		
 		bool missing=false;
 		_binner  = ResolStats_base(hkldata,missing);
-		_completeness[0]    = HKLStats_completeness(_binner);
-		_completeness[1]    = HKLStats_completeness(_binner,1.0);
-		_completeness[2]    = HKLStats_completeness(_binner,2.0);
-		_completeness[3]    = HKLStats_completeness(_binner,3.0);
-		_completeness[4]    = HKLStats_completeness(_binner,5.0);
-		_completeness[5]    = HKLStats_completeness(_binner,10.0);
-		_completeness[6]    = HKLStats_completeness(_binner,15.0);
-		_Rstandard = HKLStats_Rstandard(_binner);
+        _completeness[0]    = HKLStats_completeness(_binner);
+        for (int i=0; i != isig_size; ++i ) {
+            _completeness[i+1]    = HKLStats_completeness(_binner,isig_val[i]);
+        }
+        _Rstandard = HKLStats_Rstandard(_binner);
 				
         int nbins = _binner.size();
 		
