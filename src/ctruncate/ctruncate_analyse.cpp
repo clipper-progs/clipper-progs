@@ -1554,7 +1554,7 @@ namespace ctruncate {
             if (this->is_intensity() ) printf("The resolution range with I/sigI > 3");
             else printf("The resolution range with F/sigF > 3");
             printf(" with completeness above %4.2f, the estimated strong data resolution range ",ACCEPTABLE);
-            printf("of this data, is %6.2fA to %6.2fA\n.  This corresponds to approximately %3d%% of the reflections in the file.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()));
+            printf("of this data, is %6.2fA to %6.2fA.\n  This corresponds to approximately %3d%% of the reflections in the file.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()));
         }
     
         if (is_intensity() )  {
@@ -1614,9 +1614,9 @@ namespace ctruncate {
 		ss << "  <ResolutionRange id=\"Completeness\" unit=\"Angstrom\" >" << std::endl;
 		if ( (_activerange[0]).min() < (_activerange[0]).max() ) 
 			ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_activerange[0]).min() ) << "</min>\n    <max>"
-			<< 1.0/std::sqrt((_activerange[0]).max() ) << "</max>" << std::endl;
+			<< 1.0/std::sqrt((_activerange[0]).max() ) << "</max>\n    <percentage>100</percentage>" << std::endl;
 		else 
-			ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
+			ss <<"    <min> NaN</min>\n    <max> NaN</max>\n    <percentage> NaN</percentage> " << std::endl;
 		ss << "  </ResolutionRange>" << std::endl;
         //
         for (int i = _completeness.size()-1; i != 0; --i) {
@@ -1627,7 +1627,7 @@ namespace ctruncate {
             if ( (_activerange[i]).min() < (_activerange[i]).max() )
                 ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_activerange[i]).min() ) << "</min>\n    <max>"
                 << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[i]).max() ) << "</max>\n         <percentage>" <<
-                float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size() << "</percentage>" << std::endl;
+                int(100*float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size() ) << "</percentage>" << std::endl;
             else
                 ss <<"    <min> NaN</min>\n    <max> NaN</max>\n     <percentage> NaN</percentage>" << std::endl;
             ss << "  </ResolutionRange>" << std::endl;
