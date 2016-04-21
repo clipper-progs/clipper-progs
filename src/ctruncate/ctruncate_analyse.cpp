@@ -1509,7 +1509,7 @@ namespace ctruncate {
         }
 		if (this->is_intensity() ) {
 			printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
-			printf("\nThe following uses I/sigI completeness levels, in particular targeting completeness above 85%%.  A better estimate is available using CC1/2.\n");
+			printf("\nThe following uses I/sigI Completeness levels, in particular targeting completeness above 85%%.  The Completeness with I/sigma above 3 indicates a strong signal (A better estimate is available using CC1/2 in aimless).\n");
             std::cout << std::endl;
             std::cout << "   I/sigI>N        range(A)       %refln" << std::endl;
         } else {
@@ -1538,18 +1538,23 @@ namespace ctruncate {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
             else printf("WARNING: The resolution range with F/sigF > 3");
             printf(" and completeness above %4.2f could not be\n",ACCEPTABLE);
-            printf(" determined.  This data is of very poor quality. In order not to discard too much data the resolution range for analysing\n the statistics has been relaxed to, %6.2f - %6.2fA: note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
-            printf("the statistics output are less accurate.\n\n");
+            printf("determined.  The completeness of this data is poor. In order not to discard too much data the resolution range for analysing\nthe statistics has been relaxed to, %6.2f - %6.2fA: note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
         } else if  (i3 != ia ) {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
             else printf("WARNING: The resolution range with F/sigF > 3");
-            printf(" with completeness above 0.85 is small, %6.2fA to %6.2fA\n",1.0/std::sqrt((_activerange[i3]).min() ), 1.0/std::sqrt((_activerange[i3]).max() ));
-            printf("This is indicative of a poor quality dataset.  In order not to discard too much data the resolution range for analysing\n the statistics has been relaxed to , %6.2f - %6.2fA: note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
+            printf(" with completeness above\n0.85 is small, %6.2fA to %6.2fA.  This strong data corresponds to\napproximately %3d%% of the reflections in the file.",1.0/std::sqrt((_activerange[i3]).min() ), 1.0/std::sqrt((_activerange[i3]).max() ),int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()) );
+            printf("  In order not to\ndiscard too much data the resolution range for analysing the statistics\nhas been relaxed to, %6.2f - %6.2fA (%3d%%): note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_active.max() )-_binner(_active.min() )+1 )/_binner.size()) );
+            if (_activerange[i3].min() > 0.0011 ) printf("Strong data does not extend to low resolutions.\n"); // low resolution higher than 30A
+            if (_activerange[i3].max() < 0.11 ) printf("Strong data does not extend to high resolutions.\n"); // high resolution lower than 3A
+            if ( ( _activerange[0].max() - _activerange[2].max() ) > 0.1 ) printf("Processed data contains a lot of weak data at high resolution.  Moments plots and Wilson plot should be consulted\n"); // large amount of weak data beyond limit.
+            std::cout << std::endl;
+            
+            
         } else {
             if (this->is_intensity() ) printf("The resolution range with I/sigI > 3");
             else printf("The resolution range with F/sigF > 3");
-            printf(" with completeness above %4.2f, the estimated useful resolution range ",ACCEPTABLE);
-            printf("of this data, is %6.2fA to %6.2fA\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ) );
+            printf(" with completeness above %4.2f, the estimated strong data resolution range ",ACCEPTABLE);
+            printf("of this data, is %6.2fA to %6.2fA\n.  This corresponds to approximately %3d%% of the reflections in the file.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()));
         }
     
         if (is_intensity() )  {
@@ -1628,11 +1633,11 @@ namespace ctruncate {
             ss << "  </ResolutionRange>" << std::endl;
         }
         ss << " <Comment id=\"CompletenessReso\">" << std::endl;
-        ss << "The completeness max and min resolution indicte the resolution extremes where obs/sig(obs) &gt; N accounts for more than 85 % of observations." << std::endl;
+        ss << "The Completeness max and min resolution indicte the resolution extremes where obs/sig(obs) &gt; N accounts for more than 85 % of observations." << std::endl;
         ss << "  </Comment>" << std::endl;
 		if (this->is_intensity() ) {
 			ss << "  <Comment id=\"Completeness3\" >" << std::endl;
-			ss << "The Completeness with I/sigma above 3 indicates a good signal, " << std::endl;
+			ss << "The Completeness with I/sigma above 3 indicates a strong signal, " << std::endl;
             if ( (_activerange[i3]).min() < (_activerange[i3]).max() ) {
                 ss << "here it is from " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_activerange[i3].min() ) << " to " << 1.0/std::sqrt(_activerange[i3].max() ) << "A." << std::endl;
             } else {
@@ -1645,7 +1650,7 @@ namespace ctruncate {
 			ss << "  <Comment id=\"Completeness3\" >" << std::endl;
 			ss << "The Completeness with F/sigma above 3 indicates very strong data, " << std::endl;
             if ( (_activerange[i3]).min() < (_activerange[i3]).max() ) {
-                ss << "here it is from " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_activerange[i3].min() ) << " to " << 1.0/std::sqrt(_activerange[i3].max() ) << "A." << std::endl;
+                ss << "here it is from " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_activerange[i3].min() ) << " to " << 1.0/std::sqrt(_activerange[i3].max() ) << "A (approximately " << int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1) )/_binner.size() << " percent of the reflections)." << std::endl;
             } else {
                 ss << " here it is not defined."  << std::endl;
             }
@@ -1654,16 +1659,19 @@ namespace ctruncate {
 		}
         ss << "<Comment id=\"ActiveRange\">" << std::endl;
         if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 )
-            ss << "In order to not discard all the data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A." << std::endl;
+            ss << "&lt;li&gt; In order to not discard all the data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A. &lt;/li&gt;" << std::endl;
         else if (ia == i3 )
-            ss << " This will be used in the analysis of the data." << std::endl;
+            ss << "&lt;li&gt; This will be used in the analysis of the data. &lt;/li&gt;" << std::endl;
         else
-            ss << " In order not to discard too much data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A." << std::endl;
+            ss << "&lt;li&gt; In order not to discard too much data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A. &lt;/li&gt;" << std::endl;
+        if (_activerange[i3].min() > 0.0011 ) ss << "&lt;li&gt; Strong data does not extend to low resolutions. &lt;/li&gt;" << std::endl; // low resolution higher than 30A
+        if (_activerange[i3].max() < 0.11 ) ss << "&lt;li&gt; Strong data does not extend to high resolutions. &lt;/li&gt;" << std::endl; // high resolution lower than 3A
+        if ( ( _activerange[0].max() - _activerange[2].max() ) > 0.1 ) ss << "&lt;li&gt; Processed data contains a lot of weak data at high resolution.  Moments plots and Wilson plot should be consulted. &lt;/li&gt;" << std::endl; // large amount of weak data beyond limit.
         ss << "</Comment>" << std::endl;
         ss << "<Comment id=\"CompletenessQuality\">" << std::endl;
         if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 )
             ss << "Completeness test shows very poor data.";
-        else if (ia == i3 )
+        else if (ia == i3 && _activerange[i3].min() < 0.0011 && _activerange[i3].max() > 0.11 && ( _activerange[0].max() - _activerange[2].max() ) < 0.1 )
             ss << "Completeness test shows good data." << std::endl;
         else
             ss << "Completeness test shows some issues." << std::endl;
