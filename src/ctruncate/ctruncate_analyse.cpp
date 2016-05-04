@@ -546,44 +546,62 @@ namespace ctruncate {
         std::cout << "Estimated limits of anomalous signal:" << std::endl << std::endl;
         
         if (is_intensity() )  {       
-			std::cout << "      Bijvoet ratio (<deltaI>/<I>) > 1.0% : ";
+			std::cout << "  Bijvoet ratio (<deltaI>/<I>) > 1.0%              : ";
 			if (_bij_range.min() < _bij_range.max() ) 
 				std::cout << 1.0/std::sqrt(_bij_range.min() ) << " - " << 1.0/std::sqrt(_bij_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
-			std::cout << "      Anomalous signal to noise (<deltaI/sigdI>) > 1.3 : ";
+			std::cout << "  Anomalous signal to noise (<deltaI/sigdI>) > 1.3 : ";
 			if (_signoise_range.min() < _signoise_range.max() ) 
 				std::cout << 1.0/std::sqrt(_signoise_range.min() ) << " - " << 1.0/std::sqrt(_signoise_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
-			std::cout << "      Measurability limit (Nanon/Nov) > 5% : ";
+			std::cout << "  Measurability limit (Nanon/Nov) > 5%             : ";
 			if (_meas_range.min() < _meas_range.max() ) 
 				std::cout << 1.0/std::sqrt(_meas_range.min() ) << " - " << 1.0/std::sqrt(_meas_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
 		} else {
-			std::cout << "      Bijvoet ratio (<deltaF>/<F>) > 0.6% : ";
+			std::cout << "  Bijvoet ratio (<deltaF>/<F>) > 0.6%              : ";
 			if (_bij_range.min() < _bij_range.max() ) 
 				std::cout << 1.0/std::sqrt(_bij_range.min() ) << " - " << 1.0/std::sqrt(_bij_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
-			std::cout << "      Anomalous signal to noise (<deltaF/sigdF>) > 1.3 : " ;
+			std::cout << "  Anomalous signal to noise (<deltaF/sigdF>) > 1.3 : " ;
 			if (_signoise_range.min() < _signoise_range.max() ) 
 				std::cout << 1.0/std::sqrt(_signoise_range.min() ) << " - " << 1.0/std::sqrt(_signoise_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
-			std::cout << "      Measurability limit (Nanon/Nov) > 5% : ";
+			std::cout << "  Measurability limit (Nanon/Nov) > 5%             : ";
 			if (_meas_range.min() < _meas_range.max() ) 
 				std::cout << 1.0/std::sqrt(_meas_range.min() ) << " - " << 1.0/std::sqrt(_meas_range.max() ) << " A " << std::endl;
 			else 
 				std::cout << "NaN - NaN" << std::endl;
 		}
-		
+        std::cout << std::endl;
+        if ( _signoise_range.min() > _signoise_range.max() || _meas_range.min() > _meas_range.max() ) {
+            std::cout << "  Warning: NO anmalous signal." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.11 ) && // low resolution lower than 10A, high beyond 3 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.11 ) ) {
+            std::cout << " Significant anomalous signal to high resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) && // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            std::cout << " Significant anomalous signal to medium resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) || // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            std::cout << " Inconsistent results, there may be some anomalous signal." << std::endl;
+        } else if ( _signoise_range.min() > 0.04 || _meas_range.min() > 0.04 )  {
+            std::cout << " Warning: NO anomalous signal. Anomalous signal is probably artefact of noise at high resolution." << std::endl;
+        } else {
+            std::cout << " Some anomalous signal at intermediate resolution.  Low resolution signal missing." << std::endl;
+        }
+
 		std::cout << std::endl;
         std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal\n  can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl << std::endl;
 	//}
 		std::cout << "  The measurability is defined as the fraction of the anomalous differences for which the signal to noise for deltaI,\n  I(+) and I(-) are all > 3.";
-		std::cout << " For well processed data having more than 5% of the measured data satisfying this criteria is a good\n  indicator, particularly when combined with";
+        std::cout << " The resolution limits are derived from I/sigI of 1.2 for the signal to noise, and measurability above 5%." << std::endl;
+		std::cout << "  For well processed data having more than 5% of the measured data satisfying this criteria is a good\n  indicator, particularly when combined with";
 		std::cout << " a significate mean signal to noise of the anomalous difference in a\n  resolution shell." << std::endl; 
 	
 	//void AnomStats::output_loggraph()
@@ -616,23 +634,42 @@ namespace ctruncate {
 		ss << "<AnomStatistics type=\"" << is << "\">" << std::endl;
 		ss << "  <ResolutionRange id=\"Signal to Noise Ratio\" unit=\"Angstrom\" >" << std::endl;
 		if (_signoise_range.min() < _signoise_range.max() ) 
-			ss << std::setw(4) << "    <min>" << 1.0/std::sqrt(_signoise_range.min() ) << "</min>\n    <max>"
+			ss << std::fixed << std::setw(5) << std::setprecision(2) << "    <min>" << 1.0/std::sqrt(_signoise_range.min() ) << "</min>\n    <max>"
 			<< 1.0/std::sqrt(_signoise_range.max() ) << "</max>" << std::endl;
 		else 
 			ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
 		ss << "  </ResolutionRange>" << std::endl;
 		ss << "  <ResolutionRange id=\"Measurability Limit\" unit=\"Angstrom\" >" << std::endl;
 		if (_meas_range.min() < _meas_range.max() ) 
-			ss << std::setw(4) << "    <min>" << 1.0/std::sqrt(_meas_range.min() ) << "</min>\n    <max>"
+			ss << std::fixed << std::setw(5) << std::setprecision(2) << "    <min>" << 1.0/std::sqrt(_meas_range.min() ) << "</min>\n    <max>"
 			<< 1.0/std::sqrt(_meas_range.max() ) << "</max>" << std::endl;
 		else 
 			ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
 		ss << "  </ResolutionRange>" << std::endl;
-		ss << "  <Comment id='Anom'>" << std::endl;
+		ss << "  <Comment id='AnomDescription'>" << std::endl;
 		ss << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal\n  can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl << std::endl;
-		ss << "  The measurability is defined as the fraction of the anomalous differences for which the signal to noise for deltaI,\n  I(+) and I(-) are all > 3.";
+		ss << " The measurability is defined as the fraction of the anomalous differences for which the signal to noise for deltaI,\n  I(+) and I(-) are all > 3.";
+        ss << " The resolution limits are derived from I/sigI of 1.2 for the signal to noise, and measurability above 5%";
 		ss << " For well processed data having more than 5% of the measured data satisfying this criteria is a good\n   indicator, particularly when combined with";
-		ss << " a significate mean signal to noise of the anomalous difference in a\n  resolution shell." << std::endl; 
+		ss << " a significate mean signal to noise of the anomalous difference in a\n  resolution shell." << std::endl;
+        ss << "  </Comment>" << std::endl;
+        ss << "  <Comment id='AnomResult'>" << std::endl;
+        if ( _signoise_range.min() > _signoise_range.max() || _meas_range.min() > _meas_range.max() ) {
+            ss << "  Warning: NO anmalous signal." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.11 ) && // low resolution lower than 10A, high beyond 3 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.11 ) ) {
+            ss << "  Significant anomalous signal to high resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) && // low resolution lower than 10A, high beyond 5 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            ss << "  Significant anomalous signal to medium resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) || // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            ss << "  Inconsistent results, there may be some anomalous signal." << std::endl;
+        } else if ( _signoise_range.min() > 0.04 || _meas_range.min() > 0.04 )  {
+            ss << "  Warning: NO anomalous signal. Anomalous signal is probably artefact of noise at high resolution." << std::endl;
+        } else {
+            ss << "  Some anomalous signal at intermediate resolution.  Low resolution signal missing." << std::endl;
+        }
 		ss << "  </Comment>" << std::endl;
 		ss << "</AnomStatistics>" << std::endl;
 		/*
