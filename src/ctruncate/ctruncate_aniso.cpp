@@ -529,7 +529,7 @@ namespace ctruncate {
 		ss << "</plot>" << std::endl;
 		if (this->is_intensity()) ss << "<headers separator=\" \">\n 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))";
 		else ss << "<headers separator=\" \">\n  1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd)";
-		ss << "N(d1) N(d2) N(d3) N \n </headers>" << std::endl;
+		ss << " N(d1) N(d2) N(d3) N \n </headers>" << std::endl;
 		ss << "<data>" << std::endl;;
 		int bins=this->size();
 		for(int i=0;i!=bins;++i){
