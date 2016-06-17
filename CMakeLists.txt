@@ -12,6 +12,9 @@ if (WIN32)
   set(SOCKET_LIB ws2_32)
 endif()
 
+add_executable(cextend src/cextend.cpp)
+target_link_libraries(cextend ${CCP4_LIBRARIES})
+
 add_executable(ccontacts src/ccontacts.cpp)
 target_link_libraries(ccontacts ${CCP4_LIBRARIES})
 
@@ -175,7 +178,7 @@ target_link_libraries(cnautilus ${CCP4_LIBRARIES})
 install(FILES src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
         DESTINATION lib/data)
 
-install(TARGETS ccontacts chltofom cphasematch csfcalc cfft cinvfft csigmaa
+install(TARGETS ccontacts cextend chltofom cphasematch csfcalc cfft cinvfft csigmaa
                 cecalc cphasecombine cpatterson caniso convert2mtz
                 csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut
                 comit cmapcoeff cmtzsplit cmtzjoin
