@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.14";
-    clipper::String prog_date = "$Date: 2016/05/04";
+    clipper::String prog_vers = "1.17.15";
+    clipper::String prog_date = "$Date: 2016/06/23";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -466,9 +466,11 @@ int main(int argc, char **argv)
 		//std::cout << xml_aniso.str() << std::endl;
 		
 		//set ianiso
-		uaoc=aa.u_aniso_orth_corr_F();
-		clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,aa.u_aniso_orth_corr_F() );
-		ianiso.compute(ianiso, compute_s);
+                if (anisobysymm) {
+		    uaoc=aa.u_aniso_orth_corr_F();
+		    clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,aa.u_aniso_orth_corr_F() );
+		    ianiso.compute(ianiso, compute_s);
+                }
 	}
 	
 	//want to use anisotropy correction and resolution truncation for twinning tests

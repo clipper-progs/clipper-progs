@@ -995,15 +995,19 @@ namespace ctruncate {
                 }
             }
         }
-        for (int j = 0; j != _pdf.size() ; ++j) _pdf[j] /= NT;
-        for (int j = 0; j != _zpdf.size() ; ++j) _zpdf[j] /= NT;
-        NT = 0.0;
-        for (int j = 0; j != _zpdf.size()-1 ; ++j) {
+        for (int j = 0; j != nbins ; ++j) _pdf[j] = ( _pdf[j] < 0.1) ? 0.0 : _pdf[j]/NT;
+        for (int j = 0; j != nbins ; ++j) _zpdf[j] = ( _zpdf[j] < 0.1) ? 0.0 : _zpdf[j]/NT;
+        for (int j = 0; j != nbins-1 ; ++j) {
             weights[j] = ( _zpdf[j] == 0.0 && _zpdf[j+1] == 0.0 ) ? 0.0 : 1.0 ;
-            NT += 1.0;
+        }
+        weights.back() =  ( _zpdf.back() == 0.0 ) ? 0.0 : 1.0 ;
+        int count(0); 
+        for (int j = 0; j != nbins-1 ; ++j) {
+            if (weights[j] != 0.0 ) ++count;
         }
 
-        clipper::ftype alpha(-1.0),alpha1(1.0),beta(0.0);
+        clipper::ftype alpha(0.5),alpha1(1.0),beta(0.0);
+        if (count != 0) 
         do {
             clipper::ftype a, b, siga, sigb;
             straight_line_fit(_zpdf,x,weights,nbins,a,b,siga,sigb);
