@@ -51,6 +51,7 @@ int main( int argc, char** argv )
   clipper::String ipfile = "NONE";
   clipper::String ipcolfo = "";
   clipper::String ipcolfiso = "";
+  clipper::String ipcolphifom = "";
   clipper::String opfile = "NONE";
   clipper::String opcolfo = "*/*/[F,SIGF]";
   clipper::String opcolfiso = "*/*/[F_ISO,SIGF_ISO]";
@@ -74,6 +75,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ipcolfo = args[arg];
     } else if ( args[arg] == "-colin-fiso" ) {
       if ( ++arg < args.size() ) ipcolfiso = args[arg];
+    } else if ( args[arg] == "-colin-phifom" ) {
+      if ( ++arg < args.size() ) ipcolphifom = args[arg];
     } else if ( args[arg] == "-resolution" ) {
       if ( ++arg < args.size() ) reslim = clipper::String(args[arg]).f();
     } else if ( args[arg] == "-aniso" ) {
@@ -84,8 +87,9 @@ int main( int argc, char** argv )
     }
   }
     if ( args.size() <= 1 ) {
-    std::cout << "Usage: cextend\n\t-mtzin <filename>\n\t-mtzout <filename>\n\t-colin-fo <colpath>\n\t[ optional -colin-fiso <colpath> ]\n\t [ optional -resolution <resolution> default 1.0 ] \
-      \n\t-aniso anisotopy correct \nExtend hkls to higher resolution, optionally correct for aniostropy and calcuate normalised structure factors\n";
+    std::cout << "Usage: cextend\n\t-mtzin <filename>\n\t-mtzout <filename>\n\t-colin-fo <colpath>\n\t[ optional -colin-fiso <colpath> ]\
+      \n\t[ optional -colin-phifom <colpath> ]\n\t[ optional -resolution <resolution> default 1.0 ] \
+      \n\t-aniso anisotropy correct \nExtend hkls to higher resolution, optionally correct for anisotropy and calculate normalised structure factors\n";
     exit(1);
   }
   
@@ -111,17 +115,23 @@ int main( int argc, char** argv )
   // import F,SIGF and Fiso,SIGFiso
   clipper::HKL_data<clipper::data32::F_sigF> fsig( hkls );
   clipper::HKL_data<clipper::data32::F_sigF> fsigiso( hkls );
+  clipper::HKL_data<clipper::data32::Phi_fom> phifom( hkls );
   mtzin.import_hkl_data( fsig, ipcolfo );
   
   // if anisotropy corrected data in input file read them in
   if ( ipcolfiso != "" ) {
     mtzin.import_hkl_data( fsigiso, ipcolfiso ); 
   }
-  
   // otherwise read uncorrected Fs and correct them if requested
   else {
     mtzin.import_hkl_data( fsigiso, ipcolfo ); 
   }
+  
+  // if phases are supplied read them in too
+  if ( ipcolphifom != "" ) {
+    mtzin.import_hkl_data( phifom, ipcolphifom );
+  }
+  
   mtzin.close_read();
 
   // now correct for anisotropy 
@@ -164,6 +174,9 @@ int main( int argc, char** argv )
     mtzout.export_hkl_data ( esig, opcoleiso );
   } else {
     mtzout.export_hkl_data ( esig, opcole );
+  }
+  if ( ipcolphifom != "") {
+    mtzout.export_hkl_data ( phifom, ipcolphifom );
   }
   mtzout.close_write();
 }
