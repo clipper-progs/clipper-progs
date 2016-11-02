@@ -84,6 +84,8 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/intensity_scale.cpp \
 				  src/ctruncate/best.cpp \
                                   src/ctruncate/best_rna.cpp \
+                                  src/ctruncate/alt_hkl_datatypes.cpp \
+                                  src/ctruncate/ctruncate_aniso.cpp \
 				  src/ctruncate/ctruncate_utils.h \
 				  src/ctruncate/cpsf_utils.h \
 				  src/ctruncate/twinlaws.h \
@@ -98,7 +100,8 @@ src_ctruncate_ctruncate_SOURCES = src/ctruncate/ctruncate.cpp \
 				  src/ctruncate/best.h \
                                   src/ctruncate/best_rna.h \
 				  src/ctruncate/intensity_target.h \
-				  src/ctruncate/alt_hkl_datatypes.h
+				  src/ctruncate/alt_hkl_datatypes.h \
+                                  src/ctruncate/ctruncate_aniso.h
 
 src_pirate_cpirate_SOURCES = src/pirate/cpirate.cpp \
 			     src/pirate/simulate-lib.cpp \

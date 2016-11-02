@@ -85,7 +85,7 @@ public:
 	~PeakSearch() {}
 	template<class T> const std::vector<int>& operator() ( const clipper::Xmap<T>& map, float sig=3.0 );
 	clipper::ftype zero() { return _rho0; }
-	const int operator[](int i) { return _peaks[i]; }
+	int operator[](int i) { return _peaks[i]; }
 	int npeaks() { return _peaks.size(); }
 private:
 	clipper::Xmap_base* _xmap;

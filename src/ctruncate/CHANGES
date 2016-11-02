@@ -1,8 +1,44 @@
-1.16.10 (30/4/15)
-- fix for output column names
+1.17.15 (23/06/16)
+- some issues with 0.0/x on one platform
 
-1.16.9 (27/01/15)
+1.17.14 (04/05/16)
+- adjust anomalous signal warnings
+
+1.17.13 (21/04/16)
+- adjust completeness warnings
+
+1.17.12 (20/04/16)
+- adjust active range
+
+1.17.11 (15/04/16)
+- minor tidy in wilson calculation
+
+1.17.10 (10/03/16)
+- tidying in wilson calculation
+
+1.17.9 (15/02/16)
+- Wilson B in outlier test
+
+1.17.8 (26/01/16)
+- use finer grain binning for ice rings detection
+
+1.17.7 (07/12/15)
+- use full range for moments plots
+
+1.17.6 (27/11/15)
+- fix DANO issue, plus overzealous anisotropy correction
+
+1.17.1
+- large changes for ccp4i2
+
+1.16.11 (29/01/15)
+- crudely filter out sigma <= 0
+
+1.16.10 (27/01/15)
 - protect truncation against 0 sigma
+
+1.16.9 (26/01/15)
+- output from anomalous stats to xml file
 
 1.16.8 (14/01/15)
 - remove unnecessary file read

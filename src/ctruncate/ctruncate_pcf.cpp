@@ -95,6 +95,32 @@ namespace ctruncate {
         }
                 
 
+#ifdef HAVE_LIBGSL
+#include "gsl/gsl_sf_hyperg.h"
+	
+	double Utils::pbdv( double v, double x )
+	/*!Compute parabolic cylinder function using libgsl functions
+	 Note overflow for x > 20
+	 \param v order
+	 \param x argument
+	 \return Dv(x) */
+	{
+		double Dv(0.0);
+		if (x < 0.0) {
+			double F_0 = gsl_sf_hyperg_1F1((v+1.0)/2.0,0.5,-x*x/2.0);
+			double F_01 = gsl_sf_hyperg_1F1(1.0+v/2.0,1.5, -x*x/2.0);
+			double G_0 = tgamma((1.0-v)/2.0);
+			double G_01 = tgamma(-v/2.0);
+			Dv = std::exp(0.25*x*x)*std::sqrt(clipper::Util::pi() ) * std::pow(2.0,v/2.0) * (F_0/G_0-std::sqrt(2.0)*x*F_01/G_01);
+		} else {
+			double U = gsl_sf_hyperg_U(-v/2.0,0.5, x*x/2.0);
+			Dv = std::exp(-0.25*x*x)*std::pow(2.0,v/2.0)*U;
+		}
+		return Dv;
+	}
+
+#else
+	
     double Utils::pbdv( double v, double x )
         /*!Compute parabolic cylinder function.
 		Note overflow for x > 22 on 64-bit
@@ -175,6 +201,6 @@ namespace ctruncate {
              double pdd(dp[na-1]; */
             return dv[na-1];
         }
-
+#endif //HAVE_LIBGSL
 }
 

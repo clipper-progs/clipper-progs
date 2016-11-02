@@ -95,7 +95,7 @@ for each bin.
 */
 
 
-#include "best.h"
+#include "best_rna.h"
 #include <cmath>
 
 namespace ctruncate {
@@ -585,22 +585,31 @@ namespace ctruncate {
 		894.567
 	};
 	
-	
-	
-	float BEST_rna(float ssqr)
-	{
-		// magic scale factor to put best data on scale for average electron squared
-		const double k = 8.563714792513845e-06;
-		const double offset = 0.009; // low resolution shell at 10.5409 A resolution
-		const double step = 0.004091973;
-		int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
-		if (s1 < 0) return k*best_rna[0]; //lower than 10.5409 A resolution
-		const unsigned int best_limit = sizeof(best_rna)/sizeof(float)-1;
-		if (s1 > best_limit) return k*best_rna[best_limit]; //beyond highest resolution for BEST data (about 0.9 A)
-		//linear interpolation
-		double ssqr1 = s1*step + offset;
-		double frac = (ssqr - ssqr1)/step;
-		return k*((1.0-frac)*best_rna[s1]+frac*best_rna[s1+1]);
-	}
+    clipper::ftype Best_rna::invresolsq_min()
+    {
+        return offset;
+    }
+    
+    clipper::ftype Best_rna::invresolsq_max()
+    {
+        return (sizeof(best_rna)/sizeof(float)-1.0)*step+offset;
+    }
+    
+    bool Best_rna::contains(const clipper::ftype ssqr)
+    {
+        return (ssqr > offset && ssqr < offset+(sizeof(best_rna)/sizeof(float)-1.0)*step);
+    }
+
+    clipper::ftype Best_rna::value(const clipper::ftype ssqr)
+    {
+        int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
+        if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
+        const unsigned int best_limit = sizeof(best_rna)/sizeof(float)-1;
+        if (s1 >= best_limit) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
+        //linear interpolation
+        double ssqr1 = s1*step + offset;
+        double frac = (ssqr - ssqr1)/step;
+        return k*((1.0-frac)*best_rna[s1]+frac*best_rna[s1+1]);
+    }
 	
 }

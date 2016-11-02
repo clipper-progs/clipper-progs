@@ -9,7 +9,10 @@
 //
 
 #include "ctruncate_utils.h"
+#include <ccp4/ccp4_general.h>
+#include <ccp4/ccp4_program.h>
 #include <cstdlib>
+#include <iomanip>
 
 int bisect(double (*f)(double), double x1, double x2, double &xmid)
 {
@@ -142,6 +145,270 @@ void MatrixToString( clipper::Mat33<int>& op, clipper::String &s )
 namespace ctruncate
 {
 	
+	CCP4Program::CCP4Program( const char* name, const char* vers, const char* rcsdate )
+	{
+		name_ = name;
+		vers_ = vers;
+		rundate_ = rcsdate;
+		html = ( getenv( "CCP_SUPPRESS_HTML" ) == NULL );
+		summ = ( getenv( "CCP_SUPPRESS_SUMMARY" ) == NULL );
+		CCP4::ccp4ProgramName( (char*)name );
+		CCP4::ccp4_prog_vers( (char*)vers );
+		CCP4::ccp4RCSDate( (char*)rcsdate );
+		summary_beg();
+		if ( html ) std::cout << "<html> <!-- CCP4 HTML LOGFILE -->" << std::endl
+			<< "<hr>" << std::endl << "<pre>" << std::endl;
+		CCP4::ccp4_banner();
+		summary_end();
+		CCP4::ccp4ProgramTime(1);
+	}
+	
+	
+	CCP4Program::~CCP4Program()
+	{
+		std::cout << std::endl;
+		summary_beg();
+		std::cout << name_ << ": " << msg_ << std::endl;
+		CCP4::ccp4ProgramTime(0);
+		if ( html ) std::cout << "</pre>" << std::endl << "</html>" << std::endl;
+		summary_end();
+	}
+	
+	
+	void CCP4Program::summary_beg() const
+	{
+		if ( summ ) {
+			if ( html )
+				std::cout << "<B><FONT COLOR='#FF0000'><!--SUMMARY_BEGIN-->" << std::endl;
+			else
+				std::cout << "<!--SUMMARY_BEGIN-->" << std::endl;
+		}
+	}
+	
+	
+	void CCP4Program::summary_end() const
+	{
+		if ( summ ) {
+			if ( html )
+				std::cout << "<!--SUMMARY_END--></FONT></B>" << std::endl;
+			else
+				std::cout << "<!--SUMMARY_END-->" << std::endl;
+		}
+	}
+	
+	std::stringstream& CCP4Program::xml_start(std::stringstream& ss) const 
+	{
+                std::string name = name_;
+                std::use_facet<std::ctype<char> >(std::locale()).toupper(&name[0], &name[0] + name.size());
+		ss << "<" << name << " version=\"" << vers_ <<  "\" RunTime=\"" << rundate_ << "\" >" << std::endl;
+		return ss;
+	}
+	
+	std::stringstream& CCP4Program::xml_end(std::stringstream& ss) const 
+	{
+                std::string name = name_;
+                std::use_facet<std::ctype<char> >(std::locale()).toupper(&name[0], &name[0] + name.size());
+		ss << "</" << name << ">" << std::endl;
+		return ss;
+	}
+	
+	//--------------------------------------------------------------
+	
+	void ReflectionFile::output() const
+	{
+		printf("\nReflection File INFO:\n\n");
+		std::cout << "Reflection file name: " << cfilename_ << std::endl;
+		std::cout << "Crystal/dataset names: " << cdname_ << "\n"; 
+		printf("Spacegroup: %s (number %4d)\n", spgr_.symbol_hm().c_str(), spgr_.spacegroup_number() );
+		printf("Cell parameters: %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f\n", cell_.a(), cell_.b(), cell_.c(), 
+			   clipper::Util::rad2d( cell_.alpha() ), clipper::Util::rad2d( cell_.beta() ), clipper::Util::rad2d( cell_.gamma() ) );
+	}
+	
+	std::stringstream& ReflectionFile::xml_output(std::stringstream& ss) const
+	/*
+	<ReflectionFile stream="HKLIN" name="/tmp/ccb/test-results/aucn.mtz">
+	<cell>
+	<a>  88.91</a>
+	<b>  88.91</b>
+	<c>  229.2</c>
+	<alpha>     90</alpha>
+	<beta>     90</beta>
+	<gamma>     90</gamma>
+	</cell>
+	<MergedData>False</MergedData>
+	<SpacegroupName> P 41 2 2</SpacegroupName>
+	</ReflectionFile>
+	*/
+	{
+		ss << "<ReflectionFile name=\"" << cfilename_ << " \">" << std::endl;
+		ss << "<CrystalDatasetId>" << cdname_ << "</CrystalDatasetId>" << std::endl;
+		ss << "<cell>" << std::endl;
+		ss << "<a>" << std::fixed << std::setprecision(2) << cell_.a() << "</a>" << std::endl;
+		ss << "<b>" << std::fixed << std::setprecision(2) << cell_.b() << "</b>" << std::endl;
+		ss << "<c>" << std::fixed << std::setprecision(2) << cell_.c() << "</c>" << std::endl;
+		ss << "<alpha>" << std::fixed << std::setprecision(2) << clipper::Util::rad2d(cell_.alpha() ) << "</alpha>" << std::endl;
+		ss << "<beta>" << std::fixed << std::setprecision(2) << clipper::Util::rad2d(cell_.beta() ) << "</beta>" << std::endl;
+		ss << "<gamma>" << std::fixed << std::setprecision(2) << clipper::Util::rad2d(cell_.gamma() ) << "</gamma>" << std::endl;
+		ss << "</cell>" << std::endl;
+		ss << "<SpacegroupName>" << spgr_.symbol_hm() << "</SpacegroupName>" << std::endl;
+		ss << "</ReflectionFile>" << std::endl;
+		return ss;
+	}
+	
+	
+	//--------------------------------------------------------------
+	
+	
+	/*! \return The number of centric data in the object. */
+	int ReflectionData::num_centric() const
+	{
+		int num = 0;
+		for ( clipper::HKL_info::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) if (ih.hkl_class().centric() ) ++num;
+		return num;
+	}
+	
+	/*! \return The number of acentric data in the object. */
+	int ReflectionData::num_acentric() const
+	{
+		int num = 0;
+		for ( clipper::HKL_info::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) if (!ih.hkl_class().centric() ) ++num;
+		return num;
+	}
+
+	/*! \return The number of reflections in the object. */
+	int ReflectionData::num_obs() const
+	{
+		int num = 0;
+		clipper::ftype a,s;
+		clipper::xtype working[cdata_->data_size()];
+		for ( clipper::HKL_info::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) {
+                        cdata_->data_export(ih.hkl(),working);
+			if (cdata_->data_size() == 2) {
+				a = clipper::ftype(working[0]);
+				s = clipper::ftype(working[1]);
+                                if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;
+			} else {
+				a = working[0];
+				s = working[1];
+				if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;
+				a = working[2];
+				s = working[3];
+				if (!clipper::Util::is_nan(a) && s > 0.0 ) ++num;	}
+		}
+		return num;
+	}
+	
+    /*! \return limit of HKL values */
+    clipper::HKL ReflectionData::max_hkl() const
+    {
+        int h(0), k(0), l(0);
+        for ( clipper::HKL_data_base::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) {
+            clipper::HKL t = ih.hkl();
+            h = std::max(std::abs(t.h()),h);
+            k = std::max(std::abs(t.k()),k);
+            l = std::max(std::abs(t.l()),l);
+        }
+        return clipper::HKL(h,k,l);
+    }
+    
+    /*! \return limit of HKL values */
+    clipper::HKL ReflectionData::max_sym_hkl() const
+    {
+        int h(0), k(0), l(0);
+        clipper::Spacegroup spgr(cdata_->hkl_info().spacegroup() );
+        for ( clipper::HKL_data_base::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) {
+            clipper::HKL t(ih.hkl() );
+            h = std::max(std::abs(t.h()),h);
+            k = std::max(std::abs(t.k()),k);
+            l = std::max(std::abs(t.l()),l);
+            for (int i=1 ; i != spgr.num_primops() ; ++i ) {
+                clipper::HKL t1(t.transform(spgr.primitive_symop(i)) );
+                h = std::max(std::abs(t1.h()),h);
+                k = std::max(std::abs(t1.k()),k);
+                l = std::max(std::abs(t1.l()),l);
+            }
+        } 
+        return clipper::HKL(h,k,l);
+    }
+    
+	void ReflectionData::output() const
+	{
+        clipper::HKL hkl(max_hkl() );
+        clipper::HKL shkl(max_sym_hkl() );
+        clipper::Cell cell(cdata_->base_cell() );
+		printf("\nReflection Data INFO:\n\n");
+		std::cout << "Reflection data type: " << cdata_->type() << std::endl;
+		std::cout << "Number of observations (including Freidal mates): " << num_obs() << std::endl;
+		std::cout << "Number of unique reflections (excluding Freidal): " << cdata_->num_obs() << " (Acentric: " << num_acentric() << ", Centric: " << num_centric() << ")" << std::endl;
+		std::cout << "Resolution range of data: " << std::fixed << std::setprecision(3) << 1.0/std::sqrt(invresolsq_range().min() ) << " - " << 1.0/std::sqrt(invresolsq_range().max() ) << " A" << std::endl;
+        std::cout << "Maximum index h (a*): " << std::fixed << std::setprecision(3) << hkl.h() << " (" << 1.0/std::sqrt( clipper::HKL(hkl.h(),0,0).invresolsq(cell) ) << " A)   - by symm. -  " << shkl.h() << " (" << 1.0/std::sqrt( clipper::HKL(shkl.h(),0,0).invresolsq(cell) ) << " A)" << std::endl;
+        std::cout << "Maximum index k (b*): " << std::fixed << std::setprecision(3) << hkl.k() << " (" << 1.0/std::sqrt( clipper::HKL(0,hkl.k(),0).invresolsq(cell) ) << " A)   - by symm. -  " << shkl.k() << " (" << 1.0/std::sqrt( clipper::HKL(0,shkl.k(),0).invresolsq(cell) ) << " A)" << std::endl;
+        std::cout << "Maximum index l (c*): " << std::fixed << std::setprecision(3) << hkl.l() << " (" << 1.0/std::sqrt( clipper::HKL(0,0,hkl.l()).invresolsq(cell) ) << " A)   - by symm. -  " << shkl.l() << " (" << 1.0/std::sqrt( clipper::HKL(0,0,shkl.l()).invresolsq(cell) ) << " A)" << std::endl;
+        
+		std::cout << std::endl;
+	}
+	
+	std::stringstream& ReflectionData::xml_output(std::stringstream& ss) const
+	/*<ReflectionData>
+	 <NumberReflections>6701</NumberReflections>
+	 <NumberObservations>9286</NumberObservations>
+	 <NumberParts>9478</NumberParts>
+	 <ResolutionHigh>    3.00</ResolutionHigh>
+	 <NumberLattices>0</NumberLattices>
+	 <NumberBatches>6</NumberBatches>
+	 <NumberDatasets>1</NumberDatasets>
+	 <Dataset  name="DMSO/DMSO/red_aucn">
+	 <Run>
+	 <number>1</number>
+	 <Datasetname>DMSO/DMSO/red_aucn</Datasetname>
+	 <BatchRange>5 10</BatchRange>
+	 <BatchOffset>0</BatchOffset>
+	 <PhiRange>343 349</PhiRange>
+	 <FileStream>HKLIN</FileStream>
+	 <Used>true</Used>
+	 </Run>
+	 </Dataset>
+	 </ReflectionData>	*/
+	{
+        clipper::HKL hkl(max_hkl() );
+        clipper::HKL shkl(max_sym_hkl() );
+        clipper::Cell cell(cdata_->base_cell() );
+		ss << "<ReflectionData>" << std::endl;
+		ss << "<ReflectionDataType>" << cdata_->type() << "</ReflectionDataType>" << std::endl;
+		ss << "<NumberObservations>" << num_obs() << "</NumberObservations>" << std::endl;
+		ss << "<NumberReflections>" << cdata_->num_obs() << "</NumberReflections>" << std::endl;
+		ss << "<NumberAcentric>" << num_acentric() << "</NumberAcentric>" << std::endl;
+		ss << "<NumberCentric>" << num_centric() << "</NumberCentric>" << std::endl;
+		ss << "<ResolutionLow>" << std::fixed << std::setprecision(3) << 1.0/std::sqrt(invresolsq_range().min() ) << "</ResolutionLow>" << std::endl;
+		ss << "<ResolutionHigh>" << std::fixed << std::setprecision(3) << 1.0/std::sqrt(invresolsq_range().max() ) << "</ResolutionHigh>" << std::endl;
+        ss << "<FileReflectionIndexMax id=\"h\">" << std::endl;
+        ss << "<Index>" << hkl.h() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(hkl.h(),0,0).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</FileReflectionIndexMax>" << std::endl;
+        ss << "<FileReflectionIndexMax id=\"k\">" << std::endl;
+        ss << "<Index>" << hkl.k() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(0,hkl.k(),0).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</FileReflectionIndexMax>" << std::endl;
+        ss << "<FileReflectionIndexMax id=\"l\">" << std::endl;
+        ss << "<Index>" << hkl.l() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(0,0,hkl.l()).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</FileReflectionIndexMax>" << std::endl;
+        ss << "<ReflectionIndexMax id=\"h\">" << std::endl;
+        ss << "<Index>" << shkl.h() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(shkl.h(),0,0).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</ReflectionIndexMax>" << std::endl;
+        ss << "<ReflectionIndexMax id=\"k\">" << std::endl;
+        ss << "<Index>" << shkl.k() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(0,shkl.k(),0).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</ReflectionIndexMax>" << std::endl;
+        ss << "<ReflectionIndexMax id=\"l\">" << std::endl;
+        ss << "<Index>" << shkl.l() << "</Index>" << std::endl;
+        ss << "<Resolution unit=\"Angstrom\">" << std::fixed << std::setprecision(3) << 1.0/std::sqrt( clipper::HKL(0,0,shkl.l()).invresolsq(cell) ) << "</Resolution>" << std::endl;
+        ss << "</ReflectionIndexMax>" << std::endl;
+
+		ss << "</ReflectionData>" << std::endl;
+		return ss;
+	}
 	
 	//--------------------------------------------------------------
 	void Rings::DefaultIceRings()

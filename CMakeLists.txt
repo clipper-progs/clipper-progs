@@ -91,6 +91,8 @@ add_executable(ctruncate
  src/ctruncate/ctruncate_matthews.cpp
  src/ctruncate/ctruncate_wilson.cpp
  src/ctruncate/intensity_scale.cpp
+ src/ctruncate/alt_hkl_datatypes.cpp
+ src/ctruncate/ctruncate_aniso.cpp
  src/ctruncate/best.cpp
  src/ctruncate/best_rna.cpp)
 target_link_libraries(ctruncate ${CCP4_LIBRARIES})

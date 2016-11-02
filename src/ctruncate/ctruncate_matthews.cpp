@@ -272,14 +272,14 @@ namespace ctruncate {
 			printf(": DNA crystal");
 		}
 		if ( _reso < 99.0f ) {
-			printf(" computed at resolution of %5.3f :A:1,2,3,4\n", _reso,maxmol1);
+			printf(" computed at resolution of %5.3f :A:1,2,3,4\n", _reso/*,maxmol1*/);
 			printf("$$ Nmol/asym Matthews_Coeff sovlent_frac P(%5.3f) $$\n$$\n",_reso);
 			
 			for (int i=1; i != maxmol1 ; ++i) {
 				printf("  %3d       %6.2f          %6.2f       %6.2f\n", i, _cmath[i], _solvent[i]/100.0f, _prob[i]);
 			}
 		} else {
-			printf(" :A:1,2,3,4 \n", maxmol1);
+			printf(" :A:1,2,3,4 \n"/*, maxmol1*/);
 			printf("$$ Nmol/asym Matthews Coeff solvent_frac P() $$\n$$\n");
 			
 			for (int i=1; i != maxmol1 ; ++i) {

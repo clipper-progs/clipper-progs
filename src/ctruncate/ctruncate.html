@@ -33,6 +33,7 @@
 <b>-prior </b><i>force use of <b>WILSON</b> or <b>FLAT</b> prior</i>
 <b>-freein </b><i>retain freeR flag</i>
 <b>-history </b><i>history text</i>
+<b>-xmlout </b><i>xml output file</i>
 <br />
 [<a href="#keywords">Keyworded input</a>]</p>
 
@@ -82,6 +83,10 @@ an alternative to '-hklout'.</p>
 
 <p>Input sequence file in any common format (e.g. pir, fasta), used for scaling.
 </p> 
+
+<p><a name="xmlout"></a>-xmlout <i>filename</i></h3>
+
+<p>Output xml log file (optiional).</p>
 
 </blockquote>
 
@@ -137,11 +142,48 @@ and nucleic acid data bank.</p>
 </blockquote>
 
 <h2><a name="changes"></a>Release Notes</h2>
-<p>1.16.10 (30/4/15)</br>
-- fix for output column names
 
-<p>1.16.9 (27/01/15)</br>
+<p>1.17.15 (23/06/16)</br>
+- some issues with 0.0/x on one platform
+
+<p>1.17.14 (04/05/16)</br>
+- adjust anomalous signal warnings
+
+<p>1.17.13 (21/04/16)</br>
+- adjust completeness warnings
+
+<p>1.17.12 (20/04/16)</br>
+- adjust active range
+
+<p>1.17.11 (15/04/16)</br>
+- minor tidy in wilson calculation
+
+<p>1.17.10 (10/03/16)</br>
+- tidying in wilson calculation
+
+<p>1.17.9 (15/02/16)</br>
+- Wilson B in outlier test
+
+<p>1.17.8 (26/01/16)</br>
+- use finer grain binning for ice rings detection
+
+<p>1.17.7 (07/12/15)</br>
+- output full range for moments plot
+
+<p>1.17.6 (27/11/15)</br>
+- fix DANO issue, plus overzealous anisotropy correction
+
+<p>1.17.1</br>
+- large changes for ccp4i2
+
+<p>1.16.11 (29/01/15)</br>
+- crudely filter out sigma <= 0
+
+<p>1.16.10 (27/01/15)</br>
 - protect truncation against 0 sigma
+
+<p>1.16.9 (26/01/15)</br>
+- output from anomalous stats to xml file
 
 <p>1.16.8 (14/01/15)</br>
 - remove unnecessary file read

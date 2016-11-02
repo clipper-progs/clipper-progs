@@ -722,7 +722,7 @@ namespace ctruncate {
 #endif
 		}
 		
-	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+	/*int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
@@ -771,10 +771,10 @@ namespace ctruncate {
 		}
 		//fclose(checkfile);
 		return(1);
-	}
+	} */
 	
 	
-	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+	/*int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::ResolutionFn& Sigma, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	
@@ -865,9 +865,9 @@ namespace ctruncate {
 		}
 		//fclose(checkfile);
 		return(1);
-	}
+	} */
 	
-	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+	/*int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
@@ -916,10 +916,10 @@ namespace ctruncate {
 		}
 		//fclose(checkfile);
 		return(1);
-	}
+	} */
 	
 	
-	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+	/*int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, clipper::HKL_data<clipper::data32::I_sigI>& Sigma, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	
@@ -1020,7 +1020,7 @@ namespace ctruncate {
 		}
 		//fclose(checkfile);
 		return(1);
-	}
+	} */
     
 	// flat prior should be the same as acentric wilson (normal function) without the correction for Sigma
 	int truncate_flat(float I, float sigma, float& J, float& sigJ, float& F, float& sigF, int& nrej, bool debug)
@@ -1327,7 +1327,7 @@ namespace ctruncate {
 		return(1);
  	}
 	
-	int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+	/*int truncate(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
@@ -1366,10 +1366,10 @@ namespace ctruncate {
 			}
 		}
 		return(1);
-	}
+	} */
 	
 	
-	int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+	/*int truncate(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	
@@ -1441,9 +1441,9 @@ namespace ctruncate {
 			}
 		}
 		return(1);
-	}
+	} */
 
-	int truncate_sivia(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
+	/* int truncate_sivia(clipper::HKL_data<clipper::data32::I_sigI>& isig, clipper::HKL_data<clipper::data32::I_sigI>& jsig, 
 				 clipper::HKL_data<clipper::data32::F_sigF>& fsig, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	{
@@ -1482,10 +1482,10 @@ namespace ctruncate {
 			}
 		}
 		return(1);
-	}
+	} */
 	
 	
-	int truncate_sivia(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
+	/*int truncate_sivia(clipper::HKL_data<clipper::data32::J_sigJ_ano>& isig, clipper::HKL_data<clipper::data32::J_sigJ_ano>& jsig,
 				 clipper::HKL_data<clipper::data32::G_sigG_ano>& fsig, float scalef, 
 				 clipper::Resolution& reso, int& nrej, bool debug)
 	
@@ -1557,7 +1557,7 @@ namespace ctruncate {
 			}
 		}
 		return(1);
-	}
+	} */
 	
 	
 } //end namespace

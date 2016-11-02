@@ -189,309 +189,6 @@ namespace ctruncate {
 		return ntw;
 	}
 	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::F_sigF>& fsig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao )
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		
-        //get uao eigenvectors
-		AnisoDirection<float> direct(uao);
-		clipper::Mat33<float> e123;
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-            e123(i,j) = (direct.eigenVectors())[i][j];
-		
-		clipper::Cell cell = fsig.hkl_info().cell();
-		clipper::Spacegroup spg = fsig.hkl_info().spacegroup();
-		
-		
-		std::vector<float> somov(nbins,0.0);
-		std::vector<float> somsdov(nbins,0.0);
-		std::vector<int> numov(nbins,0);
-		std::vector<float> enumov(nbins,0.0);
-		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
-		}
-		
-		int nzerosigma = 0;
-		float cone = 30.0; //hardwired for now
-		float ang;
-		float cosang;
-		
-		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-			if ( !fsig[ih].missing() ) {
-				// bin number different in C because arrays start at zero
-				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
-				float epsiln = 1.0f/ih.hkl_class().epsilonc();
-				
-				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
-					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
-						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
-						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
-						
-						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
-						
-						for (int j=0;j!=3;++j) {
-							cosang = fabs(hc[j])/sqrt(ih.invresolsq());
-							// cosang can stray just past 1.0
-							cosang = std::min(cosang, 1.0f);
-							ang = acos(cosang);
-							if ( ang < clipper::Util::d2rad(cone) ) {
-								somdir[j][bin] += fsig[ih].f()*epsiln;
-								if ( fsig[ih].sigf() > 0.0f ) somsddir[j][bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
-								enumdir[j][bin] += epsiln;
-								numdir[j][bin]++;
-							}
-						}
-						somov[bin] += fsig[ih].f()*epsiln;
-						if ( fsig[ih].sigf() > 0.0f ) somsdov[bin] += epsiln*fsig[ih].f()/fsig[ih].sigf();
-						else nzerosigma++;
-						enumov[bin] += epsiln;
-						numov[bin]++;
-					}
-				}
-			}
-		}
-		
-		for (int i=0;i != nbins; ++i) {
-			for (int j=0;j!=3;++j) {
-				if (numdir[j][i] == 0) {
-					somdir[j][i] = 0;
-					somsddir[j][i] = 0;
-				}
-				else {
-					somdir[j][i] /= enumdir[j][i];
-					somsddir[j][i] /= enumdir[j][i];
-				}
-			}
-			if (numov[i] == 0) {
-				somov[i] = 0.0;
-				somsdov[i] = 0.0;
-			}
-			else {
-				somov[i] /= enumov[i];
-				somsdov[i] /= enumov[i];
-			}
-		}
-		
-		if (nzerosigma > 0) {
-			prog.summary_beg();
-			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
-			prog.summary_end();
-		}
-		
-		// calculate completeness
-		std::vector<float> sumov(nbins,0.0);
-		std::vector<float> summeas(nbins,0.0);
-		std::vector<float> summeas1(nbins,0.0);
-		std::vector<float> summeas2(nbins,0.0);
-		std::vector<float> summeas3(nbins,0.0);
-		std::vector<float> completeness(nbins,0.0);
-		std::vector<float> completeness1(nbins,0.0);
-		std::vector<float> completeness2(nbins,0.0);
-		std::vector<float> completeness3(nbins,0.0);
-		for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-			// bin number different in C because arrays start at zero
-			float mult = ih.hkl_class().epsilonc();
-			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
-			if ( !fsig[ih].missing() && bin < nbins && bin >= 0) {
-				summeas[bin] += mult;
-				float isigi = fsig[ih].f()/fsig[ih].sigf();
-				if (isigi >= 1.0f ) summeas1[bin] += mult;
-				if (isigi >= 2.0f ) summeas2[bin] += mult;
-				if (isigi >= 3.0f ) summeas3[bin] += mult;
-		}
-		}
-		for (int i=1; i!=nbins; ++i) {
-			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
-		}
-		
-		
-		printf("\n$TABLE: Structure amplitude statistics:\n");
-		printf("$GRAPHS");
-		printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
-		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
-		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
-		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
-		
-		
-		for(int i=0;i<nbins;i++){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
-			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
-			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
-		}
-		printf("$$\n\n");
-	}
-	
-	void yorgo_modis_plot(clipper::HKL_data<clipper::data32::I_sigI>& isig, float maxres, int nbins, CCP4Program& prog, clipper::U_aniso_orth uao )
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		
-        //get uao eigenvectors
-		AnisoDirection<float> direct(uao);
-		clipper::Mat33<float> e123;
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-                e123(i,j) = (direct.eigenVectors())[i][j];
-		
-		clipper::Cell cell = isig.hkl_info().cell();
-		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
-		
-		
-		std::vector<float> somov(nbins,0.0);
-		std::vector<float> somsdov(nbins,0.0);
-		std::vector<int> numov(nbins,0);
-		std::vector<float> enumov(nbins,0.0);
-		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
-		}
-		
-		int nzerosigma = 0;
-		float cone = 30.0; //hardwired for now
-		float ang;
-		float cosang;
-		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ) {
-				// bin number different in C because arrays start at zero
-				int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-				if (bin >= nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
-				float epsiln = 1.0f/ih.hkl_class().epsilonc();
-				
-				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
-					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
-						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
-						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
-						
-						clipper::Vec3<float> hc = e123*clipper::Vec3<float>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
-						
-						for (int j=0;j!=3;++j) {
-							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
-							// cosang can stray just past 1.0
-							cosang = std::min(cosang, 1.0f);
-							ang = acos(cosang);
-							if ( ang < clipper::Util::d2rad(cone) ) {
-								somdir[j][bin] += isig[ih].I()*epsiln;
-								if ( isig[ih].sigI() > 0.0f ) somsddir[j][bin] += epsiln*isig[ih].I()/isig[ih].sigI();
-								enumdir[j][bin] += epsiln;
-								numdir[j][bin]++;
-							}
-						}
-						somov[bin] += isig[ih].I()*epsiln;
-						if ( isig[ih].sigI() > 0.0f ) somsdov[bin] += epsiln*isig[ih].I()/isig[ih].sigI();
-						else nzerosigma++;
-						enumov[bin] += epsiln;
-						numov[bin]++;
-					}
-				}
-			}
-		}
-		
-		for (int i=0;i != nbins; ++i) {
-			for (int j=0;j!=3;++j) {
-				if (numdir[j][i] == 0) {
-					somdir[j][i] = 0;
-					somsddir[j][i] = 0;
-				}
-				else {
-					somdir[j][i] /= enumdir[j][i];
-					somsddir[j][i] /= enumdir[j][i];
-				}
-			}
-			if (numov[i] == 0) {
-				somov[i] = 0.0;
-				somsdov[i] = 0.0;
-			}
-			else {
-				somov[i] /= enumov[i];
-				somsdov[i] /= enumov[i];
-			}
-		}
-		
-		if (nzerosigma > 0) {
-			prog.summary_beg();
-			printf("\nWARNING: ****  %d reflections have zero sigma ****\n\n", nzerosigma);
-			prog.summary_end();
-		}
-		
-		// calculate completeness
-		std::vector<float> sumov(nbins,0.0);
-		std::vector<float> summeas(nbins,0.0);
-		std::vector<float> summeas1(nbins,0.0);
-		std::vector<float> summeas2(nbins,0.0);
-		std::vector<float> summeas3(nbins,0.0);
-		std::vector<float> completeness(nbins,0.0);
-		std::vector<float> completeness1(nbins,0.0);
-		std::vector<float> completeness2(nbins,0.0);
-		std::vector<float> completeness3(nbins,0.0);
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			// bin number different in C because arrays start at zero
-			float mult = ih.hkl_class().epsilonc();
-			int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.001);
-			//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-			if ( bin < nbins && bin >= 0 ) sumov[bin] += mult;
-			if ( !isig[ih].missing() && bin < nbins && bin >= 0) {
-				summeas[bin] += mult;
-				float isigi = isig[ih].I()/isig[ih].sigI();
-				if (isigi >= 1.0f ) summeas1[bin] += mult;
-				if (isigi >= 2.0f ) summeas2[bin] += mult;
-				if (isigi >= 3.0f ) summeas3[bin] += mult;
-			}
-		}
-		for (int i=1; i!=nbins; ++i) {
-			if (sumov[i] > 0.0) completeness[i] = summeas[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness1[i] = summeas1[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness2[i] = summeas2[i]/sumov[i];
-			if (sumov[i] > 0.0) completeness3[i] = summeas3[i]/sumov[i];
-		}
-		
-		
-		printf("\n$TABLE: Intensity statistics:\n");
-		printf("$GRAPHS");
-		printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
-		printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
-		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
-		printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
-		
-		
-		for(int i=0;i<nbins;i++){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,somdir[0][i],somdir[1][i],somdir[2][i],somov[i]);
-			printf("%12.4e %12.4e %12.4e %12.4e ",somsddir[0][i],somsddir[1][i],somsddir[2][i],somsdov[i]);
-			printf("%8d %8d %8d %8d",numdir[0][i],numdir[1][i],numdir[2][i],numov[i]);
-			printf("%8.4f %8.4f %8.4f %8.4f\n",completeness[i],completeness1[i],completeness2[i],completeness3[i]);
-		}
-		printf("$$\n\n");
-	}
 	
 	//--------------------------------------------------------------
 	
@@ -590,123 +287,6 @@ namespace ctruncate {
 		return;	
 	}
 	
-	//******YorgoModis***************************************************************************
-	
-	template <class D> void YorgoModis<D>::operator() (clipper::HKL_data<D>& isig, clipper::Resolution reso )
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		
-		_t = type(isig[isig.first()]); //set our type
-		
-		//if resolution not set use observed
-		_reso = reso;
-        if (_reso.is_null() ) _reso = isig.hkl_info().resolution();
-		
-        //get uao eigenvectors
-		AnisoDirection<float> direct(_uao);
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-                _e123(i,j) = (direct.eigenVectors())[i][j];
-		
-		clipper::Cell cell = isig.hkl_info().cell();
-		clipper::Spacegroup spg = isig.hkl_info().spacegroup();
-		
-		int _nzerosigma = 0;
-		float cone = 30.0; //hardwired for now
-		float ang;
-		float cosang;
-		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() ) {
-				// bin number different in C because arrays start at zero
-				int bin = int( double(_nbins) * ih.invresolsq() / _reso.invresolsq_limit() - 0.001);
-				if (bin >= _nbins || bin < 0) printf("Warning: (Modis) illegal bin number %d\n", bin);
-				float epsiln = 1.0f/ih.hkl_class().epsilonc();
-				clipper::ftype Ival=obs(isig[ih]);
-				clipper::ftype Isig=sigobs(isig[ih]);
-				for ( int jsym = 0; jsym != spg.num_primitive_symops() ; ++jsym ) {
-					for (int friedal = 0 ; friedal != 2 ; ++friedal) {
-						clipper::HKL ri = int(std::pow( -1.0f, float(friedal) ))*ih.hkl();
-						clipper::HKL rj = ri.transform( spg.primitive_symop( jsym ) );
-						
-						clipper::Vec3<clipper::ftype> hc = _e123*clipper::Vec3<clipper::ftype>(rj.coord_reci_orth(cell) );  //transpose into eigenspace
-
-						
-						for (int j=0;j!=3;++j) {
-							int jn = j*_nbins+bin;
-							cosang = fabs( hc[j] )/sqrt(ih.invresolsq());
-							// cosang can stray just past 1.0
-							cosang = std::min(cosang, 1.0f);
-							ang = acos(cosang);
-							if ( ang < clipper::Util::d2rad(cone) ) {
-								_somdir[jn] += Ival*epsiln;
-								if ( Isig > 0.0f ) _somsddir[jn] += epsiln*Ival/Isig;
-								_enumdir[jn] += epsiln;
-								++_numdir[jn];
-							}
-						}
-						_somov[bin] += Ival*epsiln;
-						if ( Isig > 0.0f ) _somsdov[bin] += epsiln*Ival/Isig;
-						else _nzerosigma++;
-						_enumov[bin] += epsiln;
-						_numov[bin]++;
-					}
-				}
-			}
-		}
-		
-		for (int i=0;i != _nbins; ++i) {
-			for (int j=0;j!=3;++j) {
-				int jn = j*_nbins+i;
-				if (_numdir[jn] == 0) {
-					_somdir[jn] = 0.0;
-					_somsddir[jn] = 0.0;
-				}
-				else {
-					_somdir[jn] /= _enumdir[jn];
-					_somsddir[jn] /= _enumdir[jn];
-				}
-			}
-			if (_numov[i] == 0) {
-				_somov[i] = 0.0;
-				_somsdov[i] = 0.0;
-			}
-			else {
-				_somov[i] /= _enumov[i];
-				_somsdov[i] /= _enumov[i];
-			}
-		}
-		return;
-	}
-	
-	template<class D> void YorgoModis<D>::plot() 
-	{
-		if (_t == I ) {
-			printf("\n$TABLE: Intensity statistics:\n");
-			printf("$GRAPHS");
-			printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
-			printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
-			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-			printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
-			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
-		} else {
-			printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
-			printf("$GRAPHS");
-			printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
-			printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
-			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-			printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
-		}
-		
-		for(int i=0;i!=_nbins;++i){
-			double res = _reso.invresolsq_limit()*(double(i)+0.5)/double(_nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e ",res,_somdir[i],_somdir[_nbins+i],_somdir[2*_nbins+i],_somov[i]);
-			printf("%12.4e %12.4e %12.4e %12.4e ",_somsddir[i],_somsddir[_nbins+i],_somsddir[2*_nbins+i],_somsdov[i]);
-			printf("%8d %8d %8d %8d\n",_numdir[i],_numdir[_nbins+i],_numdir[2*_nbins+i],_numov[i]);
-		}
-		printf("$$\n\n");
-	}
 	
 	//******Completeness***************************************************************************
 	
@@ -726,7 +306,7 @@ namespace ctruncate {
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
 			// bin number different in C because arrays start at zero
-			float mult = ih.hkl_class().epsilonc();
+			float mult = 1.0/ih.hkl_class().epsilonc();
 			int bin = int( double(_nbins) * ih.invresolsq() / _reso.invresolsq_limit() - 0.001);
 			//if (bin >= _nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
 			if ( bin < _nbins && bin >= 0 ) {
@@ -778,12 +358,16 @@ namespace ctruncate {
 		printf("$$\n\n");
 	}
 	
-	template <class T> const std::vector<clipper::Symop>& tNCS<T>::operator() (clipper::HKL_data<clipper::datatypes::I_sigI<T> >& I, clipper::Resolution r)
+	
+	//-------class tNCS-------------------------------------------------
+	//-------tNCS peak search-------------------------------------------
+	
+	/*template <class T, template<class> class D> const std::vector<clipper::Symop>& tNCS::operator() (clipper::HKL_data<D<T> >& hkldata, clipper::Resolution r)
 	{
-		intensity = &I;
-		reso = r;
+		_base = &hkldata;
+		_reso = r;
 		
-		clipper::HKL_info hklinf(I.hkl_info());
+		clipper::HKL_info hklinf(hkldata.hkl_info());
 		clipper::Cell cell = hklinf.cell();
 		clipper::Spacegroup spgr = hklinf.spacegroup();
 		
@@ -797,9 +381,9 @@ namespace ctruncate {
 		// make patterson coeffs
 		clipper::HKL_data<clipper::datatypes::F_phi<T> > fphi( hklp );
 		for ( clipper::HKL_data_base::HKL_reference_index  ih = fphi.first(); !ih.last(); ih.next() ) {
-			clipper::datatypes::I_sigI<T> i = I[ih.hkl()];
+			D<T> i = hkldata[ih.hkl()];
 			if ( !i.missing() ) {
-				fphi[ih].f() = i.I();
+				fphi[ih].f() = I(i);
 				fphi[ih].phi() = 0.0 ;
 			}
 		}
@@ -811,556 +395,638 @@ namespace ctruncate {
 		clipper::Xmap<float> patterson( pspgr, cell, grid );
 		patterson.fft_from( fphi );
 		
-		/*float zfrac=0.1;
-		
-		std::vector<float> vals;
-		vals.reserve(patterson.grid_asu().size() );
-		for ( clipper::Xmap<float>::Map_reference_index index = patterson.first() ; !index.last() ; index.next() ) {
-			vals.push_back(patterson[index]); }
-		std::sort( vals.begin(), vals.end() );
-		T rho0  = ( vals[ int(zfrac*T(vals.size())) ] ); */
-		
-		// use Charles's stuff to find peaks
+		//peak search in patterson
 		PeakSearch pksch;                      // peak search object
-		//PeakInterp pkinterp;                   // peak interpolation methods
 		
-		int npeak = 5;
+		int npeak = 10;
 		
 		const std::vector<int>& ppks = pksch( patterson );
-				
+		
 		if (ppks.size() == 0 || ppks.size() == 1 ) return peaks;
 		
 		clipper::ftype rho0 = pksch.zero();
-		T top_peak = patterson.get_data( ppks[0] ) - rho0;
+		clipper::ftype top_peak = patterson.get_data( ppks[0] ) - rho0;
 		int i = 0;
-		T pval(0.0);
+		clipper::ftype pval(0.0);
 		
 		for (int i = 1 ; i != ppks.size() ; ++i ) {
-			T next_peak = patterson.get_data( ppks[i] ) - rho0;
+			clipper::ftype next_peak = patterson.get_data( ppks[i] ) - rho0;
 			clipper::Coord_frac c0 = patterson.coord_of( ppks[i] ).coord_frac(grid);
-			T ratio = next_peak/top_peak;
-			T dist2 = std::sqrt(c0.lengthsq(cell) );
+			clipper::ftype ratio = next_peak/top_peak;
+			clipper::ftype dist2 = std::sqrt(c0.lengthsq(cell) );
 			// look for peaks > 20% of origin peak and at least 14A distant from origin
 			// precentage estimate is Zwartz CCP4 Newsletter 42
 			if (dist2 > 14.0 ) {
-			const T aval = 0.0679;
-			const T bval = 3.56;
-			pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;
-			if (pval < 1.0) {
-				//clipper::Rtop<clipper::ftype> tmp;
-				peaks.push_back(clipper::Symop(clipper::RTop_frac(clipper::Mat33<clipper::ftype>::identity(), c0) ) );
-				peak_prob.push_back(pval);
-				peak_height.push_back(ratio);
-			}
-		        }	
+				const clipper::ftype aval = 0.0679;
+				const clipper::ftype bval = 3.56;
+				pval = (1.0 - std::exp(-std::pow(ratio/(aval*(T(1.0)-ratio)),-bval)) )*100.0;
+				if (pval < 1.0) {
+					//clipper::Rtop<clipper::ftype> tmp;
+					_peaks.push_back(clipper::Symop(clipper::RTop_frac(clipper::Mat33<clipper::ftype>::identity(), c0) ) );
+					_peak_prob.push_back(pval);
+					_peak_height.push_back(ratio);
+				}
+			}	
 		} 
+		
+		return _peaks;
+	} */
 	
-		return peaks;
-	}
-	
-	template <class T> void tNCS<T>::summary() {
-		printf("\n\nTRANSLATIONAL NCS:\n");
-		if ( peaks.size() && peak_prob[0] < 1.0 ) { 
-			clipper::Vec3<clipper::ftype> c0 = peaks[0].trn();
-			printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %5.2f%% \n that this is by chance (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],peak_prob[0],reso.limit() );
-			printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n");
-			for (int i = 0; i != peaks.size() ; ++i ) {
-				printf("Peak %d Ratio = %5.2f with Peak Vector = (%6.3f, %6.3f, %6.3f)\n",i+1,peak_height[i],(peaks[i].trn() )[0],(peaks[i].trn() )[1],(peaks[i].trn() )[2]);
-			}
-		}
-		else {
-			printf("No translational NCS detected (with resolution limited to %5.2f A)\n", reso.limit() );
-		}
-	}
-	
-	
-	template <class T> AnisoPlot<T>::AnisoPlot(clipper::U_aniso_orth& uao)
+	//-------tNCS ouput to stdout----------------------------------------
+	void tNCS::output() const
 	{
-		int steps = 60;
-		clipper::ftype lev[] = { 0.5, 0.25, 0.125};
-		std::vector<clipper::ftype> levels(lev,lev+sizeof(lev)/sizeof(clipper::ftype));
-		// get eigenvalues of aniso_U
-			{
-				clipper::Matrix<T> m(3,3);
-				for (int i = 0 ; i !=3 ; ++i)
-					for (int j = 0 ; j != 3 ; ++j)
-						m(i,j) = uao(i,j);
-				_eigen = m.eigen();
-				for (int i = 0 ; i !=3 ; ++i)
-					_eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
-				for (int i = 0 ; i !=3 ; ++i)
-					for (int j = 0 ; j != 3 ; ++j)
-						_e123(i,j) = m(i,j);
+		printf("\n\nTRANSLATIONAL NCS:\n\n");
+		if ( _peaks.size() && _peak_prob[0] < 1.0 ) {
+			clipper::Vec3<clipper::ftype> c0 = _peaks[0].trn();
+			printf("Translational NCS has been detected at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %5.2f%% that this is by chance (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],_peak_prob[0],_reso.limit() );
+			printf("This will have a major impact on the twinning estimates and effectiveness of the truncate procedure\n\n");
+			std::cout << "Peak#       Location       Ratio  Q-score" << std::endl;
+			for (int i = 0; i != _peaks.size() ; ++i ) {
+				printf("%2d    (%5.2f,%5.2f,%5.2f) %5.2f  %5.2f\n",i+1,(_peaks[i].trn() )[0],(_peaks[i].trn() )[1],(_peaks[i].trn() )[2],_peak_height[i],_peak_prob[i] );
 			}
-			clipper::ftype angle, sigmau, sigmav;
-			ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-			ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-			ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
-			for (int l=0 ; l != levels.size() ; ++l ) 
-				_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-		}
-	
-	template <class T> AnisoPlot<T>::AnisoPlot(clipper::ftype scale, clipper::U_aniso_orth& uao)
-	{
-		int steps = 60;
-		clipper::ftype lev[] = { 3, 2, 1};
-		std::vector<clipper::ftype> levels(lev,lev+sizeof(lev)/sizeof(clipper::ftype));
-		for (int i = 0; i != levels.size() ; ++i ) levels[i] /= scale;
-		// get eigenvalues of aniso_U
-		{
-			clipper::Matrix<T> m(3,3);
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-					m(i,j) = uao(i,j);
-			_eigen = m.eigen();
-			for (int i = 0 ; i !=3 ; ++i)
-				_eigen[i] = 2.0/(clipper::Util::twopi2()*_eigen[i]);
-			for (int i = 0 ; i !=3 ; ++i)
-				for (int j = 0 ; j != 3 ; ++j)
-					_e123(i,j) = m(i,j);
-		}
-		clipper::ftype angle, sigmau, sigmav;
-		ellipse(_eigen[0],_eigen[1],0.0,angle,sigmau,sigmav);
-		for (int l=0 ; l != levels.size() ; ++l ) 
-			_isoline1.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-		ellipse(_eigen[0],_eigen[2],0.0,angle,sigmau,sigmav);
-		for (int l=0 ; l != levels.size() ; ++l ) 
-			_isoline2.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-		ellipse(_eigen[1],_eigen[2],0.0,angle,sigmau,sigmav);
-		for (int l=0 ; l != levels.size() ; ++l ) 
-			_isoline3.push_back(isoline(0.0,0.0,sigmau,sigmav, angle,levels[l], steps));
-	}
-	
-		/* ellipse */
-		template <class T> void AnisoPlot<T>::loggraph() {
-			std::stringstream x1,x2,x3;
-			x1 << "("  << _e123(0,0) << "h," << _e123(1,0) << "k," << _e123(2,0) << "l)";
-			x2 << "("  << _e123(0,1) << "h," << _e123(1,1) << "k," << _e123(2,1) << "l)";
-			x3 << "("  << _e123(0,2) << "h," << _e123(1,2) << "k," << _e123(2,2) << "l)";
-			
-			clipper::ftype maxv(-99.0), minv(99);
-			// get plot extremes
-			{
-			int l = _isoline1.size()-1;
-			for(int i=0;i!=_isoline1[l].size();++i) {
-				maxv = std::max(maxv,std::max(_isoline1[l][i][0],_isoline1[l][i][1]) );
-				minv = std::min(minv,std::min(_isoline1[l][i][0],_isoline1[l][i][1]) );
-			}
-			l = _isoline2.size()-1;
-			for(int i=0;i!=_isoline2[l].size();++i) {
-				maxv = std::max(maxv,std::max(_isoline2[l][i][0],_isoline2[l][i][1]) );
-				minv = std::min(minv,std::min(_isoline2[l][i][0],_isoline2[l][i][1]) );
-			}
-			l = _isoline3.size()-1;
-			for(int i=0;i!=_isoline1[l].size();++i) {
-				maxv = std::max(maxv,std::max(_isoline3[l][i][0],_isoline3[l][i][1]) );
-				minv = std::min(minv,std::min(_isoline3[l][i][0],_isoline3[l][i][1]) );
-			}
-			}
-			printf("\n$TABLE: Anisotropy:\n");
-			printf("$SCATTER");
-			printf(": Falloff plane 1:%f|%fx%f|%f:1,2:\n",minv,maxv,minv,maxv);
-			printf(": Falloff plane 2:%f|%fx%f|%f:3,4:\n",minv,maxv,minv,maxv);
-			printf(": Falloff plane 3:%f|%fx%f|%f:5,6:\n",minv,maxv,minv,maxv);
-			printf("$$ %s %s %s %s %s %s$$\n$$\n",x1.str().c_str(),x2.str().c_str(),x1.str().c_str(),
-				   x3.str().c_str(),x2.str().c_str(),x3.str().c_str());	
-			
-			// ellipse level and step
-			for(int l=0;l!=_isoline1.size(); ++l)
-				for(int i=0;i!=_isoline1[l].size();++i)
-					printf("%8.4f %8.4f %8.4f %8.4f %8.4f %8.4f\n", 
-						   _isoline1[l][i][0],_isoline1[l][i][1],
-						   _isoline2[l][i][0],_isoline2[l][i][1],
-						   _isoline3[l][i][0],_isoline3[l][i][1]);
-			
-			printf("$$\n\n");
-		}
-		
-		
-		//want a point, but use Coord_orth for now
-		template <class T> clipper::Coord_orth AnisoPlot<T>::point(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-																clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype theta, clipper::ftype frac)
-		{
-			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
-			clipper::ftype sinuv = std::sin(angleuv);
-			clipper::ftype cosuv = std::cos(angleuv);
-
-			clipper::ftype s = std::sin(theta);
-			clipper::ftype c = std::cos(theta);		 
-			// theta equations
-			clipper::ftype x = offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv);
-			clipper::ftype y= offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv);
-			return clipper::Coord_orth(x,y,0.0);
-		}
-		
-		// plot at frac of height
-	template <class T> std::vector<clipper::Coord_orth> AnisoPlot<T>::isoline(clipper::ftype offsetx, clipper::ftype offsety, clipper::ftype sigmau, 
-													  clipper::ftype sigmav, clipper::ftype angleuv, clipper::ftype frac, int steps)
-		{
-			std::vector<clipper::Coord_orth> points(steps);
-			clipper::ftype f = std::sqrt(2*std::log(1.0/frac));
-			clipper::ftype sinuv = std::sin(angleuv);
-			clipper::ftype cosuv = std::cos(angleuv);
-			
-			for (int i = 0; i != steps ;++i) {
-				clipper::ftype angle = 2.0*clipper::Util::pi()*clipper::ftype(i)/clipper::ftype(steps) ;
-				clipper::ftype s = std::sin(angle);
-				clipper::ftype c = std::cos(angle);		
-				// theta equations
-				points[i] = clipper::Coord_orth(offsetx + f*(sigmau * c * cosuv - sigmav * s * sinuv),
-												offsety + f*(sigmau * c * sinuv + sigmav * s * cosuv),
-												0.0);
-			}
-			
-			return points;
-		}
-		
-		// calculate the ellipse parameters
-		template <class T> void AnisoPlot<T>::ellipse(clipper::ftype sig1, clipper::ftype sig2, clipper::ftype cov, 
-													  clipper::ftype& angle, clipper::ftype& sigmau, clipper::ftype& sigmav)		 
-		{
-			angle = ( std::abs(sig1 - sig2 ) < 1.0e-5) ? 0.0 : std::atan(2.0*cov*sig1*sig2/(sig1*sig1-sig2*sig2));
-			//tan(2alpha) = 2*cov(x,y)*sig(x)*sig(y)/(sig(x)**2-sig(y)**2)
-			
-			clipper::ftype t1 = sig1*sig1*sig2*sig2*(1.0-cov*cov);
-			clipper::ftype s = std::sin(angle);
-			clipper::ftype c = std::cos(angle);
-			clipper::ftype t2 = 2*cov*sig1*sig2*s*c;
-			
-			sigmav = std::sqrt(t1/(sig2*sig2*c*c-t2+sig1*sig1*s*s));
-			sigmau = std::sqrt(t1/(sig2*sig2*s*s+t2+sig1*sig1*c*c));
-			return;
-		}
-
-    //---------Calculate anisotropy-------------------------------------
-
-	
-    template <class SCALER, class DATA, class T> void AnisoCorr<SCALER,DATA,T>::calc(clipper::HKL_data<DATA>& isig)
-    {
-		const clipper::HKL_info& hklinf = isig.hkl_info();
-		if (_range.range() < 0.0 ) {
-			_range = isig.hkl_info().invresolsq_range();
-		}
-		
-		if ( _is_protein || _is_nucl ) {
-			clipper::Cell cell(hklinf.cell());
-			clipper::Spacegroup spgr(hklinf.spacegroup());
-			clipper::HKL_data<DATA> Ibest(hklinf);
-			
-			//generate reference scattering curve (initially protein only)
-			if (_is_protein) {
-				Scattering scat;
-				clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
-				
-				for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
-					T reso = ih.invresolsq();
-					Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST(reso), 1.0f);
-				} // scale against BEST
-			} else {
-				Scattering scat(Scattering::NUCLEIC);
-				clipper::ftype totalscatter = spgr.num_symops()*scat(cell, spgr);
-				
-				for ( clipper::HKL_data_base::HKL_reference_index ih = Ibest.first(); !ih.last(); ih.next() ) {
-					T reso = ih.invresolsq();
-					Ibest[ih] = DATA(ih.hkl_class().epsilon()*totalscatter*ctruncate::BEST_rna(reso), 1.0f);
-				} // scale against BEST
-				
-			}
-			_iscale( Ibest, isig );
 		} else {
-			_iscale( isig, _range, 12);
+			printf("No translational NCS detected (with resolution limited to %5.2f A)\n\n", _reso.limit() );
+            if (_peaks.size() ) {
+                clipper::Vec3<clipper::ftype> c0 = _peaks[0].trn();
+                printf("The highest peak located at (%6.3f, %6.3f, %6.3f).\n  The probability based on peak ratio is %5.2f%% that this is by chance (with resolution limited to %5.2f A). \n", c0[0],c0[1],c0[2],_peak_prob[0],_reso.limit() );
+			}
+        }
+        printf("The analysis uses the peak heights in the patterson map that are further than 14 A (approx. 4 Ca-Ca) from the origin.  The presence of a large off origin peak (above 20%%) and/or a very low Q-score, below 1.0, is a string indicator of the presence of tNCS.  An intermidiate Q-score, between 5.0 and 1.0, may indicate weak tNCS or be the result of cross vector of a large scatterer such as a cluster or heavy metal.\n\n");
+        printf("Reference: P. Zwarts CCP4 Newsletter 42\n\n");
+    }
+	
+	//-------tNCS xml to stringstream-----------------------------------
+	std::stringstream& tNCS::xml_output(std::stringstream& ss) const {
+		ss.precision(3);
+		ss << "<translationalNCS>" << std::endl;
+		ss << "  <detected>" << ((hasNCS()) ? "Yes" : "No") << "</detected>" << std::endl;
+		if ( _peaks.size() && _peak_prob[0] < 1.0 ) {
+			clipper::Vec3<clipper::ftype> c0 = _peaks[0].trn();
+			ss << "  <Comment id=\"tncs\">" << std::endl;
+			ss << "Translational NCS has been detected at (" << std::setw(6) << c0[0] << "," << c0[1] << "," <<c0[2] <<")";
+			ss << " .The probability that this is by chance is " << std::setw(5) << std::setprecision(2) << _peak_prob[0] << std::endl;
+			ss << "This will have a major impact on the twinning estimates and effectiveness of the truncate procedure." << std::endl;
+			ss << "</Comment>";
+			ss << "  <PeakList>" << std::endl;
+			ss.precision(3);
+			for (int i = 0; i != _peaks.size() ; ++i ) {
+				ss << "  <Peak>" << std::endl;
+				ss << "    <number>" << i+1 << "</number>" << std::endl;
+				ss << "    <coordinate type=\"map\" separator=\" \">" << std::setw(5) << (_peaks[i].trn() )[0] << " " << (_peaks[i].trn() )[1] << " " << (_peaks[i].trn() )[2] << "</coordinate>" << std::endl;
+				ss << "    <height>" << std::setw(5) << _peak_height[i] << "</height>" << std::endl;
+				ss << "    <Q-score>" << std::setw(5) << _peak_prob[i] << "</Q-score>" << std::endl;
+				ss << "  </Peak>" << std::endl;
+			}
+			ss << "  </PeakList>" << std::endl;
+		} else {
+			ss << "  <Comment id=\"tncs\">" << std::endl;
+			ss << "No translational NCS detected." << std::endl;
+            if (_peaks.size() ) {
+                clipper::Vec3<clipper::ftype> c0 = _peaks[0].trn();
+                ss << "The largest peak is at at (" << std::setw(6) << c0[0] << "," << c0[1] << "," <<c0[2] <<")";
+                ss << " .The probability that this is by chance is " << std::setw(5) << std::setprecision(2) << _peak_prob[0] << std::endl;
+            }
+			ss << "  </Comment>" << std::endl;
 		}
-		
-        return ;
-    }
+        ss << "  <Comment id=\"tncsExplain\">" << std::endl;
+        ss << " The analysis uses the peak heights in the patterson map that are further than 14 A (approx. 4 Ca-Ca) from the origin.  The presence of a large off origin peak (above 20%) and/or a very low Q-score, below 1.0, is a string indicator of the presence of tNCS.  An intermidiate Q-score, between 5.0 and 1.0, may indicate weak tNCS or be the result of cross vector of a large scatterer such as a cluster or heavy metal." << std::endl;
+        ss << "  </Comment>" << std::endl;
+        ss << "<Reference id=\"tncsExplain\">";
+        ss << "Reference: P. Zwarts CCP4 Newsletter 42";
+        ss << "</Reference>" << std::endl;
+		ss << "</translationalNCS>" << std::endl;
+		return ss;
+	}
+	
     
-    //! calculate anisotropy correction
-    template <class SCALER, class DATA, class T> 
-    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::operator()(clipper::HKL_data<DATA>& observed, bool protein, bool rna, clipper::Range<clipper::ftype> reso )
-    {
-		_is_protein = protein;
-		_is_nucl = rna;
-		_range = reso;
-        calc(observed);
-        return _iscale.u_aniso_orth(Scaling::F);
-    }
-    
-    template <class SCALER, class DATA, class T> 
-    const clipper::U_aniso_orth& AnisoCorr<SCALER,DATA,T>::u_aniso_orth( Scaling::TYPE t ) const
-    {
-        if ( t == Scaling::I ) return _iscale.u_aniso_orth(Scaling::I);
-        else return _iscale.u_aniso_orth(Scaling::F);
-    }
-    
-    //---------Calculate anisotropy eigenvalues------------------------
-
-    //! Calculate eigenvalues
-    
-    template <class T> AnisoDirection<T>::AnisoDirection(clipper::U_aniso_orth& uao)
-    {
-        // Eigenvalue calculation
-        _uao = &uao;
-        clipper::Matrix<T> mat( 3, 3, 0.0 );
-        for (int i=0; i !=3; ++i) {
-            for (int j=0; j !=3 ; ++j) {
-                mat(i,j) = uao(i,j);
-            }
-        }
-        std::vector<T> v = mat.eigen( true );
-        
-        _max = -999.0;
-        for (int i=0 ; i!=3 ; ++i) 
-            if ( v[i] > _max ) _max = v[i];
-        
-        std::vector<int> close(3,-1);
-        
-        for (int i=0 ; i!=3 ; ++i) { // loop a*, b*, c*
-            clipper::ftype max = 0.0;
-            int jj = -1;
-            for (int j=0; j!=3; ++j) { // loop vectors
-                if (close[0] == j || close[1] == j ) continue;
-                if (std::fabs(mat(j,i) > max) ) {
-                    max = std::fabs(mat(j,i));
-                    jj = j;
-                }
-            }
-            close[i] = jj;
-        }
-        // close[i] for i -> a*, b*, c* is closest vector
-        for (int i=0; i!=3 ;++i) { // loop a*, b*, c*
-            _eigenvalues.push_back(v[close[i]]);
-            _eigenvectors.push_back(clipper::Vec3<T>(mat(0,close[i]),mat(1,close[i]),mat(2,close[i])) );
-        }
-        ASSERT( _eigenvalues.size() == 3 );
-        return ;
-    }
-    
+	//---------AnomStats--------------------------------------
     // run on scaled on merged data, however the best stats will be from the unmerged set.
     // get from aimless
-    template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::J_sigJ_ano<T> >& isig_ano, int nbins)
+    AnomStats::AnomStats(const clipper::HKL_data_base& hkldata)
     {
-        typedef clipper::HKL_data_base::HKL_reference_index HRI;
-        
-        _nbins = nbins;
-        std::vector<int> sumov(nbins,0.0);
-		std::vector<int> summeas(nbins,0.0);
-        std::vector<clipper::ftype> meandI(nbins,0.0);
-        std::vector<clipper::ftype> meandIsigdI(nbins,0.0);
-        std::vector<clipper::ftype> meanI(nbins,0.0);
-        
-        
-        clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
-        
-		for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
-            int eps = ih.hkl_class().epsilonc();
-            int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
-			sumov[bin] += eps;
-            if ( ih.hkl_class().centric() ) {
-                //no anomalous information
-                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += 0.5*eps*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-                } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                    meanI[bin] += eps*obs_pl(isig_ano[ih]);
-                } else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += eps*obs_mi(isig_ano[ih]);
-                }
-            } else {
-				if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) )  ) {
-					clipper::ftype Ip = obs_pl(isig_ano[ih]);
-					clipper::ftype sp = sigobs_pl(isig_ano[ih]);
-					clipper::ftype Im = obs_mi(isig_ano[ih]);
-					clipper::ftype sm = sigobs_mi(isig_ano[ih]);
-					clipper::ftype dI = std::fabs(Ip - Im);
-					clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
-					if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
-						summeas[bin] += eps;
-					}
-					meandI[bin] += eps*dI;
-					meandIsigdI[bin] += eps*dI/ds;
-					meanI[bin] += 0.5*eps*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-				} else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                    meanI[bin] += eps*obs_pl(isig_ano[ih]);
-				} else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += eps*obs_mi(isig_ano[ih]);
-                }
-            }
-        }
-        
-        for (int i= 0; i != nbins ; ++i ) {
-			meanI[i] /= (float) sumov[i];
-            meandI[i] /= (float) sumov[i];
-            meandIsigdI[i] /= (float) sumov[i];
-        }
-        
+		_base = const_cast<clipper::HKL_data_base *>(&hkldata);
+		
+		_binner  = ResolStats_base(hkldata);
+		_meas    = AnomStats_measurability(_binner);
+		_bij     = AnomStats_bijveot(_binner);
+		_signoise= AnomStats_signoise(_binner);
+
+        int nbins = _binner.size();
+		
+		clipper::ftype MEAS_STAT = 0.05;
+		clipper::ftype SIG_STAT = (is_intensity() ) ? 1.3 : 1.3;
+		clipper::ftype BIJ_STAT = (is_intensity() ) ? 0.010 : 0.006;
+		
         //assume values decrease monatomically.  Cut at measurability 5%
         //Dauter Acta D62 (2006) 867
         //Zwart Acta D61 (2005) 1437
-        clipper::Range<float> meas_limit;
-        for (int i1 = 0; i1 != nbins ; ++i1 ) {
-            if ( float(summeas[i1])/float(sumov[i1]) > 0.05 )
-				meas_limit.include(maxres*(float(i1)+0.5)/float(nbins));
-        } 
-        
-        //assume values decrease monatomically.  Cut at DeltaAnom at 1.3
-        //Dauter Acta D62 (2006) 867
-        //Schneider Acta D58 (2002) 1772
-		clipper::Range<float> anom_limit;
-        for (int i1 = 0  ; i1 != nbins ; ++i1 ) {
-            if ( meandIsigdI[i1] > 1.3 ) 
-				anom_limit.include(maxres*(float(i1)+0.5)/float(nbins));
-        }
-        
-        //assume values decrease monatomically.  Cut at deltaI/I 0.6%
-        //Zwart Acta D61 (2005) 1437
-        //Wang Methods Enzymol 115 (1985) 90
-        clipper::Range<float> wang_limit;
-        for (int i1 = 0  ; i1 != nbins ; ++i1 ) {
-            if ( meandI[i1]/meanI[i1] > 0.006 ) 
-				wang_limit.include(maxres*(float(i1)+0.5)/float(nbins));;
-        }
-        
-        std::cout << "Estimated limits of anomalous signal" << std::endl;
-        
-        std::cout << "      Wang limit (deltaI/I) > 0.6% : " << 1.0/std::sqrt(wang_limit.max() ) << " A " << std::endl;
-        std::cout << "      anomalous limit (deltaI/sig) > 1.3 : " << 1.0/std::sqrt(anom_limit.max() ) << " A " << std::endl;
-        std::cout << "      measurability limit (Nanon/Nov) > 5% : " << 1.0/std::sqrt(meas_limit.max() ) << " A " << std::endl;
-        std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
-        
-        printf("\n$TABLE: Intensity anomalous analysis:\n");
-		printf("$GRAPHS");
-		printf(": Mn(dI) v resolution:N:1,2:\n");
-        printf(": Mn(dI/sigdI) v resolution:N:1,3:\n");
-		printf(": Mn(dI/I) v resolution:N:1,4:\n");
-		printf(": Mesurability v resolution:N:1,5:\n");
-		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
-		for(int i=0;i!=nbins;++i){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i])/float(sumov[i]));
-		}
-		printf("$$\n\n");
-        
-    }
-    
-    template<class T> AnomStats<T>::AnomStats(clipper::HKL_data<clipper::datatypes::G_sigG_ano<T> >& isig_ano, int nbins)
-    {
-        typedef clipper::HKL_data_base::HKL_reference_index HRI;
-        
-        _nbins = nbins;
-        std::vector<int> sumov(nbins,0.0);
-		std::vector<int> summeas(nbins,0.0);
-        std::vector<clipper::ftype> meandI(nbins,0.0);
-        std::vector<clipper::ftype> meandIsigdI(nbins,0.0);
-        std::vector<clipper::ftype> meanI(nbins,0.0);
-        
-        
-        clipper::ftype maxres = isig_ano.hkl_info().resolution().invresolsq_limit();
-        
-		for (HRI ih=isig_ano.first() ; !ih.last() ; ih.next() ) {
-            int eps = ih.hkl_class().epsilon();
-            int bin = int( double(nbins) * ih.invresolsq() / maxres - 0.5);
-			sumov[bin] += eps;
-            if ( ih.hkl_class().centric() ) {
-                //no anomalous information
-                if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-                } else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                    meanI[bin] += obs_pl(isig_ano[ih]);
-                } else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += obs_mi(isig_ano[ih]);
-                }
-            } else {
-				if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) )  &&  !clipper::Util::is_nan(obs_mi(isig_ano[ih]) )  ) {
-					clipper::ftype Ip = obs_pl(isig_ano[ih]);
-					clipper::ftype sp = sigobs_pl(isig_ano[ih]);
-					clipper::ftype Im = obs_mi(isig_ano[ih]);
-					clipper::ftype sm = sigobs_mi(isig_ano[ih]);
-					clipper::ftype dI = std::fabs(Ip - Im);
-					clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
-					if ( dI/ds >= 3.0 && Ip/sp >= 3.0 && Im/sm > 3.0 ) {
-						summeas[bin] += eps;
-					}
-					meandI[bin] += dI;
-					meandIsigdI[bin] += dI/ds;
-					meanI[bin] += 0.5*(obs_pl(isig_ano[ih])+obs_mi(isig_ano[ih]));
-				} else if ( !clipper::Util::is_nan(obs_pl(isig_ano[ih]) ) ) {
-                    meanI[bin] += obs_pl(isig_ano[ih]);
-				} else if ( !clipper::Util::is_nan(obs_mi(isig_ano[ih]) ) ) {
-                    meanI[bin] += obs_mi(isig_ano[ih]);
-                }
-            }
-        }		
-        
-        for (int i= 0; i != nbins ; ++i ) {
-            meandI[i] /= (float) sumov[i];
-            meandIsigdI[i] /= (float) sumov[i];
-        }
-        
-        //assume values decrease monatomically.  Cut at measurability 5%
-        //Dauter Acta D62 (2006) 867
-        //Zwart Acta D61 (2005) 1437
-        clipper::ftype meas_limit;
-        int i1 = 0;
-        for (  ; i1 != nbins ; ++i1 ) {
-            if ( float(summeas[i1])/float(sumov[i1]) < 0.05 ) break;
-        }
-        if ( i1 == nbins ) {
-            meas_limit = maxres;
-        } else {
-            meas_limit = maxres*(float(i1)+0.5)/float(nbins);
+        for (int i1 = 0 ; i1 != nbins ; ++i1 ) {
+            if ( _meas[i1] > MEAS_STAT ) _meas_range.include(_binner[i1]);
         }
         
         //assume values decrease monatomically.  Cut at DeltaAnom at 1.3
         //Dauter Acta D62 (2006) 867
         //Schneider Acta D58 (2002) 1772
-        clipper::ftype anom_limit;
-        i1 = 0;
-        for (  ; i1 != nbins ; ++i1 ) {
-            if ( meandIsigdI[i1] < 1.3 ) break;
-        }
-        if ( i1 == nbins ) {
-            anom_limit = maxres;
-        } else {
-            anom_limit = maxres*(float(i1)+0.5)/float(nbins);
+        for (int i1 = 0 ; i1 != nbins ; ++i1 ) {
+            if ( _signoise[i1] > SIG_STAT ) _signoise_range.include(_binner[i1]);
         }
         
-        //assume values decrease monatomically.  Cut at deltaI/I 0.6%
+        //assume values decrease monatomically.  Cut at deltaF/F 0.6%
         //Zwart Acta D61 (2005) 1437
         //Wang Methods Enzymol 115 (1985) 90
-        clipper::ftype wang_limit;
-        i1 = 0;
-        for (  ; i1 != nbins ; ++i1 ) {
-            if ( meandI[i1]/meanI[i1] < 0.006 ) break;
+        for ( int i1 = 0 ; i1 != nbins ; ++i1 ) {
+            if ( _bij[i1] > BIJ_STAT ) _bij_range.include(_binner[i1]);
         }
-        if ( i1 == nbins ) {
-            wang_limit = maxres;
+        
+	}
+	
+	//void AnomStats::output()
+	void AnomStats::output()
+	{
+        std::cout << "Estimated limits of anomalous signal:" << std::endl << std::endl;
+        
+        if (is_intensity() )  {       
+			std::cout << "  Bijvoet ratio (<deltaI>/<I>) > 1.0%              : ";
+			if (_bij_range.min() < _bij_range.max() ) 
+				std::cout << 1.0/std::sqrt(_bij_range.min() ) << " - " << 1.0/std::sqrt(_bij_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+			std::cout << "  Anomalous signal to noise (<deltaI/sigdI>) > 1.3 : ";
+			if (_signoise_range.min() < _signoise_range.max() ) 
+				std::cout << 1.0/std::sqrt(_signoise_range.min() ) << " - " << 1.0/std::sqrt(_signoise_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+			std::cout << "  Measurability limit (Nanon/Nov) > 5%             : ";
+			if (_meas_range.min() < _meas_range.max() ) 
+				std::cout << 1.0/std::sqrt(_meas_range.min() ) << " - " << 1.0/std::sqrt(_meas_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+		} else {
+			std::cout << "  Bijvoet ratio (<deltaF>/<F>) > 0.6%              : ";
+			if (_bij_range.min() < _bij_range.max() ) 
+				std::cout << 1.0/std::sqrt(_bij_range.min() ) << " - " << 1.0/std::sqrt(_bij_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+			std::cout << "  Anomalous signal to noise (<deltaF/sigdF>) > 1.3 : " ;
+			if (_signoise_range.min() < _signoise_range.max() ) 
+				std::cout << 1.0/std::sqrt(_signoise_range.min() ) << " - " << 1.0/std::sqrt(_signoise_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+			std::cout << "  Measurability limit (Nanon/Nov) > 5%             : ";
+			if (_meas_range.min() < _meas_range.max() ) 
+				std::cout << 1.0/std::sqrt(_meas_range.min() ) << " - " << 1.0/std::sqrt(_meas_range.max() ) << " A " << std::endl;
+			else 
+				std::cout << "NaN - NaN" << std::endl;
+		}
+        std::cout << std::endl;
+        if ( _signoise_range.min() > _signoise_range.max() || _meas_range.min() > _meas_range.max() ) {
+            std::cout << "  Warning: NO anmalous signal." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.11 ) && // low resolution lower than 10A, high beyond 3 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.11 ) ) {
+            std::cout << " Significant anomalous signal to high resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) && // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            std::cout << " Significant anomalous signal to medium resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) || // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            std::cout << " Inconsistent results, there may be some anomalous signal." << std::endl;
+        } else if ( _signoise_range.min() > 0.04 || _meas_range.min() > 0.04 )  {
+            std::cout << " Warning: NO anomalous signal. Anomalous signal is probably artefact of noise at high resolution." << std::endl;
         } else {
-            wang_limit = maxres*(float(i1)+0.5)/float(nbins);
+            std::cout << " Some anomalous signal at intermediate resolution.  Low resolution signal missing." << std::endl;
         }
-        
-        std::cout << "Estimated limits of anomalous signal" << std::endl;
-        
-        std::cout << "      Wang limit (deltaF/F) > 0.6% : " << 1.0/std::sqrt(wang_limit) << " A " << std::endl;
-        std::cout << "      anomalous limit (deltaF/sig) > 1.3 : " << 1.0/std::sqrt(anom_limit) << " A " << std::endl;
-        std::cout << "      measurability limit (Nanon/Nov) > 5% : " << 1.0/std::sqrt(meas_limit) << " A " << std::endl;
-        std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl;
-        
-        printf("\n$TABLE: Structure factor anomalous analysis:\n");
-		printf("$GRAPHS");
-		printf(": Mn(dF) v resolution:N:1,2:\n");
-        printf(": Mn(dF/sigdF) v resolution:N:1,3:\n");
-		printf(": Mn(dF/F) v resolution:N:1,4:\n");
-		printf(": Mesurability v resolution:N:1,5:\n");
-		printf("$$ 1/resol^2 Mn(dI) Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");
+
+		std::cout << std::endl;
+        std::cout << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal\n  can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl << std::endl;
+	//}
+		std::cout << "  The measurability is defined as the fraction of the anomalous differences for which the signal to noise for deltaI,\n  I(+) and I(-) are all > 3.";
+        std::cout << " The resolution limits are derived from I/sigI of 1.2 for the signal to noise, and measurability above 5%." << std::endl;
+		std::cout << "  For well processed data having more than 5% of the measured data satisfying this criteria is a good\n  indicator, particularly when combined with";
+		std::cout << " a significate mean signal to noise of the anomalous difference in a\n  resolution shell." << std::endl; 
+	
+	//void AnomStats::output_loggraph()
+	//{
+		if (is_intensity() )  {
+			printf("\n$TABLE: Intensity anomalous analysis:\n");
+			printf("$GRAPHS");
+			printf(": Mn(dI/sigdI) v resolution:N:1,2:\n");
+			printf(": Mn(dI/I) v resolution:N:1,3:\n");
+			printf(": Mesurability v resolution:N:1,4:\n");
+			printf("$$ 1/resol^2 Mn(dI/sigdI)) Mn(dI/I) measurability$$\n$$\n");			
+		} else {
+			printf("\n$TABLE: Structure factor anomalous analysis:\n");
+			printf("$GRAPHS");
+			printf(": Mn(dF/sigdF) v resolution:N:1,2:\n");
+			printf(": Mn(dF/F) v resolution:N:1,3:\n");
+			printf(": Mesurability v resolution:N:1,4:\n");
+			printf("$$ 1/resol^2 Mn(dF/sigdF)) Mn(dF/F) measurability$$\n$$\n");
+		}			
+		int nbins = _binner.size();
 		for(int i=0;i!=nbins;++i){
-			double res = maxres*(double(i)+0.5)/double(nbins);
-			printf("%10.6f %12.4e %12.4e %12.4e %12.4e\n",res,meandI[i],meandIsigdI[i],meandI[i]/meanI[i],float(summeas[i])/float(sumov[i]));
+			printf("%10.6f %12.4e %12.4e %12.4e\n",_binner[i],_signoise[i],_bij[i],_meas[i]);
 		}
 		printf("$$\n\n");
     }
+	
+	std::stringstream& AnomStats::xml_output(std::stringstream& ss)
+	{
+		std::string is = (is_intensity() ) ? "intensity" : "amplitude" ;
+		ss << "<AnomStatistics type=\"" << is << "\">" << std::endl;
+		ss << "  <ResolutionRange id=\"Signal to Noise Ratio\" unit=\"Angstrom\" >" << std::endl;
+		if (_signoise_range.min() < _signoise_range.max() ) 
+			ss << std::fixed << std::setw(5) << std::setprecision(2) << "    <min>" << 1.0/std::sqrt(_signoise_range.min() ) << "</min>\n    <max>"
+			<< 1.0/std::sqrt(_signoise_range.max() ) << "</max>" << std::endl;
+		else 
+			ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
+		ss << "  </ResolutionRange>" << std::endl;
+		ss << "  <ResolutionRange id=\"Measurability Limit\" unit=\"Angstrom\" >" << std::endl;
+		if (_meas_range.min() < _meas_range.max() ) 
+			ss << std::fixed << std::setw(5) << std::setprecision(2) << "    <min>" << 1.0/std::sqrt(_meas_range.min() ) << "</min>\n    <max>"
+			<< 1.0/std::sqrt(_meas_range.max() ) << "</max>" << std::endl;
+		else 
+			ss <<"    <min> NaN</min>\n    <max> NaN</max>" << std::endl;
+		ss << "  </ResolutionRange>" << std::endl;
+		ss << "  <Comment id='AnomDescription'>" << std::endl;
+		ss << "  These calculations are performed using scaled and merged data.  More accurate estimates of the limit of the anomalous signal\n  can be obtained using scaled and unmerged data in the half dataset correlation calculation of aimless. " << std::endl << std::endl;
+		ss << " The measurability is defined as the fraction of the anomalous differences for which the signal to noise for deltaI,\n  I(+) and I(-) are all > 3.";
+        ss << " The resolution limits are derived from I/sigI of 1.2 for the signal to noise, and measurability above 5%";
+		ss << " For well processed data having more than 5% of the measured data satisfying this criteria is a good\n   indicator, particularly when combined with";
+		ss << " a significate mean signal to noise of the anomalous difference in a\n  resolution shell." << std::endl;
+        ss << "  </Comment>" << std::endl;
+        ss << "  <Comment id='AnomResult'>" << std::endl;
+        if ( _signoise_range.min() > _signoise_range.max() || _meas_range.min() > _meas_range.max() ) {
+            ss << "  Warning: NO anmalous signal." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.11 ) && // low resolution lower than 10A, high beyond 3 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.11 ) ) {
+            ss << "  Significant anomalous signal to high resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) && // low resolution lower than 10A, high beyond 5 A
+            ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            ss << "  Significant anomalous signal to medium resolution." << std::endl;
+        } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.04 ) || // low resolution lower than 10A, high beyond 5 A
+                   ( _meas_range.min() < 0.01 && _meas_range.max() > 0.04 ) ) {
+            ss << "  Inconsistent results, there may be some anomalous signal." << std::endl;
+        } else if ( _signoise_range.min() > 0.04 || _meas_range.min() > 0.04 )  {
+            ss << "  Warning: NO anomalous signal. Anomalous signal is probably artefact of noise at high resolution." << std::endl;
+        } else {
+            ss << "  Some anomalous signal at intermediate resolution.  Low resolution signal missing." << std::endl;
+        }
+		ss << "  </Comment>" << std::endl;
+		ss << "</AnomStatistics>" << std::endl;
+		/*
+		 <CCP4Table groupID="graph" id"I-anom" title="Intensity anomalous analysis">
+		 <plot>
+		 <title>Resolution plots for anomalous scattering indicators</title>
+		 <yrange min="0" max="None"/>
+		 <plotline xcol="  1" ycol="  4" >
+		 <symbolsize>  0</symbolsize>
+		 <linestyle>-</linestyle>
+		 <colour>red</colour>
+		 </plotline>
+		 <plotline xcol="  1" ycol="  3" >
+		 <symbolsize>  0</symbolsize>
+		 <linestyle>-</linestyle>
+		 <colour>green</colour>
+		 </plotline>
+		 <plotline xcol="  1" ycol="  2" >
+		 <linestyle>-</linestyle>
+		 <colour>black</colour>
+		 </plotline>
+		 </plot>
+		 <headers separator=" ">
+		 1/resol^2 Mn(dF/sigdF)) Mn(dF/F) measurability
+		 </headers>
+		 <data>
+		 ... ... ... ...
+		 </data>
+		 </CCP4Table>
+*/
+		int nbins = _binner.size();
+		
+		ss << "<CCP4Table groupID=\"graph\" id=\"anomalous " << is << " plot\" title=\""<< is << " anomalous analysis plots\">" << std::endl;
+		ss << "<plot>" << std::endl;
+		ss << "<title>Resolution plots for anomalous scattering indicators</title>" << std::endl;
+		ss << "<xscale>oneoversqrt</xscale>" << std::endl;
+		ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"4\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>red</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"3\" >" << std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>green</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"  1\" ycol=\"  2\" >" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>black</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "</plot>" << std::endl;
+		if (this->is_intensity()) ss << "<headers separator=\" \">\n 1/resol^2 Mn(dI/sigdI)) Mn(dI/I) measurability \n </headers>" << std::endl;
+			else ss << "<headers separator=\" \">\n 1/resol^2 Mn(dF/sigdF)) Mn(dF/F) measurability \n </headers>" << std::endl;
+		ss << "<data>" << std::endl;;
+		for(int i=0;i!=nbins;++i){
+			ss << std::setw(6) << _binner[i] << " " << _signoise[i] << " " << _bij[i] << " " << _meas[i] << std::endl;
+		}
+		ss << "</data>" << std::endl;
+		ss << "</CCP4Table>" << std::endl;
+		return ss;
+	}
+	
+	//******ResolStats_base************************************************************************
+	void ResolStats_base::init(const clipper::HKL_data_base& hkldata, const clipper::Range<clipper::ftype>& range, const bool missing, const int nreflns)
+	{
+		_base = const_cast<clipper::HKL_data_base *>(&hkldata);
+        _range.include(range.max() );
+        _range.include(range.min() );
+        _s_ord.init( range, 1000 );
+		if (missing) {
+			//_s_ord.init( hkldata, 1.0 );;
+            for (clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) )
+            if ( range.contains(ih.invresolsq()) ) _s_ord.accumulate( ih.invresolsq() );
+		} else {
+			//_s_ord.init( hkldata.hkl_info(), 1.0);
+            for (clipper::HKL_data_base::HKL_reference_index ih = hkldata.hkl_info().first(); !ih.last(); ih.next() )
+                if ( range.contains(ih.invresolsq()) ) _s_ord.accumulate( ih.invresolsq() );
+		}
+        _s_ord.prep_ordinal();
+		
+		int nbins(0);
+        int Nreflections(0);
+        if (missing) {
+            for (clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) )
+                if ( range.contains(ih.invresolsq()) ) ++Nreflections;
+		} else {
+            for (clipper::HKL_data_base::HKL_reference_index ih = hkldata.hkl_info().first(); !ih.last(); ih.next() )
+                if ( range.contains(ih.invresolsq()) ) ++Nreflections;
+            
+		}
+		//int Nreflections(hkldata.num_obs() );
+		//const int nreflns(500);
+		{
+			//for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
+			//		 if (!hkldata.missing(ih.index() ) )++Nreflections;
+			//}
+			if ( nbins == 0 && nreflns != 0 ) {
+				nbins = std::max( Nreflections/nreflns , 1);
+				//} else if ( nreflns == 0 && nprm2 != 0 ) {
+				//nprm = nbins;
+			} else {
+				//nprm2 = std::max( Nreflections/nreflns , nprm2);
+				double np1(nbins+0.499);
+				double np2(Nreflections/nreflns);
+				double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+				nbins = std::max( int(np), 1 );
+			}
+		}
+		_b_reso.resize(nbins,0.0);
+		_b_contains.resize(nbins,0.0);
+        _b_range.resize(nbins);
+				
+        if (missing) {
+            for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
+                clipper::ftype s = ih.invresolsq();
+                if ( range.contains(s) ) {
+                    clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * _s_ord.ordinal( s ) ), nbins-1 );
+                    _b_reso[bin] += eps*s;
+                    _b_contains[bin] += eps;
+                    _b_range[bin].include(s);
+                }
+            }
+        } else {
+            for (clipper::HKL_data_base::HKL_reference_index  ih = hkldata.hkl_info().first(); !ih.last(); ih.next() ) {
+                clipper::ftype s = ih.invresolsq();
+                if ( range.contains(s) ) {
+                    clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+                    int bin = clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * _s_ord.ordinal( s ) ), nbins-1 );
+                    _b_reso[bin] += eps*s;
+                    _b_contains[bin] += eps;
+                    _b_range[bin].include(s);
+                }
+            }
+
+        }
+        
+		for (int i=0 ; i != nbins ; ++i) _b_reso[i] /= _b_contains[i];
+
+		return;
+	}
+	
+	void ResolStats_base::init(const ResolStats_base& base)
+	{
+        _range.include(base._range.max() );
+        _range.include(base._range.min() );
+		_s_ord = base._s_ord;
+		_b_reso = base._b_reso;
+        _b_contains = base._b_contains;
+        _b_range = base._b_range;
+		_base = base._base;
+	}
+	
+	int ResolStats_base::operator()(const clipper::ftype s) const
+	{
+		int nbins = this->size();
+		return clipper::Util::bound( 0,clipper::Util::intf( clipper::ftype(nbins) * _s_ord.ordinal( s ) ), nbins-1 );
+	}
+	
+	clipper::ftype ResolStats_base::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _b_reso[bin];
+	}
+	
+	ResolStats_base& ResolStats_base::operator=(const ResolStats_base& orig)
+	{
+		init(orig);
+		return *this;
+	}
+	
+	//******AnomStats_measurability***************************************************************
+	
+	AnomStats_measurability::AnomStats_measurability(const clipper::HKL_data_base& hkldata) 
+	{
+		init(hkldata);
+		calc(hkldata);
+	}
+	
+	AnomStats_measurability::AnomStats_measurability(const ResolStats_base& base) 
+	{
+		init(base);
+		calc(*(this->parent() ) );
+	}
+		
+	void AnomStats_measurability::calc(const clipper::HKL_data_base& hkldata)
+	{
+		clipper::ftype MEAS_LIMIT;
+		MEAS_LIMIT = (this->is_intensity() ) ? 3.0 : 1.5;
+		int nbins = this->size();
+				
+		_meas.resize(nbins,0.0);
+		
+		std::vector<clipper::ftype> sumov(nbins,0.0);
+		
+		clipper::xtype working[hkldata.data_size()];
+		
+		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
+			if (!hkldata.missing(ih.index() ) ) {
+				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+				clipper::ftype s = ih.invresolsq();
+				hkldata.data_export(ih.hkl(),working);
+				clipper::ftype Ip(working[0]);
+				clipper::ftype sp(working[1]);
+				clipper::ftype Im(working[2]);
+				clipper::ftype sm(working[3]);
+				clipper::ftype dI(0.0), ds(1.0);
+				if (!clipper::Util::is_nan(Ip) && !clipper::Util::is_nan(Im) ) {
+					dI = std::fabs(Ip - Im);
+					ds = std::sqrt(sm*sm+sp*sp);
+				}
+				int bin = this->operator()(s);
+				if ( dI/ds >= MEAS_LIMIT && Ip/sp >= MEAS_LIMIT && Im/sm >= MEAS_LIMIT ) {
+					_meas[bin] += eps;
+				}
+				sumov[bin] += eps;
+			}
+		}
+		
+		for (int i=0 ; i != nbins ; ++i) _meas[i] /= sumov[i];
+	}
+	
+	clipper::ftype AnomStats_measurability::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _meas[bin];
+	}	
+	
+	AnomStats_measurability& AnomStats_measurability::operator=(const AnomStats_measurability& orig)
+	{
+		init(orig);
+		_meas = orig._meas;
+		return *this;
+	}
+	
+	//******AnomStats_bijveot*********************************************************************
+	
+	AnomStats_bijveot::AnomStats_bijveot(const clipper::HKL_data_base& hkldata) 
+	{
+		init(hkldata);
+		calc(hkldata);
+	}
+	
+	AnomStats_bijveot::AnomStats_bijveot(const ResolStats_base& base) 
+	{
+		init(base);
+		calc(*(this->parent() ) );
+	}
+	
+	void AnomStats_bijveot::calc(const clipper::HKL_data_base& hkldata)
+	{
+		int nbins = this->size();
+		
+		_meandI.resize(nbins,0.0);
+		
+		std::vector<clipper::ftype> meanI(nbins,0.0);
+		
+		clipper::xtype working[hkldata.data_size()];
+				
+		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
+			if (!hkldata.missing(ih.index() ) ) {
+				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+				clipper::ftype s = ih.invresolsq();
+				hkldata.data_export(ih.hkl(),working);
+				clipper::ftype Ip(working[0]);
+				clipper::ftype Im(working[2]);
+				int bin = this->operator()(s);
+				if (!clipper::Util::is_nan(Ip) && !clipper::Util::is_nan(Im) ) {
+					_meandI[bin] += eps*std::fabs(Ip - Im);
+					meanI[bin] += eps*0.5*(Ip+Im);
+				} else if (!clipper::Util::is_nan(Ip) ) {
+					meanI[bin] += eps*Ip;
+				} else if (!clipper::Util::is_nan(Im) ) {
+					meanI[bin] += eps*Im;
+				}
+			}
+		}
+		
+		for (int i=0 ; i != nbins ; ++i) _meandI[i] /= meanI[i];
+	}
+	
+	clipper::ftype AnomStats_bijveot::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _meandI[bin];
+	}	
+	
+	AnomStats_bijveot& AnomStats_bijveot::operator=(const AnomStats_bijveot& orig)
+	{
+		init(orig);
+		_meandI = orig._meandI;
+		return *this;
+	}
+	
+	//******AnomStats_signoise*******************************************************************
+	AnomStats_signoise::AnomStats_signoise(const clipper::HKL_data_base& hkldata) 
+	{
+		init(hkldata);
+		calc(hkldata);
+	}
+	
+	AnomStats_signoise::AnomStats_signoise(const ResolStats_base& base) 
+	{
+		init(base);
+		calc(*(this->parent() ) );
+	}
+	
+			
+	clipper::ftype AnomStats_signoise::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _meandI[bin];
+	}	
+	
+	void AnomStats_signoise::calc(const clipper::HKL_data_base& hkldata)
+	{
+		int nbins = this->size();
+		
+		_meandI.resize(nbins,0.0);
+		
+		std::vector<clipper::ftype> sumov(nbins,0.0);
+		
+		clipper::xtype working[hkldata.data_size()];
+		
+		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
+			if (!hkldata.missing(ih.index() ) ) {
+				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+				clipper::ftype s = ih.invresolsq();
+				hkldata.data_export(ih.hkl(),working);
+				clipper::ftype Ip(working[0]);
+				clipper::ftype sp(working[1]);
+				clipper::ftype Im(working[2]);
+				clipper::ftype sm(working[3]);
+				int bin = this->operator()(s);
+				if (!clipper::Util::is_nan(Ip) && !clipper::Util::is_nan(Im) ) {
+					clipper::ftype dI = std::fabs(Ip - Im);
+					clipper::ftype ds = std::sqrt(sp*sp+sm*sm);
+					_meandI[bin] += eps*dI/ds;
+				}
+				sumov[bin] += eps;
+			}
+		}
+		
+		for (int i=0 ; i != nbins ; ++i) _meandI[i] /= sumov[i];
+	}
+	
+	AnomStats_signoise& AnomStats_signoise::operator=(const AnomStats_signoise& orig)
+	{
+		init(orig);
+		_meandI = orig._meandI;
+		return *this;
+	}
 	
 	//******ResoCorrels***************************************************************************
 	
@@ -1417,7 +1083,7 @@ namespace ctruncate {
 			}
 		}
  		for (int i=0; i !=_nbins; ++i) {
-			_comp[i] = ( v_nf[i] * v_eocf[i] - v_eof[i] * v_ecf[i] ) 
+			_comp[i] = ( v_nf[i] * v_eocf[i] - v_eof[i] * v_ecf[i] )
 					/ sqrt ( ( v_nf[i] * v_eccf[i] - v_ecf[i] * v_ecf[i] ) * ( v_nf[i] * v_eoof[i] - v_eof[i] * v_eof[i] ) );
 		}
 		_cc = ( nf * eocf - eof * ecf ) / sqrt ( ( nf * eccf - ecf * ecf ) * ( nf * eoof - eof * eof ) );
@@ -1437,212 +1103,763 @@ namespace ctruncate {
 	}
 	
 	//----Rings analysis----------------------------------------------
-	template <class T> bool IceRings_analyse::operator()(clipper::HKL_data<T>& data, ctruncate::Rings& rings)
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		
-		int nr = rings.Nrings();
-		
-		
-		_ideal_rings.Copy(rings);
-		_data = &data;
-		_rings = &rings;
-		_comp.resize(_rings->Nrings());
-		
-		clipper::ftype maxres = data.hkl_info().resolution().invresolsq_limit();
-		
-		rings.ClearSums();
-		for (int i = 0; i != nr; ++i) rings.SetReject(i, true);
-		_ideal_rings.ClearSums();
-		
-		clipper::HKL_data<T> xsig(data.hkl_info() );
-		// dataset with all ice rings removed
-		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
-			double reso = ih.invresolsq();
-			xsig[ih] = clipper::data32::I_sigI( (data[ih].I()), data[ih].sigI() );
-			if ( ih.hkl_class().centric() ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose centrics
-			if ( rings.InRing(reso) != -1 ) 
-				if ( rings.Reject( rings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
-		}
-		
-		int nreflns=1000;
-		//int Ncentric = 0;
-		int Nreflections = 0;
-		int _nbins=60;
-        {
-			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-				clipper::ftype reso = ih.invresolsq();
-				if ( !xsig[ih].missing() ) ++Nreflections;
-			}
-			if ( _nbins == 0 && nreflns != 0 ) {
-				_nbins = std::max( Nreflections/nreflns , 1);
-			} else if ( nreflns == 0 && _nbins != 0 ) {
-				//nprm = nbins;
-			} else {
-				_nbins = std::max( Nreflections/nreflns , _nbins);
-				/*
-				 double np1(nbins+0.499);
-				 double np2(nuse/nrefln);
-				 double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
-				 _nbins = std::max( int(np), 1 );
-				 */
-			}
-        }
-		
-		std::vector<float> summeas(_nbins,0.0), sumov(_nbins,0.0), sumI(_nbins,0.0);
-		
-		for ( HRI ih = data.first(); !ih.last(); ih.next() ) {
-			clipper::ftype reso = ih.invresolsq();
-			clipper::ftype mult=data.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
-			int ring=rings.InRing(reso);
-			if ( ring == -1 ) {
-				int bin = int( double(_nbins) * reso / maxres - 0.001);
-				//if (bin >= nbins || bin < 0) printf("Warning: (completeness) illegal bin number %d\n", bin);
-				if ( bin < _nbins && bin >= 0 ) {
-					sumov[bin] += mult;
-					if ( !data[ih].missing() ) {
-						summeas[bin] += mult;
-						sumI[bin] += mult*data[ih].I();
-					}
-				}
-			} else {
-				if (!ih.hkl_class().centric() )
-				if ( ring <  rings.Nrings() && ring >= 0 ) {
-					rings.AddObs(ring,data[ih],reso,mult);
-				}
-			}
-		}
-		
-		
-		//smoothing
-		{
-			float tmp1, tmp2, tmp3, tmp4;
-			tmp1 = sumov[0];
-			tmp2 = summeas[0];
-			for (int ii = 0 ; ii != _nbins ; ++ii) {
-				if (ii == 0 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii+1];
-				} else if ( ii == _nbins-1 ) {
-					tmp3 =  0.75*sumov[ii]+0.25*sumov[ii-1];
-					tmp4 =  0.75*summeas[ii]+0.25*summeas[ii-1];
-				} else {
-					tmp3 = 0.25*tmp1+0.5*sumov[ii]+0.25*sumov[ii+1];
-					tmp4 = 0.25*tmp2+0.5*summeas[ii]+0.25*summeas[ii+1];
-				}
-				tmp1 = sumov[ii];
-				tmp2 = summeas[ii];
-				sumov[ii] = tmp3;
-				summeas[ii] = tmp4;
-			}
-		}
-		
-		for (int i=0 ; i != _rings->Nrings() ; ++ i) {
-			float reso = _rings->MeanSSqr(i);
-			if ( reso <= maxres ) {
-			int bin = int( double(_nbins) * reso / maxres - 0.001);
-			_comp[i] = summeas[bin]/sumov[bin];
-			}
-		}
-		
-		std::vector<double> params_ice( _nbins, 1.0 );
-		clipper::BasisFn_spline basis_ice( xsig, _nbins, 2.0 );
-		TargetFn_meanInth<T> target_ice( xsig, 1 );
-		clipper::ResolutionFn mean( xsig.hkl_info(), basis_ice, target_ice, params_ice );
-		
-		
-		// repeat with ibest
-		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-			clipper::ftype reso = ih.invresolsq();
-			clipper::ftype mult=xsig.hkl_info().spacegroup().num_symops()/ih.hkl_class().epsilon();
-			int ring=_ideal_rings.InRing(reso);
-			if ( ring != -1 ) {
-				if (!ih.hkl_class().centric() )
-				if ( ring <  rings.Nrings() && ring >= 0 ) {
-					T tmp = T(ih.hkl_class().epsilon()*mean.f(ih),0.0);
-					_ideal_rings.AddObs(ring,tmp,reso,mult);
-				}
-			}
-		}
-		
-		for (int i = 0; i != rings.Nrings(); ++i) {
-			bool reject = false;
-			float reso = rings.MeanSSqr(i);
-			if ( reso <= maxres && rings.MeanSigI(i) > 0.0f ) {
-				if (std::abs(rings.MeanI(i)-_ideal_rings.MeanI(i))/rings.MeanSigI(i) > _iceTolerance) reject = true;
-			}
-			rings.SetReject(i, reject);
-		}
-		
-		
+	
+	bool IceRings_analyse::present() {	
 		bool icer = false;
-        for ( int i = 0; i != nr; ++i) if (rings.Reject(i) ) icer = true;
+		for ( int i = 0; i != _rings->Nrings(); ++i) if (_rings->Reject(i) ) icer = true;
 		
 		return icer;
-		
 	}
 	
-	std::string IceRings_analyse::format() {
+	std::string IceRings_analyse::output() {
 		
 		clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
 		
 		std::stringstream ss;
 		
 		if ( _rings->MeanSSqr(0) <= maxres && _rings->MeanSigI(0) > 0.0f ) {
-			ss << "Ice Ring Summary:\n";
-			ss << " reso     mean_I mean_Sigma Estimated_I Zscore Completeness Ave_Completeness\n";
+			ss << "ICE RING SUMMARY:\n\n";
+			ss << " reso  ice_ring  mean_I mean_Sigma Estimated_I   Ratio Zscore Completeness Ave_Completeness\n";
 			for ( int i = 0; i != _rings->Nrings(); ++i) {
 				float reso = _rings->MeanSSqr(i);
 				if ( reso <= maxres && _rings->MeanSigI(i) > 0.0f ) {
 					float imean = _rings->MeanI(i);
 					float sigImean = _rings->MeanSigI(i);
 					//float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
-					ss << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << " " 
+					ss << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << " "
+					<< ( (_rings->Reject(i) ) ? "  yes  " : "  no   " )
 					<< std::setw(10) << imean << " " 
 					<< std::setw(10) << sigImean << " " 
-					<< std::setw(11) << _ideal_rings.MeanI(i) << " "
-					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
-					<< std::setw(8) << _rings->Comp(i) << " " 
+					<< std::setw(11) << _ideal_rings.MeanI(i) << "  "
+                    << std::setw(6) << imean/_ideal_rings.MeanI(i) << " "
+					<< std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << "    "
+					<< std::setw(8) << _rings->Comp(i) << " "
 					<< std::setw(8) << _comp[i] << std::endl;
 					//printf("%6.2f %-10.2f %-10.2f %-10.2f %-6.2f %-6.2f %-6.2f\n",1.0f/std::sqrt(reso),imean,sigImean,_ideal_rings.MeanI(i),
 					//	   (imean-_ideal_rings.MeanI(i))/sigImean,_rings->Comp(i),_comp[bin] );
 				}
 			}
-		}
+            if ( _wB == NULL ) {
+                ss << std::endl << "The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges. " << std::endl;
+            } else {
+                ss << std::endl << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+            }
+        }
 		return ss.str();
 	}
 	
-	
-    //---------Instantiate templates------------------------------------
-	template class AnisoPlot<clipper::ftype32>;
-	template class AnisoPlot<clipper::ftype64>;
+	std::stringstream& IceRings_analyse::xml_output(std::stringstream& ss) {
+        clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
+		ss << "<IceRingsAnalysis>" << std::endl;
+		for ( int i = 0; i != _rings->Nrings(); ++i) {
+			float reso = _rings->MeanSSqr(i);
+			float imean = _rings->MeanI(i);
+			float sigImean = _rings->MeanSigI(i);
+            if ( reso <= maxres && sigImean > 0.0f ) {
+                ss << "  <Ring>" << std::endl;
+                ss << "    <Number>" << i+1 << "</Number>" << std::endl;
+                ss << "    <Resolution>" << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << "</Resolution>" << std::endl;
+                ss << "    <Reject>" << ( (_rings->Reject(i) ) ? "  yes  " : "  no   " ) << "</Reject>" << std::endl;
+                ss << "    <Imean>" << std::setw(10) << imean << "</Imean>" << std::endl;
+                ss << "    <SigImean>" << sigImean << "</SigImean>" << std::endl;
+                ss << "    <Ratio>" << imean/_ideal_rings.MeanI(i) << "</Ratio>" << std::endl;
+                ss << "    <Z-score>" << (imean-_ideal_rings.MeanI(i))/sigImean << "</Z-score>" << std::endl;
+                ss << "    <Completeness>" << _rings->Comp(i) << "</Completeness>" << std::endl;
+                ss << "    <ExpectCompleteness>" << _comp[i] << "</ExpectCompleteness>" << std::endl;
+                ss << "  </Ring>" << std::endl;
+		}
+        }
+        ss << "<Comment id='IceRingsAnalysis'>" << std::endl;
+        if ( _wB == NULL ) {
+            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+        } else {
+            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+        }
+        ss << "</Comment>" << std::endl;
+		ss << "</IceRingsAnalysis>" << std::endl;
+		return ss;
+	}
     
-    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype32>, clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_logLikeAniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_wilsonAniso<clipper::ftype32>,clipper::datatypes::F_sigF<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_wilsonAniso<clipper::ftype64>,clipper::datatypes::F_sigF<clipper::ftype64>,clipper::ftype64>;
-    template class AnisoCorr<ctruncate::Iscale_wilsonAniso<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32>,clipper::ftype32>;
-    template class AnisoCorr<ctruncate::Iscale_wilsonAniso<clipper::ftype64>,clipper::datatypes::I_sigI<clipper::ftype64>,clipper::ftype64>;
+    //----Outlier Rings analysis----------------------------------------------
+	
+	bool OutlierRings_analyse::present() {
+		bool icer = false;
+		for ( int i = 0; i != _rings->Nrings(); ++i) if (_rings->Reject(i) ) icer = true;
+		
+		return icer;
+	}
+	
+	std::string OutlierRings_analyse::output() {
+		
+		clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
+		
+		std::stringstream ss;
+		
+        bool done(false);
+        for ( int i = 0; i != _rings->Nrings(); ++i) {
+            if (_rings->MeanSSqr(i) <= maxres && _rings->MeanSigI(i) > 0.0f) done = true;
+        }
+		if ( done ) {
+			ss << "OUTLIER RING SUMMARY:\n\n";
+            if ( present() ) {
+                ss << " reso    mean_I mean_Sigma Estimated_I  Ratio Zscore Completeness Ave_Completeness\n";
+                for ( int i = 0; i != _rings->Nrings(); ++i) {
+                    if ( _rings->Reject(i) && _rings->MeanSigI(i) > 0.0f ) {
+                        float reso = _rings->MeanSSqr(i);
+                        float imean = _rings->MeanI(i);
+                        float sigImean = _rings->MeanSigI(i);
+                        //float expectedI = exp( log(basis_ice.f_s( reso, Sigma.params()) ) + param_gauss[1]*reso);
+                        ss << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso)
+                        << std::setw(10) << imean << " "
+                        << std::setw(10) << sigImean << " "
+                        << std::setw(11) << _ideal_rings.MeanI(i) << " "
+                        << std::setw(6) << imean/_ideal_rings.MeanI(i) << " "
+                        << std::setw(6) << (imean-_ideal_rings.MeanI(i))/sigImean << " "
+                        << std::setw(8) << _rings->Comp(i) << " "
+                        << std::setw(8) << _comp[i] << std::endl;
+                    }
+                }
+            } else {
+                ss << "No problem resolution rings found." << std::endl;
+            }
+            if ( _wB == NULL ) {
+                ss << std::endl << "The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges. " << std::endl;
+            } else {
+                ss << std::endl << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+            }
+        }
+        return ss.str();
+    }
+	
+	std::stringstream& OutlierRings_analyse::xml_output(std::stringstream& ss) {
+        clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
+		ss << "<OutlierRingsAnalysis>" << std::endl;
+        ss << "  <present>" << ( ( present() ) ? "  yes  " : "  no   " ) << "</present>" << std::endl;
+		for ( int i = 0; i != _rings->Nrings(); ++i) {
+			float reso = _rings->MeanSSqr(i);
+			float imean = _rings->MeanI(i);
+			float sigImean = _rings->MeanSigI(i);
+            if ( _rings->Reject(i) && sigImean > 0.0f ) {
+                ss << "  <Ring>" << std::endl;
+                ss << "    <Number>" << i+1 << "</Number>" << std::endl;
+                ss << "    <Resolution>" << std::fixed << std::setw(5) << std::setprecision(2) << 1.0f/std::sqrt(reso) << "</Resolution>" << std::endl;
+                ss << "    <Reject>" << ( (_rings->Reject(i) ) ? "  yes  " : "  no   " ) << "</Reject>" << std::endl;
+                ss << "    <Imean>" << std::setw(10) << imean << "</Imean>" << std::endl;
+                ss << "    <SigImean>" << sigImean << "</SigImean>" << std::endl;
+                ss << "    <Z-score>" << (imean-_ideal_rings.MeanI(i))/sigImean << "</Z-score>" << std::endl;
+                ss << "    <Completeness>" << _rings->Comp(i) << "</Completeness>" << std::endl;
+                ss << "    <ExpectCompleteness>" << _comp[i] << "</ExpectCompleteness>" << std::endl;
+                ss << "  </Ring>" << std::endl;
+            }
+        }
+        ss << "<Comment id='OutlierRingsAnalysis'>" << std::endl;
+        if ( _wB == NULL ) {
+            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+        } else {
+            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+        }
+        ss << "</Comment>" << std::endl;
+		ss << "</OutlierRingsAnalysis>" << std::endl;
+		return ss;
+	}
 
-    template class AnisoDirection<clipper::ftype32>;
-    template class AnisoDirection<clipper::ftype64>;
-    
-    template class AnomStats<clipper::ftype32>;
-    template class AnomStats<clipper::ftype64>;
 	
+	//******HKLStats_completeness***************************************************************
+	
+	HKLStats_completeness::HKLStats_completeness(const clipper::HKL_data_base& hkldata,clipper::ftype val) 
+	{
+		_val=val;
+		init(hkldata);
+		calc(hkldata);
+	}
+	
+	HKLStats_completeness::HKLStats_completeness(const ResolStats_base& base, clipper::ftype val)
+	{
+		_val=val;
+		init(base);
+		calc(*(this->parent() ) );
+	}
+	
+	void HKLStats_completeness::calc(const clipper::HKL_data_base& hkldata)
+	{
+		int nbins = this->size();
+		
+		_completeness.resize(nbins,0.0);
+		
+		std::vector<clipper::ftype> sumov(nbins,0.0);
+		
+		clipper::xtype working[hkldata.data_size()];
+		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
+			clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+			int bin = this->operator()(ih.invresolsq() );
+			if (!hkldata.missing(ih.index() ) ) {
+				clipper::ftype I(0.0);
+				clipper::ftype sig(1.0);
+				clipper::ftype s = ih.invresolsq();
+				hkldata.data_export(ih.hkl(),working);
+				if (this->is_anomalous() ) {
+					clipper::ftype Ip(working[0]);
+					clipper::ftype sp(working[1]);
+					clipper::ftype Im(working[2]);
+					clipper::ftype sm(working[3]);
+					if (!clipper::Util::is_nan(Ip) && !clipper::Util::is_nan(Im) && sp > 0.0 && sm > 0.0 ) {
+						I = eps*0.5*(Ip+Im);
+						sig = eps*0.5*sqrt(sm*sm+sp*sp);
+					} else if (!clipper::Util::is_nan(Ip) && sp > 0.0 ) {
+						I = eps*Ip;
+						sig = eps*sp;
+					} else if (!clipper::Util::is_nan(Im) && sm > 0.0 ) {
+						I = eps*Im;
+						sig = eps*sm;
+					}
+				} else {
+					clipper::ftype Ip(working[0]);
+					clipper::ftype sp(working[1]);
+					if (!clipper::Util::is_nan(Ip) && sp > 0.0 ) {
+						I = eps*Ip;
+						sig = eps*sp;
+					}
+				}
+				
+				if ( I/sig >= _val ) {
+					_completeness[bin] += eps;
+				}
+			}
+			sumov[bin] += eps;
+		}
+		
+		for (int i=0 ; i != nbins ; ++i) _completeness[i] /= sumov[i];
+	} 
+	
+	clipper::ftype HKLStats_completeness::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _completeness[bin];
+	}	
+	
+	HKLStats_completeness& HKLStats_completeness::operator=(const HKLStats_completeness& orig)
+	{
+		init(orig);
+		_val = orig._val;
+		_completeness = orig._completeness;
+		return *this;
+	}
+	
+	//******HKLStats_Rstandard***************************************************************
+	
+	HKLStats_Rstandard::HKLStats_Rstandard(const clipper::HKL_data_base& hkldata,clipper::ftype val) 
+	{
+		init(hkldata);
+		calc(hkldata);
+	}
+	
+	HKLStats_Rstandard::HKLStats_Rstandard(const ResolStats_base& base, clipper::ftype val) 
+	{
+		init(base);
+		calc(*(this->parent() ) );
+	}
+	
+	void HKLStats_Rstandard::calc(const clipper::HKL_data_base& hkldata)
+	{
+		int nbins = this->size();
+		
+		_Rstandard.resize(nbins,0.0);
+		
+		std::vector<clipper::ftype> sumov(nbins,0.0);
+		
+		clipper::xtype working[hkldata.data_size()];
+		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
+			if (!hkldata.missing(ih.index() ) ) {
+				clipper::ftype I;
+				clipper::ftype sig;
+				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
+				clipper::ftype s = ih.invresolsq();
+				hkldata.data_export(ih.hkl(),working);
+				if (this->is_anomalous() ) {
+					clipper::ftype Ip(working[0]);
+					clipper::ftype sp(working[1]);
+					clipper::ftype Im(working[2]);
+					clipper::ftype sm(working[3]);
+					if (!clipper::Util::is_nan(Ip) && !clipper::Util::is_nan(Im) && sp > 0.0 && sm > 0.0 ) {
+						I = eps*0.5*(Ip+Im);
+						sig = eps*0.5*sqrt(sm*sm+sp*sp);
+					} else if (!clipper::Util::is_nan(Ip) && sp > 0.0 ) {
+						I = eps*Ip;
+						sig = eps*sp;
+					} else if (!clipper::Util::is_nan(Im) && sm > 0.0 ) {
+						I = eps*Im;
+						sig = eps*sm;
+					}
+				} else {
+					clipper::ftype Ip(working[0]);
+					clipper::ftype sp(working[1]);
+					if (!clipper::Util::is_nan(Ip) && sp > 0.0 ) {
+						I = eps*Ip;
+						sig = eps*sp;
+					}
+				}
+				
+				int bin = this->operator()(ih.invresolsq() );
+				if ( is_intensity() ) {
+					_Rstandard[bin] += ((I>0.0) ? sig/(2.0*sqrt(I) ) : 0.0 );
+				} else {
+					_Rstandard[bin] += sig;
+				}
+				sumov[bin] += I;
+			}
+		}
+		
+		for (int i=0 ; i != nbins ; ++i) _Rstandard[i] /= sumov[i];
+	}
+	
+	clipper::ftype HKLStats_Rstandard::operator[](const int index) const
+	{
+		int nbins = this->size();
+		int bin = clipper::Util::bound( 0, index, nbins-1 );
+		return _Rstandard[bin];
+	}	
+	
+	HKLStats_Rstandard& HKLStats_Rstandard::operator=(const HKLStats_Rstandard& orig)
+	{
+		init(orig);
+		_Rstandard = orig._Rstandard;
+		return *this;
+	}
+	
+	//---------HKLAnalysis--------------------------------------
+    // run on scaled on merged data, however the best stats will be from the unmerged set.
+    // get from aimless
+	
+	clipper::ftype HKLAnalysis::ACCEPTABLE = 0.85;
+	
+    /*template<class T, template<class> class D> void HKLAnalysis::operator()(const D<T>& hkldata)
+    {
+		_base = const_cast<clipper::HKL_data_base *>(&hkldata);
+		
+		_binner  = ResolStats_base(hkldata);
+		_completeness[0]    = HKL_completeness(_binner);
+		_completeness[1]    = HKL_completeness(_binner,1.0);
+		_completeness[2]    = HKL_completeness(_binner,1.5);
+		_completeness[3]    = HKL_completeness(_binner,2.0);
+		_completeness[4]    = HKL_completeness(_binner,2.5);
+		_completeness[5]    = HKL_completeness(_binner,3.0);
+		
+		for (int ii=0; ii != _completeness.size() ; ++ii) (_completeness[ii])(hkldata);
+		
+        int nbins = _binner.size();
+		
+		int NBINS = _binner.size();
+		for (int ii=0; ii != _completeness.size() ; ++ii) {
+			if ((_completeness[ii])[0]) >= ACCEPTABLE) _activerange.include(hkldata.hkl_info().invresolsq_range().min());
+			if ((_completeness[ii])[NBINS-1]) >= ACCEPTABLE) _activerange.include(hkldata.hkl_info().invresolsq_range().max());
+			for ( int i=1 ; i != NBINS ; ++i) {
+				int i1=i-1;
+				if ( (_completeness[ii])[i] >= ACCEPTABLE && (_completeness[ii])[i1]) < ACCEPTABLE ) {
+					_activerange[ii].include(0.5*(_binner[i]+_binner[i1]) );
+				} else if ( (_completeness[ii])[i] < ACCEPTABLE && (_completeness[ii])[i1]) >= ACCEPTABLE ) {
+					_activerange[ii].include(0.5*(_binner[i]+_binner[i1]) );
+				}
+			}
+		}
+		
+		return;
+	}*/
+	/*
+				
+				// try on Istandard
+				if (active_range.max() == -999999999 && active_range.min() == 999999999 ) {
+					printf("         Attempt resolution range estimate using Istandard < 1.0 (Ideally would use 0.2) \n");
+					int i = 0;
+					clipper::Range<double> range(reso_range.min(),reso_range.max() );
+					for ( ; i != NBINS-1 ; ++i) {
+						if ( compt.standard(compt.bin2invresolsq(i)) < 1.0 && compt.standard(compt.bin2invresolsq(i+1)) < 1.0 ) break;
+					}
+					if ( i != (NBINS-1) ) {
+						int j = NBINS-1;
+						for ( ; j != 1 ; --j) {
+							if ( compt.standard(compt.bin2invresolsq(j)) < 1.0 && compt.standard(compt.bin2invresolsq(j-1)) < 1.0 ) break;
+						}
+						if (j != 0 )
+							if (i != 0) {
+								float d = (compt.bin2invresolsq(i)+compt.bin2invresolsq(i-1))/2.0;
+								active_range.include(d);
+							} else {
+								active_range.include(reso_range.min() );
+							}
+						if (j != NBINS-1 ) {
+							float d = (compt.bin2invresolsq(j)+compt.bin2invresolsq(j+1))/2.0;
+							active_range.include(d);
+						} else {
+							active_range.include(range.max() );
+						}
+					} else {
+						active_range = range;
+					}
+					if ( active_range.max() != -999999999 && active_range.min() != 999999999 ) {
+						printf("         Resolution Range of this data is %7.3fA to %7.3fA\n",1.0/std::sqrt(active_range.min() ), 1.0/std::sqrt(active_range.max() ) );
+					}
+				}
+				
+	*/	
+	const clipper::Range<clipper::ftype>& HKLAnalysis::active_range() {
+		if (_active.min() < _active.max() ) return _active;
+        clipper::ftype rmax = _data->hkl_info().resolution().limit();
+        
+        std::vector<clipper::ftype> per(_activerange.size() );
+        
+        for (int i = 0; i != _activerange.size() ; ++i) per[i] = float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size();
+        
+		int ii(0);
+        for (int i=0; i != _activerange.size(); ++i) {
+            if ( int(_completeness[i].IoversigI() ) == 3 ) ii = i;
+        }
+            
+        for (; ii != 0 ; --ii) {
+			clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
+			clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
+			clipper::ftype rr = std::fabs(rmin-amax);
+            if ( ( rr > 4.0 && (amax < 3.0 || amax < rmax+0.5 ) && per[ii] > 0.2 ) || per[ii] > 0.85 )  {
+				_active = _activerange[ii];
+				break;
+			}
+		}
+		if (ii == 0) {
+            //clipper::ftype amax = 1.0/std::sqrt(_data->invresolsq_range().max() )+0.5;
+            //_active = clipper::Range<clipper::ftype>(_data->invresolsq_range().min(),1.0/(amax*amax) );
+            if ((_activerange[1]).min() < (_activerange[1]).max() ) _active = _activerange[1];
+            else _active = clipper::Range<clipper::ftype>(_data->hkl_info().invresolsq_range().min(),1.0/std::pow(rmax+0.5,2) );
+        }
+		return _active;	
+	}
+	
+	//void AnomStats::output()
+	void HKLAnalysis::output()
+	{
+        active_range();
+        int i3(0), ia(0);
+        for (int ii=0; ii != _activerange.size(); ++ii) {
+            if ( int(_completeness[ii].IoversigI() ) == 3 ) i3 = ii;
+        }
+        for (int ii=0; ii != _activerange.size(); ++ii) {
+            if ( _active.max() == (_activerange[ii]).max() && _active.min() == (_activerange[ii]).min() ) ia = ii;
+        }
+		if (this->is_intensity() ) {
+			printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
+			printf("\nThe following uses I/sigI Completeness levels, in particular targeting completeness above 85%%.  The Completeness with I/sigma above 3 indicates a strong signal (A better estimate is available using CC1/2 in aimless).\n");
+            std::cout << std::endl;
+            std::cout << "   I/sigI>N        range(A)       %refln" << std::endl;
+        } else {
+            printf("\nCOMPLETENESS ANALYSIS (using amplitudes):\n");
+			printf("\nThe following uses F/sigF completeness levels.  A better estimate is available using CC1/2.\n");
+            std::cout << std::endl;
+			std::cout << "   F/sigF>N        range(A)       %refln" << std::endl;
+        }
+        for (int ii = _activerange.size()-1; ii != 0 ; --ii) {
+            clipper::ftype rmax = _data->hkl_info().resolution().limit();
+            clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
+            clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
+            std::cout << "    " << std::fixed << std::setprecision(1) << std::setw(3) << float(_completeness[ii].IoversigI()) <<  "        ";
+            if ((_activerange[ii]).min() < (_activerange[ii]).max() )
+                std::cout << "    " << std::fixed << std::setprecision(2) << rmin << " - " << amax << "    " << std::fixed << std::setprecision(2) << float(_binner(_activerange[ii].max() )-_binner(_activerange[ii].min() )+1 )/_binner.size() << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
+            else
+                std::cout << "   NaN - NaN    0.0" << std::endl;
+        }
+        std::cout << "     N/A           ";
+        if ((_activerange[0]).min() < (_activerange[0]).max() )
+            std::cout << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - " << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
+        else
+            std::cout << "   NaN - NaN    0.0" << std::endl;
+        std::cout << std::endl;
+        if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 ) {
+            if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
+            else printf("WARNING: The resolution range with F/sigF > 3");
+            printf(" and completeness above %4.2f could not be\n",ACCEPTABLE);
+            printf("determined.  The completeness of this data is poor. In order not to discard too much data the resolution range for analysing\nthe statistics has been relaxed to, %6.2f - %6.2fA: note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
+        } else if  (i3 != ia ) {
+            if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
+            else printf("WARNING: The resolution range with F/sigF > 3");
+            printf(" with completeness above\n0.85 is small, %6.2fA to %6.2fA.  This strong data corresponds to\napproximately %3d%% of the reflections in the file.",1.0/std::sqrt((_activerange[i3]).min() ), 1.0/std::sqrt((_activerange[i3]).max() ),int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()) );
+            printf("  In order not to\ndiscard too much data the resolution range for analysing the statistics\nhas been relaxed to, %6.2f - %6.2fA (%3d%%): note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_active.max() )-_binner(_active.min() )+1 )/_binner.size()) );
+            if (_activerange[i3].min() > 0.0011 ) printf("Strong data does not extend to low resolutions.\n"); // low resolution higher than 30A
+            if (_activerange[i3].max() < 0.11 ) printf("Strong data does not extend to high resolutions.\n"); // high resolution lower than 3A
+            if ( ( _activerange[0].max() - _activerange[2].max() ) > 0.1 ) printf("Processed data contains a lot of weak data at high resolution.  Moments plots and Wilson plot should be consulted\n"); // large amount of weak data beyond limit.
+            std::cout << std::endl;
+            
+            
+        } else {
+            if (this->is_intensity() ) printf("The resolution range with I/sigI > 3");
+            else printf("The resolution range with F/sigF > 3");
+            printf(" with completeness above %4.2f, the estimated strong data resolution range ",ACCEPTABLE);
+            printf("of this data, is %6.2fA to %6.2fA.\n  This corresponds to approximately %3d%% of the reflections in the file.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ), int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1 )/_binner.size()));
+        }
+    
+        if (is_intensity() )  {
+			printf("\n$TABLE: Intensity Completeness analysis:\n");
+			printf("$GRAPHS");
+			printf(": Completeness & (I/sigI)>N v resolution:N:1,2,3,4,5,6,7,8:\n");
+			printf(": Completeness & Rstandard v resolution:N:1,2,9:\n");
+			printf("$$ 1/resol^2 Completeness (I/s>15) (I/s>10) (I/s>5) (I/s>3) (I/s>2) (I/s>1) Rstandard$$\n$$\n");
+		} else {
+			printf("\n$TABLE: Structure factor Completeness analysis:\n");
+			printf("$GRAPHS");
+			printf(": Completeness & %%(F/sigF)>N v resolution:N:1,2,3,4,5:\n");
+			printf("$$ 1/resol^2 Completeness (I/s>15) (I/s>10) (I/s>5) (F/s>3) (F/s>2) (F/s>1) Rstandard$$\n$$\n");
+		}			
+		int nbins = _binner.size();
+		for(int i=0;i!=nbins;++i){
+			printf("%10.4f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f\n",_binner[i],_completeness[0][i],_completeness[6][i],_completeness[5][i],_completeness[4][i],_completeness[3][i],_completeness[2][i],_completeness[1][i],_Rstandard[i]);
+		}
+		printf("$$\n\n");
+		
+        std::cout << "The completeness at various resolution limit plots gives the completeness after applying a I/sigI cutoff.  The profiles give an indication of the quality of the data.  The Rstandard plot (<sigF>/<F>) gives an alternative indicator.  Strongly recorded resolution bins would typically have values below 0.1." << std::endl;
+        
+        if (is_intensity() )  printf("\nLow Resolution Intensity Completeness analysis:\n");
+        else printf("\nLow Structure factor Completeness analysis:\n");
+        printf("   1/resol^2  Range       Completeness \n");
+		nbins = _lb.size();
+		for(int i=0;i!=nbins;++i){
+			printf("%10.4f %5.3f-%5.3f %5.3f [%4.1f:%4.1f]\n",_lb[i],(_lcompleteness.binRange(i)).min(),(_lcompleteness.binRange(i)).max(),_lcompleteness[i],_lcompleteness[i]*_lb.binContains(i),_lb.binContains(i)  );
+		}
+		printf("\n\n");
+        
+        std::cout << "Low completeness at low resolution can lead to map distortions and other difficulties.  This often arises through experimental effects such as incorrectly alligned crystal, poorly positioned backstop, or over exposure." << std::endl << std::endl << std::endl;
+		//completeness with direction
+		
+		//ice rings
+		std::cout << _ira.output() << std::endl;
+		
+		//wilson plot
+		_wilsonB.output();
+        
+        //outlier rings
+		std::cout << _ora.output() << std::endl;
+    }
+	
+	std::stringstream& HKLAnalysis::xml_output(std::stringstream& ss)
+	{
+        int i3(0),ia(0);
+        active_range();
+        for (int ii=0; ii != _activerange.size(); ++ii) {
+            if ( int(_completeness[ii].IoversigI() ) == 3 ) i3 = ii;
+        }
+        for (int ii=0; ii != _activerange.size(); ++ii) {
+            if ( _active.max() == (_activerange[ii]).max() && _active.min() == (_activerange[ii]).min() ) ia = ii;
+        }
+		std::string is = (is_intensity() ) ? "intensity" : "amplitude" ;
+		ss << "<DataStatistics type=\"" << is << "\">" << std::endl;
+		ss << "  <ResolutionRange id=\"Completeness\" unit=\"Angstrom\" >" << std::endl;
+		if ( (_activerange[0]).min() < (_activerange[0]).max() ) 
+			ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_activerange[0]).min() ) << "</min>\n    <max>"
+			<< 1.0/std::sqrt((_activerange[0]).max() ) << "</max>\n    <percentage>100</percentage>" << std::endl;
+		else 
+			ss <<"    <min> NaN</min>\n    <max> NaN</max>\n    <percentage> NaN</percentage> " << std::endl;
+		ss << "  </ResolutionRange>" << std::endl;
+        //
+        for (int i = _completeness.size()-1; i != 0; --i) {
+            ss << "  <ResolutionRange id=\"Completeness" << int(_completeness[i].IoversigI() ) << "\" unit=\"Angstrom\"";
+            if (this->is_intensity() ) ss << " title=\"Completeness I/sigmaI &gt; " << _completeness[i].IoversigI() << "\"";
+            else ss << " title=\"Completeness F/sigmaF &gt; " << _completeness[i].IoversigI() << "\"";
+            ss << ">" << std::endl;
+            if ( (_activerange[i]).min() < (_activerange[i]).max() )
+                ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_activerange[i]).min() ) << "</min>\n    <max>"
+                << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[i]).max() ) << "</max>\n         <percentage>" <<
+                int(100*float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size() ) << "</percentage>" << std::endl;
+            else
+                ss <<"    <min> NaN</min>\n    <max> NaN</max>\n     <percentage> NaN</percentage>" << std::endl;
+            ss << "  </ResolutionRange>" << std::endl;
+        }
+        ss << " <Comment id=\"CompletenessReso\">" << std::endl;
+        ss << "The Completeness max and min resolution indicte the resolution extremes where obs/sig(obs) &gt; N accounts for more than 85 % of observations." << std::endl;
+        ss << "  </Comment>" << std::endl;
+		if (this->is_intensity() ) {
+			ss << "  <Comment id=\"Completeness3\" >" << std::endl;
+			ss << "The Completeness with I/sigma above 3 indicates a strong signal, " << std::endl;
+            if ( (_activerange[i3]).min() < (_activerange[i3]).max() ) {
+                ss << "here it is from " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_activerange[i3].min() ) << " to " << 1.0/std::sqrt(_activerange[i3].max() ) << "A." << std::endl;
+            } else {
+                ss << " here it could not be determined.  This is very poor data."  << std::endl;
+            }
+			ss << "(The CC1/2 on unmerged intensities gives, perhaps, the best estimate of the useable data.)" << std::endl;
+			ss << "  </Comment>" << std::endl;
+		}
+		else {
+			ss << "  <Comment id=\"Completeness3\" >" << std::endl;
+			ss << "The Completeness with F/sigma above 3 indicates very strong data, " << std::endl;
+            if ( (_activerange[i3]).min() < (_activerange[i3]).max() ) {
+                ss << "here it is from " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_activerange[i3].min() ) << " to " << 1.0/std::sqrt(_activerange[i3].max() ) << "A (approximately " << int(100*float(_binner(_activerange[i3].max() )-_binner(_activerange[i3].min() )+1) )/_binner.size() << " percent of the reflections)." << std::endl;
+            } else {
+                ss << " here it is not defined."  << std::endl;
+            }
+			ss << "The CC1/2 on unmerged intensities gives, perhaps, the best estimate of the useable data." << std::endl;
+			ss << "  </Comment>" << std::endl;
+		}
+        ss << "<Comment id=\"ActiveRange\">" << std::endl;
+        if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 )
+            ss << "&lt;li&gt; In order to not discard all the data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A. &lt;/li&gt;" << std::endl;
+        else if (ia == i3 )
+            ss << "&lt;li&gt; This will be used in the analysis of the data. &lt;/li&gt;" << std::endl;
+        else
+            ss << "&lt;li&gt; In order not to discard too much data the resolution range for analysing the statistics has been relaxed to " << std::fixed << std::setprecision(2) << 1.0/std::sqrt(_active.min() ) << " to " << 1.0/std::sqrt(_active.max() ) << "A. &lt;/li&gt;" << std::endl;
+        if (_activerange[i3].min() > 0.0011 ) ss << "&lt;li&gt; Strong data does not extend to low resolutions. &lt;/li&gt;" << std::endl; // low resolution higher than 30A
+        if (_activerange[i3].max() < 0.11 ) ss << "&lt;li&gt; Strong data does not extend to high resolutions. &lt;/li&gt;" << std::endl; // high resolution lower than 3A
+        if ( ( _activerange[0].max() - _activerange[2].max() ) > 0.1 ) ss << "&lt;li&gt; Processed data contains a lot of weak data at high resolution.  Moments plots and Wilson plot should be consulted. &lt;/li&gt;" << std::endl; // large amount of weak data beyond limit.
+        ss << "</Comment>" << std::endl;
+        ss << "<Comment id=\"CompletenessQuality\">" << std::endl;
+        if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 )
+            ss << "Completeness test shows very poor data.";
+        else if (ia == i3 && _activerange[i3].min() < 0.0011 && _activerange[i3].max() > 0.11 && ( _activerange[0].max() - _activerange[2].max() ) < 0.1 )
+            ss << "Completeness test shows good data." << std::endl;
+        else
+            ss << "Completeness test shows some issues." << std::endl;
+        ss << "</Comment>" << std::endl;
+		ss << "</DataStatistics>" << std::endl;
+		/*
+		 <CCP4Table groupID="graph" id"I-anom" title="Intensity anomalous analysis">
+		 <plot>
+		 <title>Resolution plots for anomalous scattering indicators</title>
+		 <yrange min="0" max="None"/>
+		 <plotline xcol="  1" ycol="  4" >
+		 <symbolsize>  0</symbolsize>
+		 <linestyle>-</linestyle>
+		 <colour>red</colour>
+		 </plotline>
+		 <plotline xcol="  1" ycol="  3" >
+		 <symbolsize>  0</symbolsize>
+		 <linestyle>-</linestyle>
+		 <colour>green</colour>
+		 </plotline>
+		 <plotline xcol="  1" ycol="  2" >
+		 <linestyle>-</linestyle>
+		 <colour>black</colour>
+		 </plotline>
+		 </plot>
+		 <headers separator=" ">
+		 1/resol^2 Mn(dF/sigdF)) Mn(dF/F) measurability
+		 </headers>
+		 <data>
+		 ... ... ... ...
+		 </data>
+		 </CCP4Table>
+		 */
+		int nbins = _binner.size();
+		
+		ss << "<CCP4Table groupID=\"graph\" id=\"completeness\" title=\""<< is << " completeness vs resolution\">" << std::endl;
+		ss << "<plot>" << std::endl;
+		if (this->is_intensity() ) ss << "<title>Resolution plots for completeness at various I/sigmaI levels</title>" << std::endl;
+		else ss << "<title>Resolution plots for completeness at various F/sigmaF levels</title>" << std::endl;
+		ss << "<xscale>oneoversqrt</xscale>" << std::endl;
+        ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"8\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>yellow</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+        ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"7\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>blue</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+        ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"6\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>pink</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"5\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>brown</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;		
+		ss << "<plotline xcol=\"1\" ycol=\"4\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>red</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"3\" >" << std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>green</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"  1\" ycol=\"  2\" >" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>black</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "</plot>" << std::endl;
+		ss << "<plot>" << std::endl;
+		ss << "<title>Resolution plots for completeness and Rstandard</title>" << std::endl;
+		ss << "<xscale>oneoversqrt</xscale>" << std::endl;
+		ss << "<yrange min=\"0\" max=\"None\"/>" << std::endl;
+		ss << "<plotline xcol=\"1\" ycol=\"9\" >" <<  std::endl;
+		ss << "<symbolsize>  0</symbolsize>" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>red</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "<plotline xcol=\"  1\" ycol=\"  2\" >" << std::endl;
+		ss << "<linestyle>-</linestyle>" << std::endl;
+		ss << "<colour>black</colour>" << std::endl;
+		ss << "</plotline>" << std::endl;
+		ss << "</plot>" << std::endl;
+        ss << "<headers separator=\" \">\n 1/resol^2 completeness";
+        for (int ii = _completeness.size()-1; ii != 0; --ii) {
+            if (this->is_intensity() ) ss << " I/sigI&gt;" << int(_completeness[ii].IoversigI());
+            else ss << ss << " F/sigF&gt;" << int(_completeness[ii].IoversigI());
+        }
+        ss << " Rstandard\n </headers>" << std::endl;
+		ss << "<data>" << std::endl;;
+		for(int i=0;i!=nbins;++i){
+			ss << std::fixed << std::setw(10) << std::setprecision(4) << _binner[i] << " " << std::setw(5) << std::setprecision(3) << _completeness[0][i] << " ";
+            for (int ii = _completeness.size()-1; ii != 0; --ii)
+                ss << " " << std::fixed << std::setw(5) << std::setprecision(3) << _completeness[ii][i] ;
+			ss << " " << std::fixed << std::setw(5) << std::setprecision(3) << _Rstandard[i] << std::endl;
+		}
+		ss << "</data>" << std::endl;
+        ss << "</CCP4Table>" << std::endl;
+        
+        ss << "<DataStatistics>" << std::endl;
+        ss << "<Comment id=\"Completeness\">" << std::endl;
+        ss << "The completeness at various resolution limit plots gives the completeness after applying a I/sigI cutoff.  The profiles give an indication of the quality of the data.  The Rstandard plot (&lt;sigF&gt;/ &lt;F&gt;) gives an alternative indicator.  Strongly recorded resolution bins would typically have values below 0.1" << std::endl;
+        ss << "</Comment>" << std::endl;
+        nbins = _lb.size();
+        ss << "<LowResoCompleteness>" << std::endl;
+        for(int i=0; i!=nbins;++i) {
+            ss << "<bin id=\"LowResoCompleteness\">" << i+1 << "</bin>" << std::endl;
+            ss << "  <ResolutionRange id=\"LowResoCompleteness\" unit=\"Angstrom\" >" << std::endl;
+            ss << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt((_lb.binRange(i)).min() ) << "</min>\n    <max>"
+            << std::fixed << std::setprecision(2) <<  1.0/std::sqrt((_lb.binRange(i)).max() ) << "</max>" << std::endl;
+            ss << "  </ResolutionRange>" << std::endl;
+            ss << "  <Completeness id=\"LowResoCompleteness\">" << _lcompleteness[i] << "</Completeness>" << std::endl;
+            ss << "  <nTot>" << std::fixed << std::setprecision(1) << _lb.binContains(i) << "</nTot>" << std::endl;
+            ss << "  <nObs>" << std::fixed << std::setprecision(1) << _lb.binContains(i)*_lcompleteness[i] <<  "</nObs>" << std::endl;
+        }
+        ss << "</LowResoCompleteness>" << std::endl;
+        ss << " <Comment id=\"CompletenessLow\">" << std::endl;
+        ss << "Low completeness at low resolution can lead to map distortions and other difficulties.  This often arises through experimental effects such as incorrectly alligned crystal, poorly positioned backstop, or over exposure." << std::endl;
+        ss << "</Comment>" << std::endl;
+        ss << "</DataStatistics>" << std::endl;
+		
+		_ira.xml_output(ss);
+		
+		_wilsonB.xml_output(ss);
+		
+        _ora.xml_output(ss);
+        
+		return ss;
+	}
+	
+
+    //---------Instantiate templates------------------------------------
+    
 	template class Completeness<clipper::datatypes::F_sigF<clipper::ftype32> >;
 	template class Completeness<clipper::datatypes::I_sigI<clipper::ftype32> >;
 	
-	template class tNCS<clipper::ftype32>;
-	template class tNCS<clipper::ftype64>;
-	
-	template class YorgoModis<clipper::datatypes::F_sigF<clipper::ftype32> >;
-	template class YorgoModis<clipper::datatypes::I_sigI<clipper::ftype32> >;
-	
+	//template class tNCS<clipper::ftype32>;
+	//template class tNCS<clipper::ftype64>;
+		
 	template class ResoCorrel<clipper::datatypes::I_sigI<clipper::ftype32>,clipper::datatypes::I_sigI<clipper::ftype32> >;
 	template class ResoCorrel<clipper::datatypes::F_sigF<clipper::ftype32>,clipper::datatypes::F_sigF<clipper::ftype32> >;
 	
-	template bool IceRings_analyse::operator()<clipper::data32::I_sigI>(clipper::HKL_data<clipper::data32::I_sigI>&,ctruncate::Rings&);
-	}
+	//template bool IceRings_analyse::operator()<clipper::data32::I_sigI>(clipper::HKL_data<clipper::data32::I_sigI>&,ctruncate::Rings&);
+}
