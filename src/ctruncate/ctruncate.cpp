@@ -57,7 +57,7 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.16";
+    clipper::String prog_vers = "1.17.17";
     clipper::String prog_date = "$Date: 2016/11/29";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
             return(0);
         } else {
             printf("Unrecognised argument\n");
-            return(0);
+            return(1);
         }
         
     }
@@ -269,23 +269,39 @@ int main(int argc, char **argv)
     
     clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
     
-	
+    try {
     if (amplitudes ) {
-        if ( refl_mean ) {
+        if ( refl_mean )
 			mtzfile.import_hkl_data( fsig, meancol );
-		}
-		if (anomalous) {
+		if (anomalous)
             mtzfile.import_hkl_data( fsig_ano, anocols );
-        }		
     } else {
-        if ( refl_mean ) mtzfile.import_hkl_data( isig_import, meancol );
-        
-        if (anomalous) {
+        if ( refl_mean )
+            mtzfile.import_hkl_data( isig_import, meancol );
+        if (anomalous)
             mtzfile.import_hkl_data( isig_ano_import, anocols );
-        }
     }
-	ReflectionFile reflnfile(mtzfile,ipfile);
-    if (freein) mtzfile.import_hkl_data( free, freecol );
+    } catch (...) {
+        std::cout << std::endl;
+        std::cout << "Error: ";
+        if ( refl_mean ) {
+            std::cout << meancol << " could not be loaded.";
+        }
+        if (anomalous) {
+            std::cout << anocols << " could not be loaded.";
+        }
+        std::cout << std::endl;
+        return(1);
+    }
+ 
+    ReflectionFile reflnfile(mtzfile,ipfile);
+    try {
+        if (freein) mtzfile.import_hkl_data( free, freecol );
+    } catch (...) {
+        std::cout << std::endl;
+        std::cout << std::cout << "Error: " << freecol << " could not be loaded." << std::endl;
+        return(1);
+    }
     
 	clipper::String mcol = ( refl_mean ) ? meancol : anocols;
 		
@@ -307,7 +323,7 @@ int main(int argc, char **argv)
     hkl_list.init( spgr, cell1, reso );
     mtzfile.import_hkl_list(hkl_list);
     
-    MTZdataset cset; 
+    MTZdataset cset;
     MTZcrystal cxtl; 
     std::vector<clipper::String> histin;
     mtzfile.import_crystal ( cxtl, mcol );
