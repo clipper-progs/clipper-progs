@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.15";
-    clipper::String prog_date = "$Date: 2016/06/23";
+    clipper::String prog_vers = "1.17.16";
+    clipper::String prog_date = "$Date: 2016/11/29";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -182,6 +182,34 @@ int main(int argc, char **argv)
             }
         } else if ( args[arg] == "-i" ) {
             CCP4::ccp4_prog_info();
+            return(0);
+        } else if ( args[arg] == "-help") {
+            std::cout << std::endl << "Important input" << std::endl;
+            std::cout << " -mtzin <filename> or -hklin <filename>" << std::endl;
+            std::cout << "    input mtz file name " << std::endl;
+            std::cout << " -mtzout <filename> or -hklout <filename>" << std::endl;
+            std::cout << "    output mtz file name [default ctruncate_out.mtz]. " << std::endl;
+            std::cout << " -colin <column labels>" << std::endl;
+            std::cout << "    input column labels eg /*/*/[IMEAN,SIGIMEAN] or" << std::endl;
+            std::cout << "    /*/*/[I(+),SIGI(+),I(-),SIGI(-)]" << std::endl;
+            std::cout << " -colano <anomalous column labels>" << std::endl;
+            std::cout << "    alternative to -colin for anomalous data" << std::endl;
+            std::cout << " -amplitudes" << std::endl;
+            std::cout << "    input data is in form of amplitudes, only run tests" << std::endl;
+            std::cout << std::endl;
+            std::cout << "Lesser input:" << std::endl;
+            std::cout << " -colout <output column prelabel>" << std::endl;
+            std::cout << "    [default: no prelabel]" << std::endl;
+            std::cout << " -freein <free R column label>" << std::endl;
+            std::cout << "    copy free R column to output file" << std::endl;
+            std::cout << " -Imean" << std::endl;
+            std::cout << "    output Imean as well as anomalous" << std::endl;
+            std::cout << " -no-aniso" << std::endl;
+            std::cout << "    do not apply anomalous correction" << std::endl;
+            std::cout << " -history <history>" << std::endl;
+            std::cout << "    add to mtz file history" << std::endl;
+            std::cout << " -xmlout <filename>" << std::endl;
+            std::cout << "    output ccp4i2 xml file [default program.xml]" << std::endl;
             return(0);
         } else {
             printf("Unrecognised argument\n");
