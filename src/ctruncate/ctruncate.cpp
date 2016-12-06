@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.17";
-    clipper::String prog_date = "$Date: 2016/11/29";
+    clipper::String prog_vers = "1.17.18";
+    clipper::String prog_date = "$Date: 2016/12/04";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     clipper::String xmlfile = "";
     std::vector<clipper::String> history;
     
-    bool aniso = true;
+    bool doaniso = true;
     bool debug = false;
     bool freein = false;
     bool amplitudes = false;
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
         } else if ( args[arg] == "-reso" ) {
             if ( ++arg < args.size() ) reso_u3 = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-no-aniso" ) {
-            aniso = false;
+            doaniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
             amplitudes = true;
         } else if ( args[arg] == "-Imean" ) {
@@ -510,11 +510,11 @@ int main(int argc, char **argv)
 		//std::cout << xml_aniso.str() << std::endl;
 		
 		//set ianiso
-                if (anisobysymm) {
+        if (doaniso && anisobysymm) {
 		    uaoc=aa.u_aniso_orth_corr_F();
 		    clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,aa.u_aniso_orth_corr_F() );
 		    ianiso.compute(ianiso, compute_s);
-                }
+        }
 	}
 	
 	//want to use anisotropy correction and resolution truncation for twinning tests
@@ -536,12 +536,20 @@ int main(int argc, char **argv)
 		
 	HKL_data<data32::I_sigI> xsig(hklinf);
 	//normal calculation
-	{		
+    if (!reso_u3.is_null() ) {
+        reso_trunc =
+        clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
+    }
+
+	{
+        double invresolsq(reso_trunc.invresolsq_limit() );
 		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
 			xsig[ih] = clipper::data32::I_sigI( (isig[ih.hkl()].I()), isig[ih.hkl()].sigI() );
 			if ( icerings.InRing(reso) != -1 ) 
 				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+            if (reso > invresolsq )
+                xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
 		}
 
 		
@@ -579,6 +587,7 @@ int main(int argc, char **argv)
             tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::Best::value(reso), 0.0);
 		}		
 		
+        std::cout << std::endl;
 		int nrej_pre(0);
 		std::vector<double> params(nprm2,1.0);
 		{
@@ -622,7 +631,8 @@ int main(int argc, char **argv)
 		}
 		
 		// scale the norm for the anisotropy
-		if (aniso) {            
+		if (doaniso) {
+            std::cout << "Aniso correction applied to norm." << std::endl;
 			if (anisobysymm && anisodemo) {
 				clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
 				xsig.compute(xsig, compute_s);				

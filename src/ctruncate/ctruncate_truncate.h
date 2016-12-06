@@ -62,7 +62,7 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
+			if ( !isig[ih].missing() && ih.invresolsq() <=  reso.invresolsq_limit() ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				float S = Sigma[ih].I();
@@ -194,7 +194,7 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
+			if ( !isig[ih].missing() && ih.invresolsq() <=  reso.invresolsq_limit() ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				clipper::HKL hkl = ih.hkl();
@@ -237,65 +237,76 @@ namespace ctruncate {
 		float invr2 = reso.invresolsq_limit();
 		int iflag;
 		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
-				float I = isig[ih].I_pl();
-				float sigma = isig[ih].sigI_pl();
-				clipper::HKL hkl = ih.hkl();
-				float weight(ih.hkl_class().epsilon() );
-				float sqwt = sqrt(weight);
-				
-				I /= weight;
-				sigma /= weight;
-				
-				iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);	
-				if (iflag) {
-					jsig[ih].I_pl() = J*weight;
-					jsig[ih].sigI_pl() = sigJ*weight;
-					fsig[ih].f_pl() = F*scalef*sqwt;
-					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
-				} else {
-					jsig[ih].I_pl() = clipper::Util::nan();
-					jsig[ih].sigI_pl() = clipper::Util::nan();
-					fsig[ih].f_pl() = clipper::Util::nan();
-					fsig[ih].sigf_pl() = clipper::Util::nan();
-				}
-			} else {
-				jsig[ih].I_pl() = clipper::Util::nan();
-				jsig[ih].sigI_pl() = clipper::Util::nan();
-				fsig[ih].f_pl() = clipper::Util::nan();
-				fsig[ih].sigf_pl() = clipper::Util::nan();
-			}
-			
-			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
-				float I = isig[ih].I_mi();
-				float sigma = isig[ih].sigI_mi();
-				clipper::HKL hkl = ih.hkl();
-				float weight(ih.hkl_class().epsilon() );
-				float sqwt = sqrt(weight);
-				
-				I /= weight;
-				sigma /= weight;
-				
-				iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);	
-				if (iflag) {
-					jsig[ih].I_mi() = J*weight;
-					jsig[ih].sigI_mi() = sigJ*weight;
-					fsig[ih].f_mi() = F*scalef*sqwt;
-					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
-				} else {
-					jsig[ih].I_mi() = clipper::Util::nan();
-					jsig[ih].sigI_mi() = clipper::Util::nan();
-					fsig[ih].f_mi() = clipper::Util::nan();
-					fsig[ih].sigf_mi() = clipper::Util::nan();
-				}
-			} else {
-				jsig[ih].I_mi() = clipper::Util::nan();
-				jsig[ih].sigI_mi() = clipper::Util::nan();
-				fsig[ih].f_mi() = clipper::Util::nan();
-				fsig[ih].sigf_mi() = clipper::Util::nan();
-			}
-		}
+        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+            if ( ih.invresolsq() <=  reso.invresolsq_limit() ) {
+                if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
+                    float I = isig[ih].I_pl();
+                    float sigma = isig[ih].sigI_pl();
+                    clipper::HKL hkl = ih.hkl();
+                    float weight(ih.hkl_class().epsilon() );
+                    float sqwt = sqrt(weight);
+                    
+                    I /= weight;
+                    sigma /= weight;
+                    
+                    iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);
+                    if (iflag) {
+                        jsig[ih].I_pl() = J*weight;
+                        jsig[ih].sigI_pl() = sigJ*weight;
+                        fsig[ih].f_pl() = F*scalef*sqwt;
+                        fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+                    } else {
+                        jsig[ih].I_pl() = clipper::Util::nan();
+                        jsig[ih].sigI_pl() = clipper::Util::nan();
+                        fsig[ih].f_pl() = clipper::Util::nan();
+                        fsig[ih].sigf_pl() = clipper::Util::nan();
+                    }
+                } else {
+                    jsig[ih].I_pl() = clipper::Util::nan();
+                    jsig[ih].sigI_pl() = clipper::Util::nan();
+                    fsig[ih].f_pl() = clipper::Util::nan();
+                    fsig[ih].sigf_pl() = clipper::Util::nan();
+                }
+                
+                if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
+                    float I = isig[ih].I_mi();
+                    float sigma = isig[ih].sigI_mi();
+                    clipper::HKL hkl = ih.hkl();
+                    float weight(ih.hkl_class().epsilon() );
+                    float sqwt = sqrt(weight);
+                    
+                    I /= weight;
+                    sigma /= weight;
+                    
+                    iflag = truncate_flat(I, sigma, J, sigJ, F, sigF, nrej, debug);
+                    if (iflag) {
+                        jsig[ih].I_mi() = J*weight;
+                        jsig[ih].sigI_mi() = sigJ*weight;
+                        fsig[ih].f_mi() = F*scalef*sqwt;
+                        fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+                    } else {
+                        jsig[ih].I_mi() = clipper::Util::nan();
+                        jsig[ih].sigI_mi() = clipper::Util::nan();
+                        fsig[ih].f_mi() = clipper::Util::nan();
+                        fsig[ih].sigf_mi() = clipper::Util::nan();
+                    }
+                } else {
+                    jsig[ih].I_mi() = clipper::Util::nan();
+                    jsig[ih].sigI_mi() = clipper::Util::nan();
+                    fsig[ih].f_mi() = clipper::Util::nan();
+                    fsig[ih].sigf_mi() = clipper::Util::nan();
+                }
+            } else {
+                jsig[ih].I_pl() = clipper::Util::nan();
+                jsig[ih].sigI_pl() = clipper::Util::nan();
+                fsig[ih].f_pl() = clipper::Util::nan();
+                fsig[ih].sigf_pl() = clipper::Util::nan();
+                jsig[ih].I_mi() = clipper::Util::nan();
+                jsig[ih].sigI_mi() = clipper::Util::nan();
+                fsig[ih].f_mi() = clipper::Util::nan();
+                fsig[ih].sigf_mi() = clipper::Util::nan();
+            }
+        }
 		return(1);
 	}
 	
@@ -310,7 +321,7 @@ namespace ctruncate {
 		int iflag;
 		
 		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !isig[ih].missing() || ih.invresolsq() <=  reso.invresolsq_limit() ) {
+			if ( !isig[ih].missing() && ih.invresolsq() <=  reso.invresolsq_limit() ) {
 				float I = isig[ih].I();
 				float sigma = isig[ih].sigI();
 				clipper::HKL hkl = ih.hkl();
@@ -344,77 +355,87 @@ namespace ctruncate {
 	
 	// flat prior of Sivia, based on arithmetic solution of second order approximation, anomalous input
 	
-	template<class T1, class T2, class T3> int truncate_sivia(clipper::HKL_data<clipper::datatypes::I_sigI_ano<T1> >& isig, clipper::HKL_data<clipper::datatypes::I_sigI_ano<T2> >& jsig, 
-															  clipper::HKL_data<clipper::datatypes::F_sigF_ano<T3> >& fsig, float scalef, 
-															  clipper::Resolution& reso, int& nrej, bool debug)
-	{
-		typedef clipper::HKL_data_base::HKL_reference_index HRI;
-		float J, sigJ, F, sigF;
-		float invr2 = reso.invresolsq_limit();
-		int iflag;
-		
-		for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-			if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
-				float I = isig[ih].I_pl();
-				float sigma = isig[ih].sigI_pl();
-				clipper::HKL hkl = ih.hkl();
-				float weight(ih.hkl_class().epsilon() );
-				float sqwt = sqrt(weight);
-				
-				I /= weight;
-				sigma /= weight;
-				
-				iflag = truncate_sivia_calc(I, sigma, J, sigJ, F, sigF, nrej, debug);	
-				if (iflag) {
-					jsig[ih].I_pl() = J*weight;
-					jsig[ih].sigI_pl() = sigJ*weight;
-					fsig[ih].f_pl() = F*scalef*sqwt;
-					fsig[ih].sigf_pl() = sigF*scalef*sqwt;
-				} else {
-					jsig[ih].I_pl() = clipper::Util::nan();
-					jsig[ih].sigI_pl() = clipper::Util::nan();
-					fsig[ih].f_pl() = clipper::Util::nan();
-					fsig[ih].sigf_pl() = clipper::Util::nan();
-				}
-			} else {
-				jsig[ih].I_pl() = clipper::Util::nan();
-				jsig[ih].sigI_pl() = clipper::Util::nan();
-				fsig[ih].f_pl() = clipper::Util::nan();
-				fsig[ih].sigf_pl() = clipper::Util::nan();
-			}
-			
-			if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
-				float I = isig[ih].I_mi();
-				float sigma = isig[ih].sigI_mi();
-				clipper::HKL hkl = ih.hkl();
-				float weight(ih.hkl_class().epsilon() );
-				float sqwt = sqrt(weight);
-				
-				I /= weight;
-				sigma /= weight;
-				
-				iflag = truncate_sivia_calc(I, sigma, J, sigJ, F, sigF, nrej, debug);	
-				if (iflag) {
-					jsig[ih].I_mi() = J*weight;
-					jsig[ih].sigI_mi() = sigJ*weight;
-					fsig[ih].f_mi() = F*scalef*sqwt;
-					fsig[ih].sigf_mi() = sigF*scalef*sqwt;
-				} else {
-					jsig[ih].I_mi() = clipper::Util::nan();
-					jsig[ih].sigI_mi() = clipper::Util::nan();
-					fsig[ih].f_mi() = clipper::Util::nan();
-					fsig[ih].sigf_mi() = clipper::Util::nan();
-				}
-			} else {
-				jsig[ih].I_mi() = clipper::Util::nan();
-				jsig[ih].sigI_mi() = clipper::Util::nan();
-				fsig[ih].f_mi() = clipper::Util::nan();
-				fsig[ih].sigf_mi() = clipper::Util::nan();
-			}
-		}
-		return(1);
-	}
-	
+    template<class T1, class T2, class T3> int truncate_sivia(clipper::HKL_data<clipper::datatypes::I_sigI_ano<T1> >& isig, clipper::HKL_data<clipper::datatypes::I_sigI_ano<T2> >& jsig,
+                                                              clipper::HKL_data<clipper::datatypes::F_sigF_ano<T3> >& fsig, float scalef,
+                                                              clipper::Resolution& reso, int& nrej, bool debug)
+    {
+        typedef clipper::HKL_data_base::HKL_reference_index HRI;
+        float J, sigJ, F, sigF;
+        float invr2 = reso.invresolsq_limit();
+        int iflag;
+        
+        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+            if ( ih.invresolsq() <=  reso.invresolsq_limit() ) {
+                if ( !clipper::Util::is_nan(isig[ih].I_pl() ) ) {
+                    float I = isig[ih].I_pl();
+                    float sigma = isig[ih].sigI_pl();
+                    clipper::HKL hkl = ih.hkl();
+                    float weight(ih.hkl_class().epsilon() );
+                    float sqwt = sqrt(weight);
+                    
+                    I /= weight;
+                    sigma /= weight;
+                    
+                    iflag = truncate_sivia_calc(I, sigma, J, sigJ, F, sigF, nrej, debug);
+                    if (iflag) {
+                        jsig[ih].I_pl() = J*weight;
+                        jsig[ih].sigI_pl() = sigJ*weight;
+                        fsig[ih].f_pl() = F*scalef*sqwt;
+                        fsig[ih].sigf_pl() = sigF*scalef*sqwt;
+                    } else {
+                        jsig[ih].I_pl() = clipper::Util::nan();
+                        jsig[ih].sigI_pl() = clipper::Util::nan();
+                        fsig[ih].f_pl() = clipper::Util::nan();
+                        fsig[ih].sigf_pl() = clipper::Util::nan();
+                    }
+                } else {
+                    jsig[ih].I_pl() = clipper::Util::nan();
+                    jsig[ih].sigI_pl() = clipper::Util::nan();
+                    fsig[ih].f_pl() = clipper::Util::nan();
+                    fsig[ih].sigf_pl() = clipper::Util::nan();
+                }
+                
+                if ( !clipper::Util::is_nan(isig[ih].I_mi() ) ) {
+                    float I = isig[ih].I_mi();
+                    float sigma = isig[ih].sigI_mi();
+                    clipper::HKL hkl = ih.hkl();
+                    float weight(ih.hkl_class().epsilon() );
+                    float sqwt = sqrt(weight);
+                    
+                    I /= weight;
+                    sigma /= weight;
+                    
+                    iflag = truncate_sivia_calc(I, sigma, J, sigJ, F, sigF, nrej, debug);
+                    if (iflag) {
+                        jsig[ih].I_mi() = J*weight;
+                        jsig[ih].sigI_mi() = sigJ*weight;
+                        fsig[ih].f_mi() = F*scalef*sqwt;
+                        fsig[ih].sigf_mi() = sigF*scalef*sqwt;
+                    } else {
+                        jsig[ih].I_mi() = clipper::Util::nan();
+                        jsig[ih].sigI_mi() = clipper::Util::nan();
+                        fsig[ih].f_mi() = clipper::Util::nan();
+                        fsig[ih].sigf_mi() = clipper::Util::nan();
+                    }
+                } else {
+                    jsig[ih].I_mi() = clipper::Util::nan();
+                    jsig[ih].sigI_mi() = clipper::Util::nan();
+                    fsig[ih].f_mi() = clipper::Util::nan();
+                    fsig[ih].sigf_mi() = clipper::Util::nan();
+                }
+            } else {
+                jsig[ih].I_pl() = clipper::Util::nan();
+                jsig[ih].sigI_pl() = clipper::Util::nan();
+                fsig[ih].f_pl() = clipper::Util::nan();
+                fsig[ih].sigf_pl() = clipper::Util::nan();
+                jsig[ih].I_mi() = clipper::Util::nan();
+                jsig[ih].sigI_mi() = clipper::Util::nan();
+                fsig[ih].f_mi() = clipper::Util::nan();
+                fsig[ih].sigf_mi() = clipper::Util::nan();
+            }
+        }
+        return(1);
+    }
 	
 }
 
