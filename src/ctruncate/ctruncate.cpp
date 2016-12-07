@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.18";
-    clipper::String prog_date = "$Date: 2016/12/04";
+    clipper::String prog_vers = "1.17.19";
+    clipper::String prog_date = "$Date: 2016/12/07";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     clipper::Resolution reso_Patt = clipper::Resolution( 4.0 );
     clipper::Resolution reso_trunc;
     
-    clipper::Resolution reso_u1, reso_u2, reso_u3;
+    clipper::Resolution reso_u1, reso_u2, reso_u3, reso_u;
     
     //time information
     time_t now = std::time(0);
@@ -159,8 +159,10 @@ int main(int argc, char **argv)
             if ( ++arg < args.size() ) reso_u1 = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-twinres" ) {
             if ( ++arg < args.size() ) reso_u2 = clipper::Resolution( clipper::String(args[arg]).f() );
-        } else if ( args[arg] == "-reso" ) {
+        } else if ( args[arg] == "-anisores" ) {
             if ( ++arg < args.size() ) reso_u3 = clipper::Resolution( clipper::String(args[arg]).f() );
+        } else if ( args[arg] == "-reso" ) {
+            if ( ++arg < args.size() ) reso_u = clipper::Resolution( clipper::String(args[arg]).f() );
         } else if ( args[arg] == "-no-aniso" ) {
             doaniso = false;
         } else if ( args[arg] == "-amplitudes" ) {
@@ -501,8 +503,8 @@ int main(int argc, char **argv)
 	bool anisobysymm(false);
 	bool anisodemo(false);
     {
-		
-		AnisoAnalysis aa(isig,active_range);
+		clipper::Range<clipper::ftype> range_Aniso(active_range.min(), (!reso_u3.is_null() ) ?  std::min(active_range.max(),1.0/std::pow(reso_u3.limit(),2) ) : active_range.max() );
+		AnisoAnalysis aa(isig,range_Aniso);
 		anisobysymm=aa.allowed_by_symmetry();
 		anisodemo=aa.is_anisotropic();
 		aa.output();
@@ -536,9 +538,9 @@ int main(int argc, char **argv)
 		
 	HKL_data<data32::I_sigI> xsig(hklinf);
 	//normal calculation
-    if (!reso_u3.is_null() ) {
+    if (!reso_u.is_null() ) {
         reso_trunc =
-        clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
+        clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u.limit() ) );
     }
 
 	{
@@ -662,10 +664,6 @@ int main(int argc, char **argv)
 	if (!amplitudes) {
 		
 		//user override of truncate procedure and output
-		if (!reso_u3.is_null() ) {
-			reso_trunc = 
-			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u3.limit() ) );
-		}
 		if ( prior == AUTO && (hastncs || hastwin ) ) {
 			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
 			prior = FLAT;

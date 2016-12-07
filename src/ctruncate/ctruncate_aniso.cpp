@@ -855,6 +855,7 @@ namespace ctruncate {
 			clipper::U_aniso_frac uaf = _u_aniso_orth_i.u_aniso_frac( _base->hkl_info().cell() );
 			
 			printf("\nANISOTROPY ANALYSIS:\n");
+            printf("\nAnalysis using data from %6.2fA to %6.2fA.\n",1.0/std::sqrt(_range.min()),1.0/std::sqrt(_range.max() ) );
 			printf("\nEigenvalues: %8.4f %8.4f %8.4f\n", clipper::Util::u2b(v[0]/2.0),clipper::Util::u2b(v[1]/2.0),clipper::Util::u2b(v[2]/2.0) );
 			printf("Eigenvalue ratios: %8.4f %8.4f %8.4f\n", v1, v2, v3);
             std::cout << std::endl;

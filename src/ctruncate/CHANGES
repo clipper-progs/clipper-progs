@@ -1,3 +1,6 @@
+1.17.19 (07/12/16)
+- separate resolution limit for anisotropy analysis
+
 1.17.18 (04/12/16)
 - enforce reso keyword
 
