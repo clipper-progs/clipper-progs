@@ -1548,28 +1548,28 @@ namespace ctruncate {
 			printf("\nCOMPLETENESS ANALYSIS (using intensities):\n");
 			printf("\nThe following uses I/sigI Completeness levels, in particular targeting completeness above 85%%.  The Completeness with I/sigma above 3 indicates a strong signal (A better estimate is available using CC1/2 in aimless).\n");
             std::cout << std::endl;
-            std::cout << "   I/sigI>N        range(A)       %refln" << std::endl;
+            std::cout << "   I/sigI>N            range(A)      %refln" << std::endl;
         } else {
             printf("\nCOMPLETENESS ANALYSIS (using amplitudes):\n");
 			printf("\nThe following uses F/sigF completeness levels.  A better estimate is available using CC1/2.\n");
             std::cout << std::endl;
-			std::cout << "   F/sigF>N        range(A)       %refln" << std::endl;
+			std::cout << "   F/sigF>N            range(A)      %refln" << std::endl;
         }
         for (int ii = _activerange.size()-1; ii != 0 ; --ii) {
             clipper::ftype rmax = _data->hkl_info().resolution().limit();
             clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
             clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
-            std::cout << "    " << std::fixed << std::setprecision(1) << std::setw(3) << float(_completeness[ii].IoversigI()) <<  "        ";
+            std::cout << "    " << std::fixed << std::setprecision(1) << std::setw(4) << float(_completeness[ii].IoversigI()) <<  "        ";
             if ((_activerange[ii]).min() < (_activerange[ii]).max() )
-                std::cout << "    " << std::fixed << std::setprecision(2) << rmin << " - " << amax << "    " << std::fixed << std::setprecision(2) << float(_binner(_activerange[ii].max() )-_binner(_activerange[ii].min() )+1 )/_binner.size() << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
+                std::cout << "    " << std::fixed << std::setprecision(2) << std::setw(5) << rmin << " - " << std::setw(5) << amax << "    " << std::fixed << std::setprecision(1) << std::setw(5) << 100.*float(_binner(_activerange[ii].max() )-_binner(_activerange[ii].min() )+1 )/_binner.size() << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
             else
-                std::cout << "   NaN - NaN    0.0" << std::endl;
+                std::cout << "  NaN -   NaN      0.0" << std::endl;
         }
-        std::cout << "     N/A           ";
+        std::cout << "     N/A            ";
         if ((_activerange[0]).min() < (_activerange[0]).max() )
-            std::cout << std::fixed << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - " << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
+            std::cout << std::fixed << std::setw(5) << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - "  << std::setw(5) << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
         else
-            std::cout << "   NaN - NaN    0.0" << std::endl;
+            std::cout << "  NaN -   NaN      0.0" << std::endl;
         std::cout << std::endl;
         if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 ) {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
@@ -1604,11 +1604,11 @@ namespace ctruncate {
 			printf("\n$TABLE: Structure factor Completeness analysis:\n");
 			printf("$GRAPHS");
 			printf(": Completeness & %%(F/sigF)>N v resolution:N:1,2,3,4,5:\n");
-			printf("$$ 1/resol^2 Completeness (I/s>15) (I/s>10) (I/s>5) (F/s>3) (F/s>2) (F/s>1) Rstandard$$\n$$\n");
+			printf("$$ 1/resol^2 Compl (I/s>15) (I/s>10) (I/s>5) (F/s>3) (F/s>2) (F/s>1) Rstandard$$\n$$\n");
 		}			
 		int nbins = _binner.size();
 		for(int i=0;i!=nbins;++i){
-			printf("%10.4f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f\n",_binner[i],_completeness[0][i],_completeness[6][i],_completeness[5][i],_completeness[4][i],_completeness[3][i],_completeness[2][i],_completeness[1][i],_Rstandard[i]);
+			printf("    %5.4f   %5.3f        %5.3f    %5.3f    %5.3f   %5.3f   %5.3f   %5.3f   %6.3f\n",_binner[i],_completeness[0][i],_completeness[6][i],_completeness[5][i],_completeness[4][i],_completeness[3][i],_completeness[2][i],_completeness[1][i],_Rstandard[i]);
 		}
 		printf("$$\n\n");
 		

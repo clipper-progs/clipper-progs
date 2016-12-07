@@ -163,8 +163,8 @@ namespace ctruncate {
 		printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
 		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
 		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
-		printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
+		printf("$$ 1/resol^2 Mn(F(1)) Mn(F(2)) Mn(F(3)) Mn(F) Mn(F/s(1)) Mn(F/s(2)) Mn(F/s(3)) Mn(F/s)");
+		printf(" N(1) N(2) N(3) N completeness sig1 sig2 sig3$$\n$$\n");
 		
 		
 		for(int i=0;i<nbins;i++){
@@ -315,8 +315,8 @@ namespace ctruncate {
 		printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
 		printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
 		printf(": Completeness v resolution:N:1,14,15,16,17:\n");
-		printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
-		printf(" N(d1) N(d2) N(d3) N(ov) completeness sig1 sig2 sig3$$\n$$\n");
+		printf("$$ 1/resol^2 Mn(I(1)) Mn(I(2)) Mn(I(3)) Mn(I) Mn(I/s(1)) Mn(I/s(2)) Mn(I/s(3)) Mn(I/s)");
+		printf(" N(1) N(2) N(3) N completeness sig1 sig2 sig3$$\n$$\n");
 		
 		
 		for(int i=0;i<nbins;i++){
@@ -427,26 +427,26 @@ namespace ctruncate {
 			printf(": Mn(I) v resolution:N:1,2,3,4,5:\n");
 			printf(": Mn(I/sd) v resolution:N:1,6,7,8,9:\n");
 			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-			printf("$$ 1/resol^2 Mn(I(d1)) Mn(I(d2)) Mn(I(d3)) Mn(I(ov) Mn(I/sd(d1)) Mn(I/sd(d2)) Mn(I/sd(d3)) Mn(I/sd(ov))");
-			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
+			printf("$$ 1/resol^2 Mn(I(1)) Mn(I(2)) Mn(I(3)) Mn(I) Mn(I/s(1)) Mn(I/s(2)) Mn(I/s(3)) Mn(I/s)");
+			printf("     N(1)     N(2)     N(3)     N$$\n$$\n");
 		} else {
 			printf("\n$TABLE: Anisotropy analysis (Yorgo Modis):\n");
 			printf("$GRAPHS");
 			printf(": Mn(F) v resolution:N:1,2,3,4,5:\n");
 			printf(": Mn(F/sd) v resolution:N:1,6,7,8,9:\n");
 			printf(": No. reflections v resolution:N:1,10,11,12,13:\n");
-			printf("$$ 1/resol^2 Mn(F(d1)) Mn(F(d2)) Mn(F(d3)) Mn(F(ov) Mn(F/sd(d1)) Mn(F/sd(d2)) Mn(F/sd(d3)) Mn(F/sd(ov))");
-			printf(" N(d1) N(d2) N(d3) N(ov)$$\n$$\n");
+			printf("$$ 1/resol^2 Mn(F(1)) Mn(F(2)) Mn(F(3)) Mn(F) Mn(F/s(1)) Mn(F/s(2)) Mn(F/s(3)) Mn(F/s)");
+			printf("     N(1)     N(2)     N(3)     N$$\n$$\n");
 		}
 		
 		int bins=this->size();
 		for(int i=0;i!=bins;++i){
-			printf("%6.4f %8.2f %8.2f %8.2f %8.2f ",_b_reso[i],_somdir[i],_somdir[bins+i],_somdir[2*bins+i],_somov[i]);
-			printf("%8.2f %8.2f %8.2f %8.2f ",_somsddir[i],_somsddir[bins+i],_somsddir[2*bins+i],_somsdov[i]);
+			printf("   %6.4f %8.2f %8.2f %8.2f %8.2f ",_b_reso[i],_somdir[i],_somdir[bins+i],_somdir[2*bins+i],_somov[i]);
+			printf("%8.2f   %8.2f   %8.2f   %8.2f ",_somsddir[i],_somsddir[bins+i],_somsddir[2*bins+i],_somsdov[i]);
 			printf("%8.1f %8.1f %8.1f %8.1f\n",_numdir[i],_numdir[bins+i],_numdir[2*bins+i],_numov[i]);
 		}
 		printf("$$\n\n");
-		printf("The directional plots are along the directions of the moments of the anisotropy temperature matrix.  These are ordered such that d1 has maximum alignment with a*, d2 with b*, etc.\n");
+		printf("The directional plots are along the directions of the moments of the anisotropy temperature matrix.  These are ordered such that direction 1 has maximum alignment with a*, directions 2 with b*, etc.\n");
 	}
 
 	std::stringstream& YorgoModis::xml_output(std::stringstream& ss) const

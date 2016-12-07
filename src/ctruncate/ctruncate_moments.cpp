@@ -340,10 +340,10 @@ namespace ctruncate {
 				printf("$GRAPHS");
 				printf(": 2nd moment of I %5.3f (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,2:\n", acentric_second(), _a_reso[_a_reso.size()-1]);
 				printf(": 3rd & 4th Moments of I (Expected values = 6, 24, Perfect twin = 3, 7.5):0|%5.3fx0|36:1,3,4:\n", _a_reso[_a_reso.size()-1]);
-				printf("$$ 1/resol^2 <I**2> <I**3> <I**4> $$\n$$\n");
+				printf("$$ 1/resol^2   <I**2>     <I**3>     <I**4> $$\n$$\n");
 				
 				for (int i=0; i !=_a_reso.size(); ++i) {
-					printf("%10.6f %10.6f %10.6f %10.6f\n", _a_reso[i], I2a[i], I3a[i], I4a[i]);
+					printf("%10.6f %10.3f %10.3f %10.3f\n", _a_reso[i], I2a[i], I3a[i], I4a[i]);
 				}
 				printf("$$\n\n");
 			}
@@ -352,10 +352,10 @@ namespace ctruncate {
 				printf("$GRAPHS");
 				printf(": 2nd moment of I %5.3f (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,2:\n", centric_second(), _c_reso[_c_reso.size()-1]);
 				printf(": 3rd & 4th Moments of I (Expected = 15, 105, Perfect Twin = 6, 24):0|%5.3fx0|150:1,3,4:\n", _c_reso[_c_reso.size()-1]);
-				printf("$$ 1/resol^2 <I**2> <I**3> <I**4> $$\n$$\n");
+				printf("$$ 1/resol^2   <I**2>     <I**3>     <I**4> $$\n$$\n");
 				
 				for (int i=0; i!=_c_reso.size(); i++) {
-					printf("%10.6f %10.6f %10.6f %10.6f\n", _c_reso[i], I2c[i], I3c[i], I4c[i]);
+					printf("%10.6f %10.3f %10.3f %10.3f\n", _c_reso[i], I2c[i], I3c[i], I4c[i]);
 				}
 				printf("$$\n\n");
 			}
@@ -365,10 +365,10 @@ namespace ctruncate {
 				printf("$GRAPHS");
 				printf(": 4th moment of E %5.3f (Expected value = 2, Perfect Twin = 1.5):0|%5.3fx0|5:1,5:\n", acentric_fourth(), _a_reso[_a_reso.size()-1]);
 				printf(": 1st & 3rd Moments of E (Expected values = 0.886, 1.329, Perfect twin = 0.94, 1.175):0|%5.3fx0|2:1,2,4:\n", _a_reso[_a_reso.size()-1]);
-				printf("$$ 1/resol^2 <E> <|E**2-1|> <E**3> <E**4> $$\n$$\n");
+				printf("$$ 1/resol^2   <E>     <|E**2-1|>   <E**3>     <E**4> $$\n$$\n");
 				
 				for (int i=0; i !=_a_reso.size(); ++i) {
-					printf("%10.6f %10.6f %10.6f %10.6f %10.6f\n", _a_reso[i], I1a[i], I5a[i], I3a[i], I4a[i]);
+					printf("%10.6f %810.3f %10.3f %10.3f %10.3f\n", _a_reso[i], I1a[i], I5a[i], I3a[i], I4a[i]);
 				}
 				printf("$$\n\n");
 			}
@@ -377,10 +377,10 @@ namespace ctruncate {
 				printf("$GRAPHS");
 				printf(": 4th moment of E %5.3f (Expected = 3, Perfect Twin = 2):0|%5.3fx0|5:1,5:\n", centric_fourth(), _c_reso[_c_reso.size()-1]);
 				printf(": 1st & 3rd Moments of E (Expected = 0.798, 1.596, Perfect Twin = 0.886, 1.329):0|%5.3fx0|4:1,2,4:\n", _c_reso[_c_reso.size()-1]);
-				printf("$$ 1/resol^2 <E> <|E**2-1|> <E**3> <E**4> $$\n$$\n");
+				printf("$$ 1/resol^2   <E>     <|E**2-1|>   <E**3>     <E**4> $$\n$$\n");
 				
 				for (int i=0; i != _c_reso.size(); ++i) {
-					printf("%10.6f %10.6f %10.6f %10.6f %10.6f\n", _c_reso[i], I1c[i], I5c[i], I3c[i], I4c[i]);
+					printf("%10.6f %10.3f %10.3f %10.3f %10.3f\n", _c_reso[i], I1c[i], I5c[i], I3c[i], I4c[i]);
 				}
 				printf("$$\n\n");
 			}
