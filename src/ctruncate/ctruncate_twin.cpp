@@ -583,11 +583,11 @@ namespace ctruncate {
 		printf("$GRAPHS");
 		printf(": cumulative distribution function for |L|, twin fraction of %4.2f:0|1x0|1:1,2,3,4:\n",fraction() );
 		printf("$$ |L|   N(L) Untwinned Twinned $$\n$$\n");
-		printf("0.0000 0.0000 0.0000 0.0000\n");
+		printf("0.0000 0.0000  0.0000   0.0000\n");
 		
 		for (int i=0;i != _cdf.size() ;++i) {
 			double x = (double(i+1))/double(_cdf.size());
-			printf("%6.4f %6.4f %6.4f %6.4f\n", x, double(_cdf[i])/_NLT, x, 0.5*x*(3.0-x*x)  );
+			printf("%6.4f %6.4f  %6.4f   %6.4f\n", x, double(_cdf[i])/_NLT, x, 0.5*x*(3.0-x*x)  );
 		}
 		printf("$$\n\n");
     }
@@ -1993,7 +1993,7 @@ namespace ctruncate {
 		bool centric(_intensity_ord_c.ordinal(2.0) >0.1 );
 		for (int i=0; i!=51; ++i) {
 			if (centric) printf("%10.5f %8.5f %8.5f %8.5f %8.5f %8.5f\n", x, _acentricideal[i], _acentrictwin[i], _intensity_ord_a.ordinal(x), _centricideal[i], _intensity_ord_c.ordinal(x));
-			else printf("%10.5f %8.5f %8.5f %8.5f %8.5f -\n", x, _acentricideal[i], _acentrictwin[i], _intensity_ord_a.ordinal(x), _centricideal[i]);
+			else printf("%10.5f %8.5f %8.5f %8.5f %8.5f       -\n", x, _acentricideal[i], _acentrictwin[i], _intensity_ord_a.ordinal(x), _centricideal[i]);
 			x += deltax;
 		}
 		printf("$$\n\n");

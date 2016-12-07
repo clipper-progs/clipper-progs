@@ -1616,10 +1616,10 @@ namespace ctruncate {
         
         if (is_intensity() )  printf("\nLow Resolution Intensity Completeness analysis:\n");
         else printf("\nLow Structure factor Completeness analysis:\n");
-        printf("   1/resol^2  Range       Completeness \n");
+        printf("   1/resol^2    Range         Completeness \n");
 		nbins = _lb.size();
 		for(int i=0;i!=nbins;++i){
-			printf("%10.4f %5.3f-%5.3f %5.3f [%4.1f:%4.1f]\n",_lb[i],(_lcompleteness.binRange(i)).min(),(_lcompleteness.binRange(i)).max(),_lcompleteness[i],_lcompleteness[i]*_lb.binContains(i),_lb.binContains(i)  );
+			printf("%10.4f   %5.3f-%5.3f   %5.3f [%4.1f:%4.1f]\n",_lb[i],(_lcompleteness.binRange(i)).min(),(_lcompleteness.binRange(i)).max(),_lcompleteness[i],_lcompleteness[i]*_lb.binContains(i),_lb.binContains(i)  );
 		}
 		printf("\n\n");
         
