@@ -1140,9 +1140,9 @@ namespace ctruncate {
 				}
 			}
             if ( _wB == NULL ) {
-                ss << std::endl << "The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges. " << std::endl;
+                ss << std::endl << "The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and low completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges. " << std::endl;
             } else {
-                ss << std::endl << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+                ss << std::endl << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and low completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
             }
         }
 		return ss.str();
@@ -1171,9 +1171,9 @@ namespace ctruncate {
         }
         ss << "<Comment id='IceRingsAnalysis'>" << std::endl;
         if ( _wB == NULL ) {
-            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with neighbouring ice-ring insensitive resolutions. Large z-scores and low completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
         } else {
-            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
+            ss << " The ice rings table shows data Z-scores and completeness for ice ring sensitive resolutions in comparison with the Wilson B-factor fit. Large z-scores and low completeness at give a strong hint to the presence of ice rings. It may be required to exclude these resolution ranges." << std::endl;
         }
         ss << "</Comment>" << std::endl;
 		ss << "</IceRingsAnalysis>" << std::endl;
@@ -1223,9 +1223,9 @@ namespace ctruncate {
                 ss << "No problem resolution rings found." << std::endl;
             }
             if ( _wB == NULL ) {
-                ss << std::endl << "The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges. " << std::endl;
+                ss << std::endl << "The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and low completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges. " << std::endl;
             } else {
-                ss << std::endl << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+                ss << std::endl << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and low completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
             }
         }
         return ss.str();
@@ -1254,9 +1254,9 @@ namespace ctruncate {
         }
         ss << "<Comment id='OutlierRingsAnalysis'>" << std::endl;
         if ( _wB == NULL ) {
-            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with neighbouring resolutions. Large z-scores and low completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
         } else {
-            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and high completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
+            ss << " The outlier rings table shows data Z-scores and completeness for problem resolution bins in comparison with the Wilson B-factor fit. Large z-scores and low completeness at give a strong hint to the presence of problems. It may be required to exclude these resolution ranges." << std::endl;
         }
         ss << "</Comment>" << std::endl;
 		ss << "</OutlierRingsAnalysis>" << std::endl;

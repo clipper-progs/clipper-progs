@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.19";
-    clipper::String prog_date = "$Date: 2016/12/07";
+    clipper::String prog_vers = "1.17.20";
+    clipper::String prog_date = "$Date: 2016/12/15";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
