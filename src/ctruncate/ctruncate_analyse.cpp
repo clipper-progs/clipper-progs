@@ -1504,31 +1504,96 @@ namespace ctruncate {
 	*/	
 	const clipper::Range<clipper::ftype>& HKLAnalysis::active_range() {
 		if (_active.min() < _active.max() ) return _active;
+        
+        const clipper::ftype ALIM(0.2), BLIM(0.35), RR(4.0), RLIM(3.0);
+        
         clipper::ftype rmax = _data->hkl_info().resolution().limit();
         
         std::vector<clipper::ftype> per(_activerange.size() );
         
         for (int i = 0; i != _activerange.size() ; ++i) per[i] = float(_binner(_activerange[i].max() )-_binner(_activerange[i].min() )+1 )/_binner.size();
         
-		int ii(0);
+		int ii(0), i3(0);
         for (int i=0; i != _activerange.size(); ++i) {
-            if ( int(_completeness[i].IoversigI() ) == 3 ) ii = i;
+            if ( int(_completeness[i].IoversigI() ) == 3 ) i3 = ii = i;
         }
+    
+        // first i/sigI > 3 limits
+        clipper::ftype rmin = 1.0/std::sqrt((_activerange[i3]).min() );
+        clipper::ftype amax = 1.0/std::sqrt((_activerange[i3]).max() );
+        clipper::ftype rr = std::fabs(rmin-amax);
+        if ( ( rr > RR && (amax < RLIM || amax < rmax+0.5 ) && per[i3] > ALIM ) || per[i3] > BLIM )  {
+            _active = _activerange[i3];
+            --ii;
+        }
+        
+        // second R standard > 0.1
+        if (ii == i3) {
+            clipper::Range<clipper::ftype> rrange;
+            int NBINS = _binner.size();
+            clipper::ftype acceptable = 0.1;
+            if (_Rstandard[0] <= acceptable) rrange.include(_data->hkl_info().invresolsq_range().min());
+            if (_Rstandard[NBINS-1] <= acceptable) rrange.include(_data->hkl_info().invresolsq_range().max());
+            for ( int i=1 ; i != NBINS ; ++i) {
+                int i1=i-1;
+                if ( _Rstandard[i] <= acceptable && _Rstandard[i1] > acceptable ) {
+                    rrange.include(_binner[i1]+(acceptable-_Rstandard[i1])/(_Rstandard[i]-_Rstandard[i1])*(_binner[i]-_binner[i1]) );
+                } else if ( _Rstandard[i] > acceptable && _Rstandard[i1] <= acceptable ) {
+                    rrange.include(_binner[i1]+(acceptable-_Rstandard[i1])/(_Rstandard[i]-_Rstandard[i1])*(_binner[i]-_binner[i1]) );
+                }
+            }
+            rmin = 1.0/std::sqrt(rrange.min() );
+            amax = 1.0/std::sqrt(rrange.max() );
+            rr = std::fabs(rmin-amax);
+            clipper::ftype per = float(_binner(rrange.max() )-_binner(rrange.min() ) +1 )/_binner.size();
+            if ( ( rr > RR && (amax < RLIM || amax < rmax+0.5 ) && per > ALIM ) || per > BLIM )  {
+                _active = rrange;
+                --ii;
+            }
+        }
+        
+        //next try lower sigma levels
+        if (ii == i3) {
+            for (; ii != 0 ; --ii) {
+                rmin = 1.0/std::sqrt((_activerange[ii]).min() );
+                amax = 1.0/std::sqrt((_activerange[ii]).max() );
+                rr = std::fabs(rmin-amax);
+                if ( ( rr > RR && (amax < RLIM || amax < rmax+0.5 ) && per[ii] > ALIM ) || per[ii] > BLIM )  {
+                    _active = _activerange[ii];
+                    break;
+                }
+            }
+        }
+        
+        // reduce acceptable limit in steps down to 35% for I/sigI > 3
+        if (ii == 0) {
+            clipper::Range<clipper::ftype> rrange;
+            int NBINS = _binner.size();
+            ii = 10;
+            for (; ii != 0 ; --ii) { // try down to 30% completeness
+                float acceptable = float(ii)*0.05 + 0.3;
+                if ((_completeness[i3])[0] >= acceptable) rrange.include(_data->hkl_info().invresolsq_range().min());
+                if ((_completeness[i3])[NBINS-1] >= acceptable) rrange.include(_data->hkl_info().invresolsq_range().max());
+                for ( int i=1 ; i != NBINS ; ++i) {
+                    int i1=i-1;
+                    if ( (_completeness[i3])[i] >= acceptable && (_completeness[i3])[i1] < acceptable ) {
+                        rrange.include(_binner[i1]+(acceptable-(_completeness[i3])[i1])/((_completeness[i3])[i]-(_completeness[i3])[i1])*(_binner[i]-_binner[i1]) );
+                    } else if ( (_completeness[i3])[i] < acceptable && (_completeness[i3])[i1] >= acceptable ) {
+                        rrange.include(_binner[i1]+(acceptable-(_completeness[i3])[i1])/((_completeness[i3])[i]-(_completeness[i3])[i1])*(_binner[i]-_binner[i1]) );
+                    }
+                }
+                rmin = 1.0/std::sqrt(rrange.min() );
+                amax = 1.0/std::sqrt(rrange.max() );
+                rr = std::fabs(rmin-amax);
+                clipper::ftype per = float(_binner(rrange.max() )-_binner(rrange.min() ) +1 )/_binner.size();
+                if ( ( rr > RR && (amax < RLIM || amax < rmax+0.5 ) && per > ALIM ) || per > BLIM )  {
+                    _active = rrange;
+                    break;
+                }
+            }
             
-        for (; ii != 0 ; --ii) {
-			clipper::ftype rmin = 1.0/std::sqrt((_activerange[ii]).min() );
-			clipper::ftype amax = 1.0/std::sqrt((_activerange[ii]).max() );
-			clipper::ftype rr = std::fabs(rmin-amax);
-            if ( ( rr > 4.0 && (amax < 3.0 || amax < rmax+0.5 ) && per[ii] > 0.2 ) || per[ii] > 0.85 )  {
-				_active = _activerange[ii];
-				break;
-			}
-		}
-		if (ii == 0) {
-            //clipper::ftype amax = 1.0/std::sqrt(_data->invresolsq_range().max() )+0.5;
-            //_active = clipper::Range<clipper::ftype>(_data->invresolsq_range().min(),1.0/(amax*amax) );
-            if ((_activerange[1]).min() < (_activerange[1]).max() ) _active = _activerange[1];
-            else _active = clipper::Range<clipper::ftype>(_data->hkl_info().invresolsq_range().min(),1.0/std::pow(rmax+0.5,2) );
+            // finally just use SHELX style limits
+            if (ii == 0) _active = clipper::Range<clipper::ftype>(_data->hkl_info().invresolsq_range().min(),1.0/std::pow(rmax+0.5,2) );
         }
 		return _active;	
 	}
@@ -1563,19 +1628,19 @@ namespace ctruncate {
             if ((_activerange[ii]).min() < (_activerange[ii]).max() )
                 std::cout << "    " << std::fixed << std::setprecision(2) << std::setw(5) << rmin << " - " << std::setw(5) << amax << "    " << std::fixed << std::setprecision(1) << std::setw(5) << 100.*float(_binner(_activerange[ii].max() )-_binner(_activerange[ii].min() )+1 )/_binner.size() << "  " << (( ii == ia  )  ? "***" : "") << std::endl;
             else
-                std::cout << "  NaN -   NaN      0.0" << std::endl;
+                std::cout << "      NaN -   NaN      0.0" << std::endl;
         }
         std::cout << "     N/A            ";
         if ((_activerange[0]).min() < (_activerange[0]).max() )
             std::cout << std::fixed << std::setw(5) << std::setprecision(2) << 1.0/std::sqrt((_activerange[0]).min() ) << " - "  << std::setw(5) << 1.0/std::sqrt((_activerange[0]).max() ) << std::endl;
         else
-            std::cout << "  NaN -   NaN      0.0" << std::endl;
+            std::cout << "      NaN -   NaN      0.0" << std::endl;
         std::cout << std::endl;
         if ( (_activerange[i3]).max() == -999999999 && (_activerange[i3]).min() == 999999999 ) {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
             else printf("WARNING: The resolution range with F/sigF > 3");
             printf(" and completeness above %4.2f could not be\n",ACCEPTABLE);
-            printf("determined.  The completeness of this data is poor. In order not to discard too much data the resolution range for analysing\nthe statistics has been relaxed to, %6.2f - %6.2fA: note the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
+            printf("determined.  The completeness of this data is poor. In order not to discard too much data\nthe resolution range for analysing the statistics has been relaxed to, %6.2f - %6.2fA:\nnote the statistics output will be less accurate.\n\n",1.0/std::sqrt(_active.min() ), 1.0/std::sqrt(_active.max() ));
         } else if  (i3 != ia ) {
             if (this->is_intensity() ) printf("WARNING: The resolution range with I/sigI > 3");
             else printf("WARNING: The resolution range with F/sigF > 3");

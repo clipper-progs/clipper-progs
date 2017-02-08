@@ -1,6 +1,6 @@
 //
 //     CTRUNCATE
-//     Copyright (C) 2006-2015 Norman Stein, Charles Ballard
+//     Copyright (C) 2006-2017 Norman Stein, Charles Ballard
 //
 //     This code is distributed under the terms and conditions of the
 //     CCP4 Program Suite Licence Agreement as a CCP4 Application.
@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.20";
-    clipper::String prog_date = "$Date: 2016/12/15";
+    clipper::String prog_vers = "1.17.21";
+    clipper::String prog_date = "$Date: 2017/02/07";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
