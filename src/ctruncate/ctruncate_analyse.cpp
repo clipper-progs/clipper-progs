@@ -1532,13 +1532,13 @@ namespace ctruncate {
             clipper::Range<clipper::ftype> rrange;
             int NBINS = _binner.size();
             clipper::ftype acceptable = 0.1;
-            if (_Rstandard[0] <= acceptable) rrange.include(_data->hkl_info().invresolsq_range().min());
-            if (_Rstandard[NBINS-1] <= acceptable) rrange.include(_data->hkl_info().invresolsq_range().max());
+            if (_Rstandard[0] <= acceptable && _Rstandard[0] > 0.0) rrange.include(_data->hkl_info().invresolsq_range().min());
+            if (_Rstandard[NBINS-1] <= acceptable && _Rstandard[NBINS-1] > 0.0) rrange.include(_data->hkl_info().invresolsq_range().max());
             for ( int i=1 ; i != NBINS ; ++i) {
                 int i1=i-1;
-                if ( _Rstandard[i] <= acceptable && _Rstandard[i1] > acceptable ) {
+                if ( (_Rstandard[i] <= acceptable && _Rstandard[i] > 0.0 ) && _Rstandard[i1] > acceptable ) {
                     rrange.include(_binner[i1]+(acceptable-_Rstandard[i1])/(_Rstandard[i]-_Rstandard[i1])*(_binner[i]-_binner[i1]) );
-                } else if ( _Rstandard[i] > acceptable && _Rstandard[i1] <= acceptable ) {
+                } else if ( _Rstandard[i] > acceptable && (_Rstandard[i1] <= acceptable && _Rstandard[i1] > 0.0 ) ) {
                     rrange.include(_binner[i1]+(acceptable-_Rstandard[i1])/(_Rstandard[i]-_Rstandard[i1])*(_binner[i]-_binner[i1]) );
                 }
             }
