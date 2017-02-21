@@ -1,4 +1,9 @@
-1.17.21 (08.02/17)
+1.17.22 (21/02/17)
+- protect Rstandard against negative values
+- use completeness variation in bad rings
+- downweight low resolution in bad rings
+
+1.17.21 (08/02/17)
 - allow greater flexiblity in active range
 
 1.17.20 (20/12/16)
