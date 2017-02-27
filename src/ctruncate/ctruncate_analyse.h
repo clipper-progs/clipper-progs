@@ -411,8 +411,10 @@ private:
 		std::string output();
 		//!output xml
 		std::stringstream& xml_output(std::stringstream&);
-		//!ice rings?
+		//!outlier rings?
 		bool present();
+        //!percentage of outlier rings
+        float percentage();
         //!return rings data
         ctruncate::Rings& rings() { return _outliers; }
         //!return or set tolerance for z score
@@ -1104,7 +1106,6 @@ private:
             bool reject = false;
             float reso = _outliers.MeanSSqr(i);
             if ( reso > 0.0 ) {
-                ++nt;
                 clipper::ftype r1 = _outliers.MeanI(i)/_ideal_rings.MeanI(i);
                 clipper::ftype r2 = _outliers.Comp(i)/_comp[i];
                 float weight = ( reso < res_scaling ) ? std::pow(res_scaling/reso, 2.0f) : 1.0;

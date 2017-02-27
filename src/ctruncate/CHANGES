@@ -1,6 +1,7 @@
 1.17.22 (21/02/17)
 - protect Rstandard against negative values
 - use completeness variation in bad rings
+- output percentage of bad rings
 - downweight low resolution in bad rings
 
 1.17.21 (08/02/17)

@@ -1188,6 +1188,13 @@ namespace ctruncate {
 		
 		return icer;
 	}
+    
+    float OutlierRings_analyse::percentage() {
+        int nb(0);
+        for ( int i = 0; i != _rings->Nrings(); ++i) if (_rings->Reject(i) ) ++nb;
+        
+        return float(nb)/float(_rings->Nrings() );
+    }
 	
 	std::string OutlierRings_analyse::output() {
 		
@@ -1202,6 +1209,7 @@ namespace ctruncate {
 		if ( done ) {
 			ss << "OUTLIER RING SUMMARY:\n\n";
             if ( present() ) {
+                ss << "Outliers total " << std::fixed << std::setw(5) << std::setprecision(1) << percentage()*100 << "% of the bins." << std::endl << std::endl;
                 ss << " reso    mean_I mean_Sigma Estimated_I  Ratio Zscore Completeness Ave_Completeness\n";
                 for ( int i = 0; i != _rings->Nrings(); ++i) {
                     if ( _rings->Reject(i) && _rings->MeanSigI(i) > 0.0f ) {
@@ -1235,6 +1243,7 @@ namespace ctruncate {
         clipper::ftype maxres = _data->hkl_info().resolution().invresolsq_limit();
 		ss << "<OutlierRingsAnalysis>" << std::endl;
         ss << "  <present>" << ( ( present() ) ? "  yes  " : "  no   " ) << "</present>" << std::endl;
+        ss << "  <percentage>" << std::fixed << std::setw(5) << std::setprecision(1) <<  percentage()*100 << "</percentage>" << std::endl;
 		for ( int i = 0; i != _rings->Nrings(); ++i) {
 			float reso = _rings->MeanSSqr(i);
 			float imean = _rings->MeanI(i);
