@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.22";
-    clipper::String prog_date = "$Date: 2017/02/21";
+    clipper::String prog_vers = "1.17.23";
+    clipper::String prog_date = "$Date: 2017/03/02";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -543,19 +543,35 @@ int main(int argc, char **argv)
         clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u.limit() ) );
     }
 
-	{
+	if (!amplitudes) {
+        MODE prior_user = prior;
+        //user override of truncate procedure and output
+        if ( prior == AUTO && (hastncs || hastwin ) ) prior = FLAT;
+        
+        int nrej_ice(0);
         double invresolsq(reso_trunc.invresolsq_limit() );
 		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
 			double reso = ih.invresolsq();
 			xsig[ih] = clipper::data32::I_sigI( (isig[ih.hkl()].I()), isig[ih.hkl()].sigI() );
 			if ( icerings.InRing(reso) != -1 ) 
-				if ( icerings.Reject( icerings.InRing(reso) ) ) xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+                if ( icerings.Reject( icerings.InRing(reso) ) ) {
+                    xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
+                    ++nrej_ice;
+                }
             if (reso > invresolsq )
                 xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
 		}
 
-		
-		
+        HKL_data<data32::I_sigI> tr1(hklinf);
+        
+        // calc scale
+        for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+            double reso = ih.invresolsq();
+            if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+            if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+            tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::Best::value(reso), 0.0);
+        }		
+
 		int nprm2=12;
 		int nreflns=500;
 		
@@ -578,142 +594,148 @@ int main(int argc, char **argv)
 			}
 		}
 
-		
-		HKL_data<data32::I_sigI> tr1(hklinf);
-		
-		// calc scale
-		for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-            double reso = ih.invresolsq();
+		int nrej_pre(0), nrej_norm(0);
+        bool ierror(false);
+        std::vector<double> params(nprm2,1.0);
+        //precondition the ML calc using least squares fit.  This should give an excellent start
+        clipper::BasisFn_binner basis_pre( tr1, nprm2, 1.0 );
+        TargetFn_meanInth<clipper::data32::I_sigI> target_pre(tr1,1.0);
+        clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
+        params = pre.params();
+        
+        //outlier rejection from Read (1999)
+        double rlimit(0.0);
+        for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+            if ( !xsig[ih.hkl()].missing() ) {
+                double I = tr1[ih].I()/(ih.hkl_class().epsilon()*pre.f(ih));
+                rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
+                if (I > rlimit )  {
+                    ++nrej_pre;
+                    xsig[ih.hkl()].I() = xsig[ih.hkl()].sigI() = clipper::Util::nan();
+                }
+            }
+        }
+        //reset tr1
+        double reso(0.0);
+        for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+            reso = ih.invresolsq();
             if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
             if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
-            tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::Best::value(reso), 0.0);
-		}		
-		
-        std::cout << std::endl;
-		int nrej_pre(0);
-		std::vector<double> params(nprm2,1.0);
-		{
-			//precondition the ML calc using least squares fit.  This should give an excellent start
-			clipper::BasisFn_binner basis_pre( tr1, nprm2, 1.0 );
-			TargetFn_meanInth<clipper::data32::I_sigI> target_pre(tr1,1.0);
-			clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
-			params = pre.params();
-			
-			//outlier rejection from Read (1999)			
-			double rlimit(0.0);
-			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-				if ( !xsig[ih.hkl()].missing() ) {
-				double I = tr1[ih].I()/(ih.hkl_class().epsilon()*/*tr1[ih].I()*/pre.f(ih));
-				rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
-					if (I > rlimit )  {
-						++nrej_pre;
-						}
-				}
-			}				
-			std::cout << "Number of outliers not used in norm calculation (Read (1999) ): " << nrej_pre << std::endl;
-			//reset tr1
-			double reso(0.0);
-			for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-				reso = ih.invresolsq();
-                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
-                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
-				tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
-			}					
-		}
-		std::vector<bool> mask(nprm2,false);
-		clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
-		//TargetFn_meanInth<clipper::data32::I_sigI> target_fo( xsig, 1 );
-		TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
-		ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, mask, 1.0, false);
-		params = Sigma.params();
-		
-		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.invresolsq();
-			xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * tr1[ih].I(),1.0f);
-		}
-		
+            tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
+        }
+        for (int i=0; i != params.size() ; ++i) {
+            if (params[i] < 0.0) ierror = true;
+        }
+        if (ierror) {
+            //back to least squares fit
+            for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+                double reso = ih.invresolsq();
+                xsig[ih] = clipper::data32::I_sigI(pre.f(ih) * tr1[ih].I(),1.0f);
+            }
+        } else {
+            // proeceed with ML calc
+            std::vector<bool> mask(nprm2,false);
+            clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
+            TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
+            ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, mask, 1.0, false);
+            params = Sigma.params();
+            
+            //generate norm
+            for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+                double reso = ih.invresolsq();
+                xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * tr1[ih].I(),1.0f);
+            }
+        }
 		// scale the norm for the anisotropy
 		if (doaniso) {
-            std::cout << "Aniso correction applied to norm." << std::endl;
 			if (anisobysymm && anisodemo) {
 				clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
 				xsig.compute(xsig, compute_s);				
 			}
 		}		
 		
-		{
-			int nrej(0);
+		if (!ierror) {
 			//outlier rejection from Read (1999) using new norm		
 			double rlimit(0.0);
 			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-				if ( !isig[ih].missing() ) {
-					double I = isig[ih].I()/(ih.hkl_class().epsilon()*xsig[ih.hkl()].I() );
-					rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
-					if (I > rlimit )  {
-						++nrej;
+                double reso = ih.invresolsq();
+                double I(0.0);
+                if (reso <= invresolsq ) {
+                    if ( !isig[ih].missing() ) {
+                        int ring = icerings.InRing(reso);
+                        if ( ring == -1 ) I = isig[ih].I()/(ih.hkl_class().epsilon()*xsig[ih.hkl()].I() );
+                        else if ( !icerings.Reject( ring) ) I = isig[ih].I()/(ih.hkl_class().epsilon()*xsig[ih.hkl()].I() );
+					    rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
+					    if (I > rlimit )  {
+						    ++nrej_norm;
+                        }
 					}
 				}
 			}	
-			std::cout << "Number of outliers in final normal (Read (1999) ): " << nrej << std::endl << std::endl;
-			if (nrej > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << std::endl << "WARNING: prior may be unstable" << std::endl << std::endl;
-		}
-	}
-		
-	int nrej = 0; 
-	
-	if (!amplitudes) {
-		
-		//user override of truncate procedure and output
-		if ( prior == AUTO && (hastncs || hastwin ) ) {
-			printf("\nWARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON\n\n");
-			prior = FLAT;
-		}
-		
-		if ( refl_mean ) {
-			if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
-			else if (prior == SIVIA) truncate_sivia(isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
-			else truncate( isig, jsig, fsig, xsig, scalef, reso_trunc, nrej, debug );
-		}
-		if (anomalous) {
-			if (prior == FLAT ) truncate( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
-			else if (prior == SIVIA) truncate_sivia( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+        }
+        
+        int nrej(0);
+        if ( refl_mean ) {
+            if (prior == FLAT ) truncate( isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
+            else if (prior == SIVIA) truncate_sivia(isig, jsig, fsig, scalef, reso_trunc, nrej, debug );
+            else truncate( isig, jsig, fsig, xsig, scalef, reso_trunc, nrej, debug );
+        }
+        if (anomalous) {
+            if (prior == FLAT ) truncate( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
+            else if (prior == SIVIA) truncate_sivia( isig_ano, jsig_ano, fsig_ano, scalef, reso_trunc, nrej, debug );
             else truncate( isig_ano, jsig_ano, fsig_ano, xsig, scalef, reso_trunc, nrej, debug );
-			int iwarn = 0;
-			// use for phil plot
-			if (!refl_mean ) {
-				for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-					jsig[ih].I() = jsig_ano[ih].I();
-					jsig[ih].sigI() = jsig_ano[ih].sigI();
-					fsig[ih].f() = fsig_ano[ih].f();
-					fsig[ih].sigf() = fsig_ano[ih].sigf();
-				}
-			}
-		} 
+            int iwarn = 0;
+            // use for phil plot
+            if (!refl_mean ) {
+                for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+                    jsig[ih].I() = jsig_ano[ih].I();
+                    jsig[ih].sigI() = jsig_ano[ih].sigI();
+                    fsig[ih].f() = fsig_ano[ih].f();
+                    fsig[ih].sigf() = fsig_ano[ih].sigf();
+                }
+            }
+        }
+        
+        std::cout << std::endl;
+        prog.summary_beg();
+        std::cout << std::endl << "INTENSITY TO AMPLITUDE CONVERSION:" << std::endl << std::endl;
+        if (prior == prior_user) {
+            if ( prior == FLAT ) std::cout <<  "Calculation using flat prior." << std::endl;
+            else if ( prior == SIVIA ) std::cout << "Calculation using SIVIA method." << std::endl;
+            else std::cout << "Calculation using Wilson prior." << std::endl;
+        } else {
+            std::cout << "WARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON." << std::endl;
+        }
+        printf("During the truncate procedure %d intensities have been flagged as unphysical.\n\n", nrej);
+        prog.summary_end();
+        std::cout << std::endl;
+        std::cout << "Norm calculation summary:" << std::endl << std::endl;
+        if (ierror) std::cout << "      WARNING: negative mean I in bins, resorted to least squares norm." << std::endl;
+        std::cout << "      Number of outliers and ice ring reflections not used in norm calculation (Read (1999) ): " << nrej_pre+nrej_ice << std::endl;
+        if (!ierror) {
+            std::cout << "      Number of outliers in detected in final norm (Read (1999) ): " << nrej_norm << std::endl;
+            if (nrej_norm > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << "      WARNING: prior may be unstable, change in rejected reflections" << std::endl ;
+        }
+        if (doaniso) std::cout << "      Anisotropy correction applied to norm." << std::endl;
+        std::cout << std::endl << std::endl;
+        
+
 	}
-	printf("\n");
-	prog.summary_beg();
-	printf("\nINTENSITY TO AMPLITUDE CONVERSION:\n\n");
-	if ( prior == FLAT ) printf("Calculation using flat prior\n");
-	else printf("Calculation using Wilson prior\n");
-	
-	printf("%d intensities have been rejected as unphysical\n", nrej);
-	prog.summary_end();
-	printf("\n");
-	
 	
 	{
 		ctruncate::PattPeak patt_peak(std::sqrt(isig.invresolsq_range().max() ));
 		
-		float opt_res = patt_peak(xsig);
+		float opt_res = patt_peak(isig);
 		
 		float width_patt = 2.0f*patt_peak.sigma();
 		
 		float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
 		
+        std::cout << std::endl;
 		prog.summary_beg();
 		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
 		prog.summary_end();
-		
+        std::cout << std::endl << std::endl;
 		
 		
     }
