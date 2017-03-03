@@ -542,7 +542,7 @@ int main(int argc, char **argv)
         reso_trunc =
         clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u.limit() ) );
     }
-
+    std::stringstream xml_trunc;
 	if (!amplitudes) {
         MODE prior_user = prior;
         //user override of truncate procedure and output
@@ -700,7 +700,7 @@ int main(int argc, char **argv)
         prog.summary_beg();
         std::cout << std::endl << "INTENSITY TO AMPLITUDE CONVERSION:" << std::endl << std::endl;
         if (prior == prior_user) {
-            if ( prior == FLAT ) std::cout <<  "Calculation using flat prior." << std::endl;
+            if ( prior == FLAT ) std::cout <<  "Calculation using FLAT prior." << std::endl;
             else if ( prior == SIVIA ) std::cout << "Calculation using SIVIA method." << std::endl;
             else std::cout << "Calculation using Wilson prior." << std::endl;
         } else {
@@ -719,9 +719,28 @@ int main(int argc, char **argv)
         if (doaniso) std::cout << "      Anisotropy correction applied to norm." << std::endl;
         std::cout << std::endl << std::endl;
         
-
+        xml_trunc << "<Truncation>" << std::endl;
+        xml_trunc << "  <prior>";
+        if ( prior == FLAT ) xml_trunc <<  "FLAT";
+        else if ( prior == SIVIA ) xml_trunc << "SIVIA";
+        else xml_trunc << "WILSON";
+        xml_trunc << "</prior>" << std::endl;
+        xml_trunc << "  <mode>";
+        if ( prior == AUTO ) xml_trunc << "AUTO";
+            else if ( prior == FLAT ) xml_trunc <<  "FLAT";
+            else if ( prior == SIVIA ) xml_trunc << "SIVIA";
+            else xml_trunc << "WILSON";
+        xml_trunc << "</mode>"  << std::endl;
+        xml_trunc << "  <AnisoCorrection>" << ((doaniso) ? "yes" : "no" ) << "</AnisoCorrection>" << std::endl;
+        xml_trunc << "  <ResolutionRange id=\"Truncation\" unit=\"Angstrom\" >" << std::endl;
+        xml_trunc << std::fixed << std::setprecision(2) << "    <min>" << 1.0/std::sqrt(isig.invresolsq_range().min() ) << "</min>\n    <max>"
+        << std::fixed << std::setprecision(2) <<  1.0/std::sqrt(invresolsq ) << "</max>" << std::endl;
+        xml_trunc << "  </ResolutionRange>" << std::endl;
+        if (prior != prior_user) xml_trunc << "  <Warning id=\"flat\">FLAT prior in use due to either tNCS or twinning. To override force --prior WILSON.</Warning>" << std::endl;
+        if (ierror) xml_trunc << "  <Warning id=\"negative\">Negative mean I in bins, resorted to least squares norm.</Warning>" << std::endl;
+        xml_trunc << "</Truncation>" << std::endl;
 	}
-	
+
 	{
 		ctruncate::PattPeak patt_peak(std::sqrt(isig.invresolsq_range().max() ));
 		
@@ -977,6 +996,7 @@ int main(int argc, char **argv)
         std::ofstream xf;
         xf.open(xmlfile.c_str() );
         xf << prog.xml_start(ss1).str();
+        xf << xml_trunc.str();
 		reflndata.xml_output(ss3);
 		xf << reflnfile.xml_output(ss3).str();
 		xf << xml_comp.str();
