@@ -301,7 +301,7 @@ int main(int argc, char **argv)
         if (freein) mtzfile.import_hkl_data( free, freecol );
     } catch (...) {
         std::cout << std::endl;
-        std::cout << std::cout << "Error: " << freecol << " could not be loaded." << std::endl;
+        std::cout << "Error: " << freecol << " could not be loaded." << std::endl;
         return(1);
     }
     

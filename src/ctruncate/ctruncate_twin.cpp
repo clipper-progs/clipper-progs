@@ -1622,7 +1622,7 @@ namespace ctruncate {
 		
 		_ts.output();
 		
-        std::cout << std::cout << "The appearance of twinning operators only indicates that the crystal symmetry and lattice symmetry permit twinning.  It does not mean that there is twinning present.  Only the presence of statistics consistent with twinning gives a strong indicator." << std::endl << std::endl;
+            std::cout << "The appearance of twinning operators only indicates that the crystal symmetry and lattice symmetry permit twinning.  It does not mean that there is twinning present.  Only the presence of statistics consistent with twinning gives a strong indicator." << std::endl << std::endl;
 		//htest plots
 		if (_htests.size()) {
             std::cout << "Twinning operator based tests:" << std::endl << std::endl;
