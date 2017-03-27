@@ -548,20 +548,44 @@ int main(int argc, char **argv)
         //user override of truncate procedure and output
         if ( prior == AUTO && (hastncs || hastwin ) ) prior = FLAT;
         
-        int nrej_ice(0);
+        int nrej_ice(0), nrej_norm(0), nrej_pre(0);
+        bool ierror(false);
         double invresolsq(reso_trunc.invresolsq_limit() );
-		for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-			double reso = ih.invresolsq();
-			xsig[ih] = clipper::data32::I_sigI( (isig[ih.hkl()].I()), isig[ih.hkl()].sigI() );
-			if ( icerings.InRing(reso) != -1 ) 
+        
+        for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+            double reso = ih.invresolsq();
+            xsig[ih] = clipper::data32::I_sigI( (isig[ih.hkl()].I()), isig[ih.hkl()].sigI() );
+            if ( icerings.InRing(reso) != -1 )
                 if ( icerings.Reject( icerings.InRing(reso) ) ) {
                     xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan(); // loose ice rings
                     ++nrej_ice;
                 }
             if (reso > invresolsq )
                 xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
-		}
-
+        }
+        
+        int nprm2=100;
+        int nreflns=200;
+        
+        int Nreflections = 0;
+        {
+            for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+                clipper::ftype reso = ih.invresolsq();
+                if ( !xsig[ih].missing() ) ++Nreflections;
+            }
+            if ( nprm2 == 0 && nreflns != 0 ) {
+                nprm2 = std::max( Nreflections/nreflns , 1);
+                //} else if ( nreflns == 0 && nprm2 != 0 ) {
+                //nprm = nbins;
+            } else {
+                //nprm2 = std::max( Nreflections/nreflns , nprm2);
+                double np1(nprm2+0.499);
+                double np2(Nreflections/nreflns);
+                double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+                nprm2 = std::max( int(np), 1 );
+            }
+        }
+        
         HKL_data<data32::I_sigI> tr1(hklinf);
         
         // calc scale
@@ -570,32 +594,8 @@ int main(int argc, char **argv)
             if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
             if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
             tr1[ih] = clipper::data32::I_sigI( xsig[ih.hkl()].I()/ctruncate::Best::value(reso), 0.0);
-        }		
-
-		int nprm2=12;
-		int nreflns=500;
-		
-		int Nreflections = 0;
-		{
-			for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-				clipper::ftype reso = ih.invresolsq();
-				if ( !xsig[ih].missing() ) ++Nreflections;
-			}
-			if ( nprm2 == 0 && nreflns != 0 ) {
-				nprm2 = std::max( Nreflections/nreflns , 1);
-				//} else if ( nreflns == 0 && nprm2 != 0 ) {
-				//nprm = nbins;
-			} else {
-				//nprm2 = std::max( Nreflections/nreflns , nprm2);
-				double np1(nprm2+0.499);
-				double np2(Nreflections/nreflns);
-				double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
-				nprm2 = std::max( int(np), 1 );
-			}
-		}
-
-		int nrej_pre(0), nrej_norm(0);
-        bool ierror(false);
+        }
+        
         std::vector<double> params(nprm2,1.0);
         //precondition the ML calc using least squares fit.  This should give an excellent start
         clipper::BasisFn_binner basis_pre( tr1, nprm2, 1.0 );
@@ -603,36 +603,73 @@ int main(int argc, char **argv)
         clipper::ResolutionFn pre( hklinf, basis_pre, target_pre, params);
         params = pre.params();
         
+        for (int i=0; i != params.size() ; ++i) {
+            if (params[i] < 0.0) ierror = true;
+        }
+        
         //outlier rejection from Read (1999)
-        double rlimit(0.0);
+        //double rlimit(0.0);
         for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
             if ( !xsig[ih.hkl()].missing() ) {
                 double I = tr1[ih].I()/(ih.hkl_class().epsilon()*pre.f(ih));
-                rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
+                double rlimit = (ih.hkl_class().centric() ) ? 6.40*6.40 : 4.55*4.55 ;
                 if (I > rlimit )  {
                     ++nrej_pre;
                     xsig[ih.hkl()].I() = xsig[ih.hkl()].sigI() = clipper::Util::nan();
                 }
             }
         }
-        //reset tr1
-        double reso(0.0);
-        for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
-            reso = ih.invresolsq();
-            if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
-            if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
-            tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
-        }
-        for (int i=0; i != params.size() ; ++i) {
-            if (params[i] < 0.0) ierror = true;
-        }
+        
         if (ierror) {
-            //back to least squares fit
+            //back to least squares fit, but using spline
+            std::vector<bool> mask(nprm2,false);
+            clipper::BasisFn_spline basis_fo( tr1, nprm2, 1.0 );
+            TargetFn_meanInth<clipper::data32::I_sigI> target_fo(tr1,1.0);
+            clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params);
+            params = Sigma.params();
+            
             for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
                 double reso = ih.invresolsq();
-                xsig[ih] = clipper::data32::I_sigI(pre.f(ih) * tr1[ih].I(),1.0f);
+                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+                xsig[ih].I() = Sigma.f(ih) * ctruncate::Best::value(reso);
+                xsig[ih].sigI() = 1.0;
             }
+            
         } else {
+            //reset bins as are scaling exponential
+            int nprm2=20;
+            int nreflns=500;
+            
+            //int Nreflections = 0;
+            {
+                //for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+                //    clipper::ftype reso = ih.invresolsq();
+                //    if ( !xsig[ih].missing() ) ++Nreflections;
+                //}
+                if ( nprm2 == 0 && nreflns != 0 ) {
+                    nprm2 = std::max( Nreflections/nreflns , 1);
+                    //} else if ( nreflns == 0 && nprm2 != 0 ) {
+                    //nprm = nbins;
+                } else {
+                    //nprm2 = std::max( Nreflections/nreflns , nprm2);
+                    double np1(nprm2+0.499);
+                    double np2(Nreflections/nreflns);
+                    double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+                    nprm2 = std::max( int(np), 1 );
+                }
+            }
+            std::vector<double> params(nprm2,1.0);
+            
+            //reset tr1
+            double reso(0.0);
+            for ( HRI ih = tr1.first(); !ih.last(); ih.next() ) {
+                reso = ih.invresolsq();
+                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+                tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
+            }
+            
             // proeceed with ML calc
             std::vector<bool> mask(nprm2,false);
             clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
@@ -643,19 +680,22 @@ int main(int argc, char **argv)
             //generate norm
             for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
                 double reso = ih.invresolsq();
-                xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * tr1[ih].I(),1.0f);
+                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
+                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
+                xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * ctruncate::Best::value(reso),1.0f);
             }
         }
+
 		// scale the norm for the anisotropy
 		if (doaniso) {
 			if (anisobysymm && anisodemo) {
 				clipper::datatypes::Compute_scale_u_aniso<clipper::data32::I_sigI > compute_s(1.0,-uaoc);
-				xsig.compute(xsig, compute_s);				
+				xsig.compute(xsig, compute_s);
 			}
-		}		
+		}
 		
 		if (!ierror) {
-			//outlier rejection from Read (1999) using new norm		
+			//outlier rejection from Read (1999) using new norm
 			double rlimit(0.0);
 			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
                 double reso = ih.invresolsq();
