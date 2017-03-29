@@ -1203,8 +1203,10 @@ namespace ctruncate {
         std::vector<clipper::ftype> params_old( nparams );
         params_.resize( nparams );
         
-        // loop for 20 cycles refining the params
-        for ( int n = 0; n != 10; ++n ) {
+		const int NCYC(100);
+		
+		int n(0);
+        for ( ; n != NCYC; ++n ) {
             for (int i=0; i!=nparams;++i) params_old[i] = params_[i];
             
             // calc target fn and derivs
@@ -1283,9 +1285,10 @@ namespace ctruncate {
             if ( debug ) std::cout << " Resolution function cycle " << n << " " << r0 << " " << r1 << " " << scale << "\n";
             
             clipper::ftype sig = (r0 > 1.0) ? r0 : 1.0;
-            sig *= 10000.0*std::numeric_limits<clipper::ftype>::epsilon();
-            if ( std::fabs( r1 - r0 ) < sig || std::abs(g) < sig ) break;
+            sig *= 1000.0*std::numeric_limits<clipper::ftype>::epsilon();
+            if ( std::fabs(r1-r0)/std::fabs(r1+r0) < sig || std::abs(g) < sig ) break;
         }
+		if (n == NCYC) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: failed to converge"));
     }
 	
     //------------------------------------------------------
@@ -1320,8 +1323,10 @@ namespace ctruncate {
         std::vector<clipper::ftype> params_old( nparams );
         params_.resize( nparams );
   
-        // loop for 20 cycles refining the params
-        for ( int n = 0; n != 20; ++n ) {
+        const int NCYC(100);
+		
+		int n(0);
+        for ( ; n != 20; ++n ) {
             for (int i=0; i!=nparams;++i) params_old[i] = params_[i];
             
             // calc target fn and derivs
@@ -1414,9 +1419,10 @@ namespace ctruncate {
             if ( debug ) std::cout << " Resolution function cycle " << n << " " << r0 << " " << r1 << " " << scale << "\n";
             
             clipper::ftype sig = (r0 > 1.0) ? r0 : 1.0;
-            sig *= 10000.0*std::numeric_limits<clipper::ftype>::epsilon();
-            if ( std::fabs( r1 - r0 ) < sig || std::abs(g) < sig ) break;
+            sig *= 1000.0*std::numeric_limits<clipper::ftype>::epsilon();
+            if ( std::fabs(r1-r0)/std::fabs(r1+r0) < sig || std::abs(g) < sig ) break;
         }
+		if (n == NCYC) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: failed to converge"));
     }
 
     /*------------------aniso scaling using wilson approx----------------------*/
