@@ -564,8 +564,8 @@ int main(int argc, char **argv)
                 xsig[ih].I() = xsig[ih].sigI() = clipper::Util::nan();
         }
         
-        int nprm2=100;
-        int nreflns=200;
+        int nprm2=20;
+        int nreflns=500;
         
         int Nreflections = 0;
         {
@@ -637,28 +637,6 @@ int main(int argc, char **argv)
             }
             
         } else {
-            //reset bins as are scaling exponential
-            int nprm2=20;
-            int nreflns=500;
-            
-            //int Nreflections = 0;
-            {
-                //for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-                //    clipper::ftype reso = ih.invresolsq();
-                //    if ( !xsig[ih].missing() ) ++Nreflections;
-                //}
-                if ( nprm2 == 0 && nreflns != 0 ) {
-                    nprm2 = std::max( Nreflections/nreflns , 1);
-                    //} else if ( nreflns == 0 && nprm2 != 0 ) {
-                    //nprm = nbins;
-                } else {
-                    //nprm2 = std::max( Nreflections/nreflns , nprm2);
-                    double np1(nprm2+0.499);
-                    double np2(Nreflections/nreflns);
-                    double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
-                    nprm2 = std::max( int(np), 1 );
-                }
-            }
             std::vector<double> params(nprm2,1.0);
             
             //reset tr1
