@@ -723,19 +723,17 @@ int main(int argc, char **argv)
         prog.summary_beg();
         std::cout << std::endl << "INTENSITY TO AMPLITUDE CONVERSION:" << std::endl << std::endl;
         std::cout << "Norm calculation summary:" << std::endl << std::endl;
-		if (prior == prior_user) {
-            if ( prior == FLAT ) std::cout <<  "      Calculation using FLAT prior." << std::endl;
-            else if ( prior == SIVIA ) std::cout << "      Calculation using SIVIA method." << std::endl;
-            else std::cout << "      Calculation using Wilson prior." << std::endl;
-        } else {
-            std::cout << "      WARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON." << std::endl;
-        }
+		if ( prior == FLAT ) std::cout <<  "      Calculation using FLAT prior." << std::endl;
+		else if ( prior == SIVIA ) std::cout << "      Calculation using SIVIA method." << std::endl;
+		else std::cout << "      Calculation using Wilson prior." << std::endl;
+		if (doaniso) std::cout << "      Anisotropy correction applied to norm." << std::endl;
+		if (prior != prior_user) std::cout << "      WARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON." << std::endl;
         if (ierror) std::cout << "      WARNING: negative mean I in bins." << std::endl;
-		std::cout << "      During the truncate procedure " << nrej << " intensities have been flagged as unphysical (too small)." << std::endl;
-        std::cout << "      Number of outliers and ice ring reflections not used in norm calculation (Read (1999) ): " << nrej_pre+nrej_ice << std::endl;
-		std::cout << "      Number of outliers in detected in final norm (Read (1999) ): " << nrej_norm << std::endl;
 		if (nrej_norm > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << "      WARNING: prior may be unstable, change in rejected reflections" << std::endl;
-        if (doaniso) std::cout << "      Anisotropy correction applied to norm." << std::endl;
+        std::cout << "      Number of outliers and ice ring reflections not used in norm calculation (Read (1999) ): " << nrej_pre+nrej_ice << std::endl;
+		std::cout << "      During the truncate procedure " << nrej << " intensities have been flagged as unphysical (too small)." << std::endl;
+		std::cout << "      Number of outliers detected in final norm (Read (1999) ): " << nrej_norm << std::endl;
+		std::cout << std::endl;
 		prog.summary_end();
         std::cout << std::endl << std::endl;
         
