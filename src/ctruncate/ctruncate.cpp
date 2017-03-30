@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.23";
-    clipper::String prog_date = "$Date: 2017/03/02";
+    clipper::String prog_vers = "1.17.24";
+    clipper::String prog_date = "$Date: 2017/03/30";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -619,25 +619,30 @@ int main(int argc, char **argv)
                 }
             }
         }
-        
-        if (ierror) {
-            //back to least squares fit, but using spline
-            std::vector<bool> mask(nprm2,false);
-            clipper::BasisFn_spline basis_fo( tr1, nprm2, 1.0 );
-            TargetFn_meanInth<clipper::data32::I_sigI> target_fo(tr1,1.0);
-            clipper::ResolutionFn Sigma( hklinf, basis_fo, target_fo, params);
-            params = Sigma.params();
-            
-            for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
-                double reso = ih.invresolsq();
-                if ( reso > ctruncate::Best::invresolsq_max() ) reso =  ctruncate::Best::invresolsq_max();
-                if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
-                xsig[ih].I() = Sigma.f(ih) * ctruncate::Best::value(reso);
-                xsig[ih].sigI() = 1.0;
-            }
-            
-        } else {
-            std::vector<double> params(nprm2,1.0);
+		{
+			//LL norm
+			//reset as removed some reflections at previous stage
+			nprm2=20;
+			Nreflections = 0;
+			{
+				for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
+					clipper::ftype reso = ih.invresolsq();
+					if ( !xsig[ih].missing() ) ++Nreflections;
+				}
+				if ( nprm2 == 0 && nreflns != 0 ) {
+					nprm2 = std::max( Nreflections/nreflns , 1);
+					//} else if ( nreflns == 0 && nprm2 != 0 ) {
+					//nprm = nbins;
+				} else {
+					//nprm2 = std::max( Nreflections/nreflns , nprm2);
+					double np1(nprm2+0.499);
+					double np2(Nreflections/nreflns);
+					double np(std::sqrt(np1*np1*np2*np2/(np1*np1+np2*np2) ) );
+					nprm2 = std::max( int(np), 1 );
+				}
+			}
+			
+            std::vector<double> paramsn(nprm2,1.0);
             
             //reset tr1
             double reso(0.0);
@@ -652,8 +657,8 @@ int main(int argc, char **argv)
             std::vector<bool> mask(nprm2,false);
             clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
             TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
-            ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, params, mask, 1.0, false);
-            params = Sigma.params();
+            ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, paramsn, mask, 1.0, false);
+            paramsn = Sigma.params();
             
             //generate norm
             for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
@@ -725,7 +730,7 @@ int main(int argc, char **argv)
         } else {
             std::cout << "      WARNING: FLAT prior in use due to either tNCS or twinning.\nTo override force --prior WILSON." << std::endl;
         }
-        if (ierror) std::cout << "      WARNING: negative mean I in bins, resorted to least squares norm." << std::endl;
+        if (ierror) std::cout << "      WARNING: negative mean I in bins." << std::endl;
 		std::cout << "      During the truncate procedure " << nrej << " intensities have been flagged as unphysical (too small)." << std::endl;
         std::cout << "      Number of outliers and ice ring reflections not used in norm calculation (Read (1999) ): " << nrej_pre+nrej_ice << std::endl;
         if (!ierror) {
