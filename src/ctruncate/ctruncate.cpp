@@ -677,7 +677,7 @@ int main(int argc, char **argv)
 			}
 		}
 		
-		if (!ierror) {
+		{
 			//outlier rejection from Read (1999) using new norm
 			double rlimit(0.0);
 			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
@@ -733,10 +733,8 @@ int main(int argc, char **argv)
         if (ierror) std::cout << "      WARNING: negative mean I in bins." << std::endl;
 		std::cout << "      During the truncate procedure " << nrej << " intensities have been flagged as unphysical (too small)." << std::endl;
         std::cout << "      Number of outliers and ice ring reflections not used in norm calculation (Read (1999) ): " << nrej_pre+nrej_ice << std::endl;
-        if (!ierror) {
-            std::cout << "      Number of outliers in detected in final norm (Read (1999) ): " << nrej_norm << std::endl;
-            if (nrej_norm > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << "      WARNING: prior may be unstable, change in rejected reflections" << std::endl ;
-        }
+		std::cout << "      Number of outliers in detected in final norm (Read (1999) ): " << nrej_norm << std::endl;
+		if (nrej_norm > nrej_pre && ( prior != FLAT || prior != SIVIA ) ) std::cout << "      WARNING: prior may be unstable, change in rejected reflections" << std::endl;
         if (doaniso) std::cout << "      Anisotropy correction applied to norm." << std::endl;
 		prog.summary_end();
         std::cout << std::endl << std::endl;
@@ -759,7 +757,7 @@ int main(int argc, char **argv)
         << std::fixed << std::setprecision(2) <<  1.0/std::sqrt(invresolsq ) << "</max>" << std::endl;
         xml_trunc << "  </ResolutionRange>" << std::endl;
         if (prior != prior_user) xml_trunc << "  <Warning id=\"flat\">FLAT prior in use due to either tNCS or twinning. To override force --prior WILSON.</Warning>" << std::endl;
-        if (ierror) xml_trunc << "  <Warning id=\"negative\">Negative mean I in bins, resorted to least squares norm.</Warning>" << std::endl;
+        if (ierror) xml_trunc << "  <Warning id=\"negative\">Negative mean I in bins.</Warning>" << std::endl;
         xml_trunc << "</Truncation>" << std::endl;
 	}
 
