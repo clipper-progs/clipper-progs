@@ -429,7 +429,23 @@ int main(int argc, char **argv)
 		}
     }
 	
-	    clipper::Range<double> active_range;
+	{
+		ctruncate::PattPeak patt_peak(std::sqrt(isig.invresolsq_range().max() ));
+		
+		float opt_res = patt_peak(isig);
+		
+		float width_patt = 2.0f*patt_peak.sigma();
+		
+		float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
+		
+        std::cout << std::endl;
+		prog.summary_beg();
+		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
+		prog.summary_end();
+        std::cout << std::endl << std::endl;
+    }
+	
+    clipper::Range<double> active_range;
 
 	std::stringstream xml_comp;
 	ctruncate::Rings icerings;
@@ -535,15 +551,16 @@ int main(int argc, char **argv)
 		//Parity group analysis
 		ctruncate::parity(ianiso, active_range.max(), nbins);
     }
-		
-	HKL_data<data32::I_sigI> xsig(hklinf);
-	//normal calculation
-    if (!reso_u.is_null() ) {
-        reso_trunc =
-        clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u.limit() ) );
-    }
-    std::stringstream xml_trunc;
+	
+	std::stringstream xml_trunc;
 	if (!amplitudes) {
+		HKL_data<data32::I_sigI> xsig(hklinf);
+		//normal calculation
+		if (!reso_u.is_null() ) {
+			reso_trunc =
+			clipper::Resolution( clipper::Util::max( reso_trunc.limit(), reso_u.limit() ) );
+		}
+		
         MODE prior_user = prior;
         //user override of truncate procedure and output
         if ( prior == AUTO && (hastncs || hastwin ) ) prior = FLAT;
@@ -668,7 +685,7 @@ int main(int argc, char **argv)
                 xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * ctruncate::Best::value(reso),1.0f);
             }
         }
-
+		
 		// scale the norm for the anisotropy
 		if (doaniso) {
 			if (anisobysymm && anisodemo) {
@@ -745,9 +762,9 @@ int main(int argc, char **argv)
         xml_trunc << "</prior>" << std::endl;
         xml_trunc << "  <mode>";
         if ( prior == AUTO ) xml_trunc << "AUTO";
-            else if ( prior == FLAT ) xml_trunc <<  "FLAT";
-            else if ( prior == SIVIA ) xml_trunc << "SIVIA";
-            else xml_trunc << "WILSON";
+		else if ( prior == FLAT ) xml_trunc <<  "FLAT";
+		else if ( prior == SIVIA ) xml_trunc << "SIVIA";
+		else xml_trunc << "WILSON";
         xml_trunc << "</mode>"  << std::endl;
         xml_trunc << "  <AnisoCorrection>" << ((doaniso) ? "yes" : "no" ) << "</AnisoCorrection>" << std::endl;
         xml_trunc << "  <ResolutionRange id=\"Truncation\" unit=\"Angstrom\" >" << std::endl;
@@ -757,256 +774,238 @@ int main(int argc, char **argv)
         if (prior != prior_user) xml_trunc << "  <Warning id=\"flat\">FLAT prior in use due to either tNCS or twinning. To override force --prior WILSON.</Warning>" << std::endl;
         if (ierror) xml_trunc << "  <Warning id=\"negative\">Negative mean I in bins.</Warning>" << std::endl;
         xml_trunc << "</Truncation>" << std::endl;
-	}
-
-	{
-		ctruncate::PattPeak patt_peak(std::sqrt(isig.invresolsq_range().max() ));
 		
-		float opt_res = patt_peak(isig);
-		
-		float width_patt = 2.0f*patt_peak.sigma();
-		
-		float b_patt = 4.0f*clipper::Util::twopi2()*std::pow(width_patt/2.0f,2.0f);
-		
-        std::cout << std::endl;
-		prog.summary_beg();
-		std::cout << "Estimated Optical Resolution: " << opt_res << std::endl;
-		prog.summary_end();
-        std::cout << std::endl << std::endl;
-		
-		
-    }
-    
-    // I/Sigma and F/sqrt(Sigma) plots
-    if (!amplitudes) {
-        //could use a clipper::Histogram
-        clipper::Range<double> range(-5.0,10.0);
-        /*for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-         float eps = ih.hkl_class().epsilon();
-         if (!isig[ih].missing() ) range.include(isig[ih].I()/(xsig[ih].I()));
-         //if (!fsig[ih].missing() ) range.include(std::sqrt(eps)*fsig[ih].f()/std::sqrt(xsig[ih].I()) );
-         }*/
-        clipper::Histogram Icount(range,200);
-        clipper::Histogram Jcount(range,200);
-        clipper::Histogram Fcount(range,200);
-        clipper::Histogram IScount(range,200);
-        clipper::Histogram JScount(range,200);
-        clipper::Histogram FScount(range,200);
-        
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!isig[ih].missing() ) {
-                Icount.accumulate(isig[ih].I()/xsig[ih].I());
-            }
-        }
-        
-        for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!jsig[ih].missing() ) {
-                Jcount.accumulate(jsig[ih].I()/xsig[ih].I());
-            }
-        }	
-        
-        for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!fsig[ih].missing() ) {
-                Fcount.accumulate(fsig[ih].f()/(scalef*std::sqrt(xsig[ih].I()) ) );
-            }
-        }	
-        
-        
-        for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!isig[ih].missing() ) {
-                IScount.accumulate(isig[ih].I()/isig[ih].sigI() );
-            }
-        }
-        
-        for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!jsig[ih].missing() ) {
-                JScount.accumulate(jsig[ih].I()/jsig[ih].sigI() );
-            }
-        }	
-        
-        for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
-            //float eps = ih.hkl_class().epsilon();
-            if (!fsig[ih].missing() ) {
-                FScount.accumulate(fsig[ih].f()/fsig[ih].sigf() );
-            }
-        }	
-        
-        printf("$TABLE: Phil plot:\n");
-        printf("$GRAPHS");
-        printf(": Phil plot - normalised values:A:1,2,3,4:\n");  
-        printf(": Phil plot - vs sigma:A:1,5,6,7:\n$$");  
-        
-        printf(" Value Io/Sigma I/Sigma F/Sigma**0.5 Io/sigIo I/sigI F/sigF$$\n$$\n");
-        
-        for ( int i=0; i!=200; ++i ) {
-            float res = range.min()+float(i)*(range.max()-range.min())/200.0; 
-            printf("%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
-                   res,
-                   Icount.y(res),
-                   Jcount.y(res),
-                   Fcount.y(res),
-                   IScount.y(res),
-                   JScount.y(res),
-                   FScount.y(res)
-                   );
-        }
-        
-        printf("$$\n\n");
-    }		
-    
-    // output data
-    if (!amplitudes) {
-		CCP4MTZfile mtzout;
-		HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
-		HKL_data<data32::ISym> freidal_sym(hklinf);
-		HKL_data<data32::J_sigJ_ano> isig_ano_export(hklinf); // do not want to output cov term, so use 4 term ano
-		HKL_data<data32::G_sigG_ano> fsig_ano_export(hklinf); // do not want to output cov term
-		if (anomalous) {
-			for ( HRI ih = freidal_sym.first(); !ih.last(); ih.next() ) {
-				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0 :
-				( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() ) ) ? 1 :
-				( !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 2 : 0;
-            }
-            for ( HRI ih = Dano.first(); !ih.last(); ih.next() ) {
-                Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? (fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
-				Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::sqrt(fsig_ano[ih.hkl()].sigf_pl()*fsig_ano[ih.hkl()].sigf_pl()+fsig_ano[ih.hkl()].sigf_mi()*fsig_ano[ih.hkl()].sigf_mi() ) : clipper::Util::nan();
-				if ( ih.hkl_class().centric() ) {
-					Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
-					Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+		// I/Sigma and F/sqrt(Sigma) plots
+		{
+			//could use a clipper::Histogram
+			clipper::Range<double> range(-5.0,10.0);
+			/*for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+			 float eps = ih.hkl_class().epsilon();
+			 if (!isig[ih].missing() ) range.include(isig[ih].I()/(xsig[ih].I()));
+			 //if (!fsig[ih].missing() ) range.include(std::sqrt(eps)*fsig[ih].f()/std::sqrt(xsig[ih].I()) );
+			 }*/
+			clipper::Histogram Icount(range,200);
+			clipper::Histogram Jcount(range,200);
+			clipper::Histogram Fcount(range,200);
+			clipper::Histogram IScount(range,200);
+			clipper::Histogram JScount(range,200);
+			clipper::Histogram FScount(range,200);
+			
+			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!isig[ih].missing() ) {
+					Icount.accumulate(isig[ih].I()/xsig[ih].I());
 				}
 			}
-			for ( HRI ih = isig_ano_export.first(); !ih.last(); ih.next() ) {
-				isig_ano_export[ih] = clipper::data32::J_sigJ_ano(isig_ano_import[ih.hkl()].I_pl(), isig_ano_import[ih.hkl()].I_mi(), isig_ano_import[ih.hkl()].sigI_pl(), isig_ano_import[ih.hkl()].sigI_mi() );
+			
+			for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!jsig[ih].missing() ) {
+					Jcount.accumulate(jsig[ih].I()/xsig[ih].I());
+				}
+			}	
+			
+			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!fsig[ih].missing() ) {
+					Fcount.accumulate(fsig[ih].f()/(scalef*std::sqrt(xsig[ih].I()) ) );
+				}
+			}	
+			
+			
+			for ( HRI ih = isig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!isig[ih].missing() ) {
+					IScount.accumulate(isig[ih].I()/isig[ih].sigI() );
+				}
 			}
-			for ( HRI ih = fsig_ano_export.first(); !ih.last(); ih.next() ) {
-				fsig_ano_export[ih] = clipper::data32::G_sigG_ano(fsig_ano[ih.hkl()].f_pl(), fsig_ano[ih.hkl()].f_mi(), fsig_ano[ih.hkl()].sigf_pl(), fsig_ano[ih.hkl()].sigf_mi() );
+			
+			for ( HRI ih = jsig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!jsig[ih].missing() ) {
+					JScount.accumulate(jsig[ih].I()/jsig[ih].sigI() );
+				}
+			}	
+			
+			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+				//float eps = ih.hkl_class().epsilon();
+				if (!fsig[ih].missing() ) {
+					FScount.accumulate(fsig[ih].f()/fsig[ih].sigf() );
+				}
+			}	
+			
+			printf("$TABLE: Phil plot:\n");
+			printf("$GRAPHS");
+			printf(": Phil plot - normalised values:A:1,2,3,4:\n");  
+			printf(": Phil plot - vs sigma:A:1,5,6,7:\n$$");  
+			
+			printf(" Value Io/Sigma I/Sigma F/Sigma**0.5 Io/sigIo I/sigI F/sigF$$\n$$\n");
+			
+			for ( int i=0; i!=200; ++i ) {
+				float res = range.min()+float(i)*(range.max()-range.min())/200.0; 
+				printf("%10.5f %10.5f %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+					   res,
+					   Icount.y(res),
+					   Jcount.y(res),
+					   Fcount.y(res),
+					   IScount.y(res),
+					   JScount.y(res),
+					   FScount.y(res)
+					   );
 			}
-		}			
+			
+			printf("$$\n\n");
+		}		
 		
-        //mtzout.open_append( args[mtzinarg], outfile );
-        mtzout.open_write( outfile );
-        mtzout.export_crystal ( cxtl, outcol );
-        mtzout.export_dataset ( cset, outcol );
-        //mtzout.export_hkl_info( hklinf );
-        mtzout.export_hkl_info( hkl_list );
-        //mtzout.export_hkl_data( jsig, outcol );
-        //clipper::String labels;
-		if ( refl_mean ) {
-            clipper::String labels;
-			if (appendcol == "") labels = outcol + "[F,SIGF]";
-			else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
-			mtzout.export_hkl_data( fsig, labels );
-        }
-        if (freein) {
-            if (appendcol != "") {
-                String::size_type loc = freecol.find("]",0);
-                freecol.insert(loc,"_"+appendcol);
-            }
-            mtzout.export_hkl_data( free, outcol + freecol.tail() );
-        }
-		
-        if (anomalous) {
-            clipper::String labels;
-            if ( !refl_mean ) {
-                if (appendcol == "") labels = "[FMEAN,SIGFMEAN]";
-                else labels = "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
-                mtzout.export_hkl_data( fsig, outcol+labels.tail() );
-                labels.clear();
-            }
-            if (appendcol == "") labels = "[DANO,SIGDANO]";
-            else labels = "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
-            mtzout.export_hkl_data( Dano, outcol+labels.tail() );
-            labels.clear();
-			if (appendcol == "") labels = "[F(+),SIGF(+),F(-),SIGF(-)]";
-            else labels = "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
-            mtzout.export_hkl_data( fsig_ano_export, outcol+labels.tail() );
-            labels.clear();
-            if (appendcol == "") labels = "[ISYM]";
-            else labels = "[ISYM_" + appendcol + "]";
-            mtzout.export_hkl_data( freidal_sym, outcol+labels.tail() );
-        }
-		
-		//output original input
-		if ( refl_mean ) {
-            clipper::String labels;
-            labels = meancol;
-			if (appendcol != "") {
-				String::size_type loc = labels.find(",",0);
-				labels.insert(loc,"_"+appendcol);
-				loc = labels.find("]",0);
-				labels.insert(loc,"_"+appendcol);
+		// output data
+		{
+			CCP4MTZfile mtzout;
+			HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
+			HKL_data<data32::ISym> freidal_sym(hklinf);
+			HKL_data<data32::J_sigJ_ano> isig_ano_export(hklinf); // do not want to output cov term, so use 4 term ano
+			HKL_data<data32::G_sigG_ano> fsig_ano_export(hklinf); // do not want to output cov term
+			if (anomalous) {
+				for ( HRI ih = freidal_sym.first(); !ih.last(); ih.next() ) {
+					freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0 :
+					( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() ) ) ? 1 :
+					( !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 2 : 0;
+				}
+				for ( HRI ih = Dano.first(); !ih.last(); ih.next() ) {
+					Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? (fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
+					Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::sqrt(fsig_ano[ih.hkl()].sigf_pl()*fsig_ano[ih.hkl()].sigf_pl()+fsig_ano[ih.hkl()].sigf_mi()*fsig_ano[ih.hkl()].sigf_mi() ) : clipper::Util::nan();
+					if ( ih.hkl_class().centric() ) {
+						Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+						Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+					}
+				}
+				for ( HRI ih = isig_ano_export.first(); !ih.last(); ih.next() ) {
+					isig_ano_export[ih] = clipper::data32::J_sigJ_ano(isig_ano_import[ih.hkl()].I_pl(), isig_ano_import[ih.hkl()].I_mi(), isig_ano_import[ih.hkl()].sigI_pl(), isig_ano_import[ih.hkl()].sigI_mi() );
+				}
+				for ( HRI ih = fsig_ano_export.first(); !ih.last(); ih.next() ) {
+					fsig_ano_export[ih] = clipper::data32::G_sigG_ano(fsig_ano[ih.hkl()].f_pl(), fsig_ano[ih.hkl()].f_mi(), fsig_ano[ih.hkl()].sigf_pl(), fsig_ano[ih.hkl()].sigf_mi() );
+				}
+			}			
+			
+			//mtzout.open_append( args[mtzinarg], outfile );
+			mtzout.open_write( outfile );
+			mtzout.export_crystal ( cxtl, outcol );
+			mtzout.export_dataset ( cset, outcol );
+			//mtzout.export_hkl_info( hklinf );
+			mtzout.export_hkl_info( hkl_list );
+			//mtzout.export_hkl_data( jsig, outcol );
+			//clipper::String labels;
+			if ( refl_mean ) {
+				clipper::String labels;
+				if (appendcol == "") labels = outcol + "[F,SIGF]";
+				else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
+				mtzout.export_hkl_data( fsig, labels );
 			}
-			mtzout.export_hkl_data( isig_import, outcol + labels.tail() );
-            labels.clear();
-        }
-
-		// KDC hack to output Imean  if explicitly requested (should be combined with above)
-		if ( outImean ) mtzout.export_hkl_data( isig, outcol + appendcol + "_MEAN" );
-
-        if (anomalous) {
-            clipper::String labels;
-            labels = anocols;
-            if (appendcol != "") {
-                String::size_type loc = labels.find("-",0);
-                labels.insert(loc-1,"_"+appendcol);
-                loc = labels.find(",",loc);
-                loc = labels.find("-",loc);
-                //loc = labels.find("-",loc+appendcol.size()+2 );
-                labels.insert(loc-1,"_"+appendcol);
-                loc = labels.find("+",0);
-                labels.insert(loc-1,"_"+appendcol);
-                loc = labels.find(",",loc);
-                loc = labels.find("+",loc);
-                //loc = labels.find("+",loc+appendcol.size()+2 );
-                labels.insert(loc-1,"_"+appendcol);
-            }
-            mtzout.export_hkl_data( isig_ano_export, outcol + labels.tail() );
-        }
-		
-        //copy old history and say something about ctruncate run
-        if (history.size() != 0 ) {
-			for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
-        }
-        //char run_date[10];
-        //CCP4::ccp4_utils_date(run_date);
-        //char run_time[8];
-        //CCP4::ccp4_utils_time(run_time);
-        clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
-        
-        //clipper::String chistory = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
-        clipper::String chistory = prog_string + " " + prog_vers + run_type + "run on " + date_time;
-        histin.push_back(chistory);
-    
-        mtzout.set_history(histin);
-		
-        mtzout.set_spacegroup_confidence(spgr_confidence);
-        
-        //mtzout.close_append();
-        mtzout.close_write();
-        
-        // Clipper will change H3 to R3, so change it back
-        if ((spgr.symbol_hm())[0] == 'R') {			
-			CMtz::MTZ *mtz=NULL;
-			int read_refs=1;  // need to read in reflections, otherwise they won't be written out
-			mtz = CMtz::MtzGet(outfile.c_str(), read_refs);
-			// write title to output file
-			char title[72];
-			CMtz::ccp4_lrtitl(mtz, title);
-			strncpy( mtz->title, title, 71 );
-			//reset spacegroup
-			char spacegroup[20];
-			CSym::CCP4SPG *spg = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz));
-			strcpy(spacegroup,spg->symbol_old);
-			strcpy(mtz->mtzsymm.spcgrpname,spacegroup);
-			CMtz::MtzPut( mtz, outfile.c_str() );
-			CMtz::MtzFree( mtz );
+			if (freein) {
+				if (appendcol != "") {
+					String::size_type loc = freecol.find("]",0);
+					freecol.insert(loc,"_"+appendcol);
+				}
+				mtzout.export_hkl_data( free, outcol + freecol.tail() );
+			}
+			
+			if (anomalous) {
+				clipper::String labels;
+				if ( !refl_mean ) {
+					if (appendcol == "") labels = "[FMEAN,SIGFMEAN]";
+					else labels = "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
+					mtzout.export_hkl_data( fsig, outcol+labels.tail() );
+					labels.clear();
+				}
+				if (appendcol == "") labels = "[DANO,SIGDANO]";
+				else labels = "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+				mtzout.export_hkl_data( Dano, outcol+labels.tail() );
+				labels.clear();
+				if (appendcol == "") labels = "[F(+),SIGF(+),F(-),SIGF(-)]";
+				else labels = "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
+				mtzout.export_hkl_data( fsig_ano_export, outcol+labels.tail() );
+				labels.clear();
+				if (appendcol == "") labels = "[ISYM]";
+				else labels = "[ISYM_" + appendcol + "]";
+				mtzout.export_hkl_data( freidal_sym, outcol+labels.tail() );
+			}
+			
+			//output original input
+			if ( refl_mean ) {
+				clipper::String labels;
+				labels = meancol;
+				if (appendcol != "") {
+					String::size_type loc = labels.find(",",0);
+					labels.insert(loc,"_"+appendcol);
+					loc = labels.find("]",0);
+					labels.insert(loc,"_"+appendcol);
+				}
+				mtzout.export_hkl_data( isig_import, outcol + labels.tail() );
+				labels.clear();
+			}
+			
+			// KDC hack to output Imean  if explicitly requested (should be combined with above)
+			if ( outImean ) mtzout.export_hkl_data( isig, outcol + appendcol + "_MEAN" );
+			
+			if (anomalous) {
+				clipper::String labels;
+				labels = anocols;
+				if (appendcol != "") {
+					String::size_type loc = labels.find("-",0);
+					labels.insert(loc-1,"_"+appendcol);
+					loc = labels.find(",",loc);
+					loc = labels.find("-",loc);
+					//loc = labels.find("-",loc+appendcol.size()+2 );
+					labels.insert(loc-1,"_"+appendcol);
+					loc = labels.find("+",0);
+					labels.insert(loc-1,"_"+appendcol);
+					loc = labels.find(",",loc);
+					loc = labels.find("+",loc);
+					//loc = labels.find("+",loc+appendcol.size()+2 );
+					labels.insert(loc-1,"_"+appendcol);
+				}
+				mtzout.export_hkl_data( isig_ano_export, outcol + labels.tail() );
+			}
+			
+			//copy old history and say something about ctruncate run
+			if (history.size() != 0 ) {
+				for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
+			}
+			//char run_date[10];
+			//CCP4::ccp4_utils_date(run_date);
+			//char run_time[8];
+			//CCP4::ccp4_utils_time(run_time);
+			clipper::String run_type = ( prior == FLAT ) ? " flat " : " french-wilson ";
+			
+			//clipper::String chistory = prog_string + " " + prog_vers + run_type +  "run on " + run_date + " " + run_time;
+			clipper::String chistory = prog_string + " " + prog_vers + run_type + "run on " + date_time;
+			histin.push_back(chistory);
+			
+			mtzout.set_history(histin);
+			
+			mtzout.set_spacegroup_confidence(spgr_confidence);
+			
+			//mtzout.close_append();
+			mtzout.close_write();
+			
+			// Clipper will change H3 to R3, so change it back
+			if ((spgr.symbol_hm())[0] == 'R') {			
+				CMtz::MTZ *mtz=NULL;
+				int read_refs=1;  // need to read in reflections, otherwise they won't be written out
+				mtz = CMtz::MtzGet(outfile.c_str(), read_refs);
+				// write title to output file
+				char title[72];
+				CMtz::ccp4_lrtitl(mtz, title);
+				strncpy( mtz->title, title, 71 );
+				//reset spacegroup
+				char spacegroup[20];
+				CSym::CCP4SPG *spg = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz));
+				strcpy(spacegroup,spg->symbol_old);
+				strcpy(mtz->mtzsymm.spcgrpname,spacegroup);
+				CMtz::MtzPut( mtz, outfile.c_str() );
+				CMtz::MtzFree( mtz );
+			}
 		}
-    }
+	}
     
     if (outxml) {
         time_t now = std::time(0);
