@@ -655,7 +655,7 @@ namespace ctruncate {
         ss << "  </Comment>" << std::endl;
         ss << "  <Comment id='AnomResult'>" << std::endl;
         if ( _signoise_range.min() > _signoise_range.max() || _meas_range.min() > _meas_range.max() ) {
-            ss << "  Warning: NO anmalous signal." << std::endl;
+            ss << "  Warning: NO anomalous signal." << std::endl;
         } else if ( ( _signoise_range.min() < 0.01 && _signoise_range.max() > 0.11 ) && // low resolution lower than 10A, high beyond 3 A
             ( _meas_range.min() < 0.01 && _meas_range.max() > 0.11 ) ) {
             ss << "  Significant anomalous signal to high resolution." << std::endl;
