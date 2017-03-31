@@ -1422,7 +1422,7 @@ namespace ctruncate {
             sig *= 1000.0*std::numeric_limits<clipper::ftype>::epsilon();
             if ( std::fabs(r1-r0)/std::fabs(r1+r0) < sig || std::abs(g) < sig ) break;
         }
-		if (n == NCYC) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: failed to converge"));
+		if (n == NCYC) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear_rest: failed to converge"));
     }
 
     /*------------------aniso scaling using wilson approx----------------------*/
