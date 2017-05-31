@@ -33,22 +33,22 @@ std::vector<int> NucleicAcidJoin::best_chain( std::vector<Node>& nodes )
       // test whether we've found a longer route
       float next_score = node_score[node] + nodes[next_node].score;
       if ( node_score[next_node] < next_score ) {
-	// check here for loops and broken paths
-	int back_node = node;
-	int back_node_next;
-	while ( bck_ptrs[back_node] >= 0 ) {
-	  back_node_next = bck_ptrs[back_node];
-	  if ( back_node_next == next_node ) break;
-	  if ( node_score[back_node_next] >= node_score[back_node] ) break;
-	  back_node = back_node_next;
-	}
-	// if the path to this node is clean, we can update the node
-	if ( bck_ptrs[back_node] < 0 ) {
-	  // if this is a longer non-looped route, store it
-	  node_score[next_node] = next_score;
-	  bck_ptrs[next_node] = node;
-	  dirty.insert( next_node );
-	}
+        // check here for loops and broken paths
+        int back_node = node;
+        int back_node_next;
+        while ( bck_ptrs[back_node] >= 0 ) {
+          back_node_next = bck_ptrs[back_node];
+          if ( back_node_next == next_node ) break;
+          if ( node_score[back_node_next] >= node_score[back_node] ) break;
+          back_node = back_node_next;
+        }
+        // if the path to this node is clean, we can update the node
+        if ( bck_ptrs[back_node] < 0 ) {
+          // if this is a longer non-looped route, store it
+          node_score[next_node] = next_score;
+          bck_ptrs[next_node] = node;
+          dirty.insert( next_node );
+        }
       }
     }
   }
@@ -130,20 +130,20 @@ clipper::MiniMol NucleicAcidJoin::join( const clipper::MiniMol& mol )
       //std::cout << r2 << " ";
       // if there is a match AND the residues hasn't already been matched
       if ( equivalent[r2] > equivalent[r1] ) {
-	const int b1 = nas[r2].lookup( " C1'", clipper::MM::ANY );
-	const int b3 = nas[r2].lookup( " C3'", clipper::MM::ANY );
-	const int b4 = nas[r2].lookup( " C4'", clipper::MM::ANY );
-	clipper::Coord_frac cb1 = nas[r2][b1].coord_orth().coord_frac(cell);
-	clipper::Coord_frac cb3 = nas[r2][b3].coord_orth().coord_frac(cell);
-	clipper::Coord_frac cb4 = nas[r2][b4].coord_orth().coord_frac(cell);
-	cb1 = cb1.symmetry_copy_near( spgr, cell, ca1 );
-	cb3 = cb3.symmetry_copy_near( spgr, cell, ca3 );
-	cb4 = cb4.symmetry_copy_near( spgr, cell, ca4 );
-	//std::cout << "(" << ( cb1 - ca1 ).lengthsq( cell ) << "," << ( cb3 - ca3 ).lengthsq( cell ) << "," << ( cb4 - ca4 ).lengthsq( cell ) << ") "; 
-	if ( ( cb1 - ca1 ).lengthsq( cell ) < d2 &&
-	     ( cb3 - ca3 ).lengthsq( cell ) < d2 &&
-	     ( cb4 - ca4 ).lengthsq( cell ) < d2 )
-	  equivalent[r2] = equivalent[r1];
+        const int b1 = nas[r2].lookup( " C1'", clipper::MM::ANY );
+        const int b3 = nas[r2].lookup( " C3'", clipper::MM::ANY );
+        const int b4 = nas[r2].lookup( " C4'", clipper::MM::ANY );
+        clipper::Coord_frac cb1 = nas[r2][b1].coord_orth().coord_frac(cell);
+        clipper::Coord_frac cb3 = nas[r2][b3].coord_orth().coord_frac(cell);
+        clipper::Coord_frac cb4 = nas[r2][b4].coord_orth().coord_frac(cell);
+        cb1 = cb1.symmetry_copy_near( spgr, cell, ca1 );
+        cb3 = cb3.symmetry_copy_near( spgr, cell, ca3 );
+        cb4 = cb4.symmetry_copy_near( spgr, cell, ca4 );
+        //std::cout << "(" << ( cb1 - ca1 ).lengthsq( cell ) << "," << ( cb3 - ca3 ).lengthsq( cell ) << "," << ( cb4 - ca4 ).lengthsq( cell ) << ") "; 
+        if ( ( cb1 - ca1 ).lengthsq( cell ) < d2 &&
+             ( cb3 - ca3 ).lengthsq( cell ) < d2 &&
+             ( cb4 - ca4 ).lengthsq( cell ) < d2 )
+          equivalent[r2] = equivalent[r1];
       }
     }
     //std::cout << std::endl;
@@ -161,12 +161,12 @@ clipper::MiniMol NucleicAcidJoin::join( const clipper::MiniMol& mol )
       clipper::Coord_frac cb3 = nas[r2][b3].coord_orth().coord_frac(cell);
       cb3 = cb3.symmetry_copy_near( spgr, cell, ca4 );
       if ( ( cb3 - ca4 ).lengthsq( cell ) < j2 ) {
-	int e1 = equivalent[r1];
-	int e2 = equivalent[r2];
-	bool found = false;
-	for ( int i = 0; i < joins[e1].ptrs.size(); i++ )
-	  if ( joins[e1].ptrs[i] == e2 ) found = true;
-	if ( !found ) joins[e1].ptrs.push_back( e2 );
+        int e1 = equivalent[r1];
+        int e2 = equivalent[r2];
+        bool found = false;
+        for ( int i = 0; i < joins[e1].ptrs.size(); i++ )
+          if ( joins[e1].ptrs[i] == e2 ) found = true;
+        if ( !found ) joins[e1].ptrs.push_back( e2 );
       }
     }
   }
@@ -196,12 +196,12 @@ clipper::MiniMol NucleicAcidJoin::join( const clipper::MiniMol& mol )
     // remove links from used fragments
     for ( int f = 0; f < joins.size(); f++ )
       if ( flags[f] == 0 )
-	joins[f].ptrs.clear();
+        joins[f].ptrs.clear();
     // and links to used fragments
     for ( int f = 0; f < joins.size(); f++ )
       for ( int j = joins[f].ptrs.size()-1; j >= 0; j-- )
-	if ( flags[joins[f].ptrs[j]] == 0 )
-	  joins[f].ptrs.erase( joins[f].ptrs.begin() + j );
+        if ( flags[joins[f].ptrs[j]] == 0 )
+          joins[f].ptrs.erase( joins[f].ptrs.begin() + j );
   }
 
   /*
@@ -220,11 +220,11 @@ clipper::MiniMol NucleicAcidJoin::join( const clipper::MiniMol& mol )
     for ( int r = 0; r < chns[c].size(); r++ ) {
       clipper::MMonomer mm = nas[chns[c][r]];
       if ( !cref.is_null() ) {
-	// get nearest symmetry copy
-	std::vector<clipper::Coord_orth> cwrk;
-	for ( int a = 0; a < mm.size(); a++ )
-	  cwrk.push_back( mm[a].coord_orth() );
-	mm.transform(NucleicAcidTools::symmetry_rtop(cwrk,cref,spgr,cell));
+        // get nearest symmetry copy
+        std::vector<clipper::Coord_orth> cwrk;
+        for ( int a = 0; a < mm.size(); a++ )
+          cwrk.push_back( mm[a].coord_orth() );
+        mm.transform(NucleicAcidTools::symmetry_rtop(cwrk,cref,spgr,cell));
       }
       mp.insert( mm );
       int a = mm.lookup( " O3'", clipper::MM::ANY );

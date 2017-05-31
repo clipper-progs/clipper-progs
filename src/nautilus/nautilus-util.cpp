@@ -81,16 +81,16 @@ void NautilusLog::log( const clipper::String& id, const clipper::MiniMol& mol, b
     std::cout << std::endl;
     for ( int c = 0; c < mol.size(); c++ ) {
       if ( !mol[c].exists_property( "NON-NA" ) ) {
-	for ( int r1 = 0; r1 < mol[c].size()-1; r1++ ) {
-	  int r2 = r1 + 1;
-	  int a1 = mol[c][r1].lookup( " O3'", clipper::MM::ANY );
-	  int a2 = mol[c][r2].lookup( " O5'", clipper::MM::ANY );
-	  if ( a1 >= 0 && a2 >= 0 ) {
-	    double r = sqrt( ( mol[c][r1][a1].coord_orth() -
-			       mol[c][r2][a2].coord_orth() ).lengthsq() );
-	    if ( r > 5.0 ) std::cout << "BREAK " << c << " " << r1 << " " << r2 << " " << r << std::endl;
-	  }
-	}
+        for ( int r1 = 0; r1 < mol[c].size()-1; r1++ ) {
+          int r2 = r1 + 1;
+          int a1 = mol[c][r1].lookup( " O3'", clipper::MM::ANY );
+          int a2 = mol[c][r2].lookup( " O5'", clipper::MM::ANY );
+          if ( a1 >= 0 && a2 >= 0 ) {
+            double r = sqrt( ( mol[c][r1][a1].coord_orth() -
+                               mol[c][r2][a2].coord_orth() ).lengthsq() );
+            if ( r > 5.0 ) std::cout << "BREAK " << c << " " << r1 << " " << r2 << " " << r << std::endl;
+          }
+        }
       }
     }
   }
@@ -107,21 +107,22 @@ clipper::String NautilusLog::log_info( const clipper::MiniMol& mol )
       nna += mol[c].size();
     }
   return clipper::String(nna,4) + " nucleic acids built in " +
-         clipper::String(nna,3) + " chains.";
+         clipper::String(nnc,3) + " chains.";
 }
 
 
-/*
 void NautilusLog::xml( const clipper::String& file, const clipper::MiniMol& mol )
 {
   int nres, nseq, nchn, nmax;
   nchn = mol.size();
   nres = nseq = nmax = 0;
   for ( int c = 0; c < mol.size(); c++ ) {
-    if ( mol[c].size() > nmax ) nmax = mol[c].size();
-    for ( int r = 0; r < mol[c].size(); r++ ) {
-      if ( mol[c][r].lookup( " CA ", clipper::MM::ANY ) >= 0 ) nres++;
-      if ( ProteinTools::residue_index_3( mol[c][r].type() ) >= 0 ) nseq++;
+    if ( !mol[c].exists_property( "NON-NA" ) ) {
+      if ( mol[c].size() > nmax ) nmax = mol[c].size();
+      for ( int r = 0; r < mol[c].size(); r++ ) {
+        if ( mol[c][r].lookup( " C4 ", clipper::MM::ANY ) >= 0 ) nres++;
+        if ( mol[c][r].lookup( " C4 ", clipper::MM::ANY ) >= 0 && mol[c][r].lookup( " O4 ", clipper::MM::ANY ) >= 0 ) nseq++;
+      }
     }
   }
 
@@ -135,7 +136,6 @@ void NautilusLog::xml( const clipper::String& file, const clipper::MiniMol& mol 
   f << "</NautilusResult>" << std::endl;
   f.close();
 }
-*/
 
 
 void NautilusLog::profile()

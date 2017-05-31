@@ -20,10 +20,10 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.4", "$Date: 2014/01/10" );
+  CCP4Program prog( "cnautilus", "0.5", "$Date: 2017/05/30" );
   prog.set_termination_message( "Failed" );
 
-  std::cout << std::endl << "Copyright 2011-2014 Kevin Cowtan and University of York." << std::endl << std::endl;
+  std::cout << std::endl << "Copyright 2011-2017 Kevin Cowtan and University of York." << std::endl << std::endl;
   prog.summary_beg();
   std::cout << "$TEXT:Reference: $$ Please reference $$" << std::endl << std::endl << " 'Automated nucleic acid chain tracing in real time'" << std::endl << " Cowtan K. (2014). IUCrJ 1, doi:10.1107/S2052252514019290. " << std::endl << std::endl << "$$" << std::endl;
   prog.summary_end();
@@ -42,12 +42,13 @@ int main( int argc, char** argv )
   clipper::String ippdb_ref = "NONE";
   clipper::String oppdb = "nautilus.pdb";
   clipper::String opmap = "NONE";
+  clipper::String opxml = "NONE";
   int ncyc = 3;
   bool doanis = false;
   int nhit = 100;
   double res_in = 2.0;         // Resolution limit
   double srchst = 18.0;        // Search angle step
-  int verbose = 5;
+  int verbose = 0;
 
   // command input
   CCP4CommandInput args( argc, argv, true );
@@ -67,6 +68,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) oppdb = args[arg];
     } else if ( args[arg] == "-mapout" ) {
       if ( ++arg < args.size() ) opmap  = args[arg];
+    } else if ( args[arg] == "-xmlout" ) {
+      if ( ++arg < args.size() ) opxml  = args[arg];
     } else if ( args[arg] == "-colin-fo" ) {
       if ( ++arg < args.size() ) ipcol_fo = args[arg];
     } else if ( args[arg] == "-colin-hl" ) {
@@ -95,7 +98,7 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "\nUsage: cnautilus\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl <colpath> or -colin-phifom <colpath>\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-cycles <number>\n\t-anisotropy-correction <number>\n\t-fragments <number>\n\t-resolution <resolution/A>\n\t-pdbin-ref <filename>\n.\n";
+    std::cout << "\nUsage: cnautilus\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-xmlout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl <colpath> or -colin-phifom <colpath>\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-cycles <number>\n\t-anisotropy-correction <number>\n\t-fragments <number>\n\t-resolution <resolution/A>\n\t-pdbin-ref <filename>\n.\n";
     return 1;
   }
 
@@ -147,7 +150,7 @@ int main( int argc, char** argv )
     if ( ipcol_fc != "NONE" ) fphi.compute( fphi, compute_aniso );    
     // output
     std::cout << std::endl << "Applying anisotropy correction:"
-	      << std::endl << uaniso.format() << std::endl << std::endl;
+              << std::endl << uaniso.format() << std::endl << std::endl;
   }
 
   // apply free flag
@@ -203,14 +206,14 @@ int main( int argc, char** argv )
   for ( HRI ih = fphi.first(); !ih.last(); ih.next() )
     if ( !fphi[ih].missing() )
       if ( fphi[ih].f() > 0.0 )
-	smax = std::max( smax, double(hkls.invresolsq(ih.index())) );
+        smax = std::max( smax, double(hkls.invresolsq(ih.index())) );
   std::cout << " Reso " << hkls.resolution().limit() << " " << 1.0/std::max(sqrt(smax),1.0e-3) << std::endl;
   if ( ipcol_fo != "NONE" ) {
     double sf(0.0), sw(0.0);
     for ( HRI ih = fphi.first(); !ih.last(); ih.next() )
       if ( !wrk_f1[ih].missing() && !fphi[ih].missing() ) {
-	sf += wrk_f1[ih].f();
-	sw += fphi[ih].f();
+        sf += wrk_f1[ih].f();
+        sw += fphi[ih].f();
       }
     std::cout << " Fw/Fo " << sw/sf << std::endl;
   }
@@ -270,12 +273,15 @@ int main( int argc, char** argv )
     NucleicAcidRebuildBases na_bases;
     mol_wrk = na_bases.rebuild_bases( xwrk, mol_wrk );
     log.log( "BASES", mol_wrk, verbose >= 5 );
-    for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
+    //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     prog.summary_beg();
     clipper::String msg = log.log_info( mol_wrk );
     std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << msg << std::endl;
     prog.summary_end();
+
+    // file output
+    if ( opxml != "NONE" ) log.xml( opxml, mol_wrk );
   }
 
   // move to match input model
@@ -283,31 +289,48 @@ int main( int argc, char** argv )
     NucleicAcidTools::symm_match( mol_wrk, mol_wrk_in );
 
   // output
+
+  // set up residue types
   const clipper::String basetypes = "ACGTU";
   clipper::MiniMol mol_new( xwrk.spacegroup(), xwrk.cell() );
-  const clipper::String chainid1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const clipper::String chainid2 = "abcdefghijklmnopqrstuvwxyz";
   for ( int i = 0; i < mol_wrk.size(); i++ ) {
-    clipper::String id; int roff;
-    if ( i < 26 ) {
-      id = chainid1.substr( i, 1 ); roff = 0;
-    } else {
-      id = chainid2.substr( (i-26)/100, 1 ); roff = 10*(i%100);
-    }
     clipper::MPolymer mpx = mol_wrk[i];
-    mpx.set_id( id );
     if ( !mpx.exists_property( "NON-NA" ) ) {
       for ( int r = 0; r < mpx.size(); r++ ) {
-	const clipper::String type = mpx[r].type().trim()+" ";
-	const char ctype = type[0];
-	int t = NucleicAcidTools::base_index( ctype );
-	if ( t >= 0 ) mpx[r].set_type( "  "+basetypes.substr(t,1) );
-	else          mpx[r].set_type( "  U" );
-	mpx[r].set_seqnum( roff+r+1 );
+        const clipper::String type = mpx[r].type().trim()+" ";
+        const char ctype = type[0];
+        int t = NucleicAcidTools::base_index( ctype );
+        if ( t >= 0 ) mpx[r].set_type( "  "+basetypes.substr(t,1) );
+        else          mpx[r].set_type( "  U" );
       }
     }
     mol_new.insert( mpx );
   }
+
+  // set up default chain labels
+  std::vector<clipper::String> labels;
+  labels.push_back( "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" );
+  labels.push_back( "0123456789" );
+  int label = 0;
+  std::vector<int> nresc( labels[1].length(), 0 );
+  for ( int chn = 0; chn < mol_new.size(); chn++ ) {
+    if ( label < labels[0].length() ) {
+      if ( mol_new[chn].id() == "" ) {
+        mol_new[chn].set_id( labels[0].substr( label, 1 ) );
+        label++;
+      }
+    } else {
+      int c = label - labels[0].length();
+      int c1 = c % labels[1].length();
+      mol_new[chn].set_id( labels[1].substr( c1, 1 ) );
+      for ( int res = 0; res < mol_new[chn].size(); res++ )
+        mol_new[chn][res].set_seqnum( res + nresc[c1] + 1 );
+      nresc[c1] += mol_new[chn].size()+5;
+      label++;
+    }
+  }
+
+  // add true sequence numbers
   ModelTidy::chain_renumber( mol_new, seq_wrk );
   clipper::MMDBfile pdbfile;
   pdbfile.export_minimol( mol_new );

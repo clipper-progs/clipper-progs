@@ -33,7 +33,7 @@ NucleicAcidRebuildBases::NucleicAcidRebuildBases()
     std::vector<std::pair<clipper::String,clipper::Coord_orth> > atoms;
     for ( int j = 0; j < 11; j++ )
       if ( clipper::String(baseatoms[i][j]) != "" )
-	atoms.push_back( std::pair<clipper::String,clipper::Coord_orth>( baseatoms[i][j], clipper::Coord_orth( basecoords[i][j][0], basecoords[i][j][1], basecoords[i][j][2] ) ) );
+        atoms.push_back( std::pair<clipper::String,clipper::Coord_orth>( baseatoms[i][j], clipper::Coord_orth( basecoords[i][j][0], basecoords[i][j][1], basecoords[i][j][2] ) ) );
     basedata.push_back( atoms );
   }
 }
@@ -49,32 +49,32 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
   for ( int c = 0; c < mol_new.size(); c++ ) {
     if ( !mol_new[c].exists_property( "NON-NA" ) ) {
       for ( int r = 0; r < mol_new[c].size(); r++ ) {
-	NucleicAcidDB::NucleicAcid na( mol_new[c][r] );
-	if ( na.flag() == NucleicAcidDB::NucleicAcid::COMPLETE ) {
-	  const clipper::String type = mol_new[c][r].type()+"?";
-	  const char ctype = type.trim()[0];
-	  const int t = (ctype!='?') ? NucleicAcidTools::base_index(ctype) : 5;
-	  if ( t >= 0 ) {
-	    const clipper::RTop_orth rtop =
-	      NucleicAcidSequence::base_rtop( mol_new[c][r], xmap );
-	    if ( !rtop.is_null() ) {
-	      clipper::MMonomer mm0, mm1;
-	      mm0 = na.mmonomer();
-	      mm1.set_type( mm0.type() );
-	      for ( int a = 0; a < mm0.size(); a++ )
-		if ( mm0[a].id().trim() != "N1" ) mm1.insert( mm0[a] );
-	      clipper::MAtom ma = clipper::MAtom::null();
-	      ma.set_occupancy( 1.0 ); ma.set_u_iso( 0.25 );
-	      for ( int a = 0; a < basedata[t].size(); a++ ) {
-		ma.set_id( " "+basedata[t][a].first+" " );
-		ma.set_element( basedata[t][a].first.substr(0,1) );
-		ma.set_coord_orth( rtop * basedata[t][a].second );
-		mm1.insert( ma );
-	      }
-	      mol_new[c][r] = mm1;
-	    }
-	  }
-	}
+        NucleicAcidDB::NucleicAcid na( mol_new[c][r] );
+        if ( na.flag() == NucleicAcidDB::NucleicAcid::COMPLETE ) {
+          const clipper::String type = mol_new[c][r].type()+"?";
+          const char ctype = type.trim()[0];
+          const int t = (ctype!='?') ? NucleicAcidTools::base_index(ctype) : 5;
+          if ( t >= 0 ) {
+            const clipper::RTop_orth rtop =
+              NucleicAcidSequence::base_rtop( mol_new[c][r], xmap );
+            if ( !rtop.is_null() ) {
+              clipper::MMonomer mm0, mm1;
+              mm0 = na.mmonomer();
+              mm1.set_type( mm0.type() );
+              for ( int a = 0; a < mm0.size(); a++ )
+                if ( mm0[a].id().trim() != "N1" ) mm1.insert( mm0[a] );
+              clipper::MAtom ma = clipper::MAtom::null();
+              ma.set_occupancy( 1.0 ); ma.set_u_iso( 0.25 );
+              for ( int a = 0; a < basedata[t].size(); a++ ) {
+                ma.set_id( " "+basedata[t][a].first+" " );
+                ma.set_element( basedata[t][a].first.substr(0,1) );
+                ma.set_coord_orth( rtop * basedata[t][a].second );
+                mm1.insert( ma );
+              }
+              mol_new[c][r] = mm1;
+            }
+          }
+        }
       }
     }
   }
@@ -85,25 +85,25 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
   for ( int c1 = 0; c1 < mol_new.size(); c1++ ) {
     if ( !mol_new[c1].exists_property( "NON-NA" ) ) {
       for ( int r1 = 0; r1 < mol_new[c1].size(); r1++ ) {
-	bool clash = false;
-	for ( int a1 = 0; a1 < mol_new[c1][r1].size(); a1++ ) {
-	  bool test = false;
-	  for ( int i = 0; i < nclashatoms; i++ )
-	    if ( mol_new[c1][r1][a1].id() == clashatoms[i] )
-	      test = true;
-	  if ( test ) {
-	    const clipper::Coord_orth co = mol_new[c1][r1][a1].coord_orth();
-	    std::vector<clipper::MAtomIndexSymmetry> atoms = nb( co, 2.0 );
-	    for ( int i = 0; i < atoms.size(); i++ ) {
-	      int c2 = atoms[i].polymer();
-	      int r2 = atoms[i].monomer();
-	      if ( c1 != c2 || r1 != r2 ) clash = true;
-	    }
-	  }
-	}
-	if ( clash )
-	  mol_new[c1][r1] =
-	    NucleicAcidDB::NucleicAcid( mol_new[c1][r1] ).mmonomer();
+        bool clash = false;
+        for ( int a1 = 0; a1 < mol_new[c1][r1].size(); a1++ ) {
+          bool test = false;
+          for ( int i = 0; i < nclashatoms; i++ )
+            if ( mol_new[c1][r1][a1].id() == clashatoms[i] )
+              test = true;
+          if ( test ) {
+            const clipper::Coord_orth co = mol_new[c1][r1][a1].coord_orth();
+            std::vector<clipper::MAtomIndexSymmetry> atoms = nb( co, 2.0 );
+            for ( int i = 0; i < atoms.size(); i++ ) {
+              int c2 = atoms[i].polymer();
+              int r2 = atoms[i].monomer();
+              if ( c1 != c2 || r1 != r2 ) clash = true;
+            }
+          }
+        }
+        if ( clash )
+          mol_new[c1][r1] =
+            NucleicAcidDB::NucleicAcid( mol_new[c1][r1] ).mmonomer();
       }
     }
   }
@@ -115,46 +115,46 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
       clipper::MAtom ma = clipper::MAtom::null();
       ma.set_occupancy( 1.0 ); ma.set_u_iso( 0.25 ); ma.set_element( "O" );
       for ( int r = 1; r < mol_new[c].size(); r++ ) {
-	const int i3 = mol_new[c][r-1].lookup(" O3'",clipper::MM::ANY);
-	const int ip = mol_new[c][r].lookup(" P  ",clipper::MM::ANY);
-	const int i5 = mol_new[c][r].lookup(" O5'",clipper::MM::ANY);
-	if ( i3 >= 0 && ip >= 0 && i5 >= 0 ) {
-	  const clipper::Coord_orth c3 = mol_new[c][r-1][i3].coord_orth();
-	  const clipper::Coord_orth cp = mol_new[c][r][ip].coord_orth();
-	  const clipper::Coord_orth c5 = mol_new[c][r][i5].coord_orth();
-	  const clipper::Coord_orth u = c3 - cp;
-	  const clipper::Coord_orth v = c5 - cp;
-	  if ( u.lengthsq() < 3.0 && v.lengthsq() < 3.0 ) {
-	    const clipper::Coord_orth x( clipper::Vec3<>::cross(u,v).unit() );
-	    const clipper::Coord_orth y( (u.unit()+v.unit()).unit() );
-	    const clipper::Coord_orth co1 = cp - 0.80*y + 1.25*x;
-	    const clipper::Coord_orth co2 = cp - 0.80*y - 1.25*x;
-	    ma.set_coord_orth( co2 ); ma.set_id( " OP2" );
-	    mol_new[c][r].insert( ma, i5 );
-	    ma.set_coord_orth( co1 ); ma.set_id( " OP1" );
-	    mol_new[c][r].insert( ma, i5 );
-	  }
-	}
+        const int i3 = mol_new[c][r-1].lookup(" O3'",clipper::MM::ANY);
+        const int ip = mol_new[c][r].lookup(" P  ",clipper::MM::ANY);
+        const int i5 = mol_new[c][r].lookup(" O5'",clipper::MM::ANY);
+        if ( i3 >= 0 && ip >= 0 && i5 >= 0 ) {
+          const clipper::Coord_orth c3 = mol_new[c][r-1][i3].coord_orth();
+          const clipper::Coord_orth cp = mol_new[c][r][ip].coord_orth();
+          const clipper::Coord_orth c5 = mol_new[c][r][i5].coord_orth();
+          const clipper::Coord_orth u = c3 - cp;
+          const clipper::Coord_orth v = c5 - cp;
+          if ( u.lengthsq() < 3.0 && v.lengthsq() < 3.0 ) {
+            const clipper::Coord_orth x( clipper::Vec3<>::cross(u,v).unit() );
+            const clipper::Coord_orth y( (u.unit()+v.unit()).unit() );
+            const clipper::Coord_orth co1 = cp - 0.80*y + 1.25*x;
+            const clipper::Coord_orth co2 = cp - 0.80*y - 1.25*x;
+            ma.set_coord_orth( co2 ); ma.set_id( " OP2" );
+            mol_new[c][r].insert( ma, i5 );
+            ma.set_coord_orth( co1 ); ma.set_id( " OP1" );
+            mol_new[c][r].insert( ma, i5 );
+          }
+        }
       }
       // insert O2'
       for ( int r = 0; r < mol_new[c].size(); r++ ) {
-	const int i1 = mol_new[c][r].lookup(" C1'",clipper::MM::ANY);
-	const int i2 = mol_new[c][r].lookup(" C2'",clipper::MM::ANY);
-	const int i3 = mol_new[c][r].lookup(" C3'",clipper::MM::ANY);
-	if ( i1 >= 0 && i2 >= 0 && i3 >= 0 ) {
-	  const clipper::Coord_orth c1 = mol_new[c][r][i1].coord_orth();
-	  const clipper::Coord_orth c2 = mol_new[c][r][i2].coord_orth();
-	  const clipper::Coord_orth c3 = mol_new[c][r][i3].coord_orth();
-	  const clipper::Coord_orth u = c1 - c2;
-	  const clipper::Coord_orth v = c3 - c2;
-	  if ( u.lengthsq() < 3.0 && v.lengthsq() < 3.0 ) {
-	    const clipper::Coord_orth x( clipper::Vec3<>::cross(u,v).unit() );
-	    const clipper::Coord_orth y( (u.unit()+v.unit()).unit() );
-	    const clipper::Coord_orth co = c2 - 0.80*y - 1.20*x;
-	    ma.set_coord_orth( co ); ma.set_id( " O2'" );
-	    mol_new[c][r].insert( ma, i1 );
-	  }
-	}
+        const int i1 = mol_new[c][r].lookup(" C1'",clipper::MM::ANY);
+        const int i2 = mol_new[c][r].lookup(" C2'",clipper::MM::ANY);
+        const int i3 = mol_new[c][r].lookup(" C3'",clipper::MM::ANY);
+        if ( i1 >= 0 && i2 >= 0 && i3 >= 0 ) {
+          const clipper::Coord_orth c1 = mol_new[c][r][i1].coord_orth();
+          const clipper::Coord_orth c2 = mol_new[c][r][i2].coord_orth();
+          const clipper::Coord_orth c3 = mol_new[c][r][i3].coord_orth();
+          const clipper::Coord_orth u = c1 - c2;
+          const clipper::Coord_orth v = c3 - c2;
+          if ( u.lengthsq() < 3.0 && v.lengthsq() < 3.0 ) {
+            const clipper::Coord_orth x( clipper::Vec3<>::cross(u,v).unit() );
+            const clipper::Coord_orth y( (u.unit()+v.unit()).unit() );
+            const clipper::Coord_orth co = c2 - 0.80*y - 1.20*x;
+            ma.set_coord_orth( co ); ma.set_id( " O2'" );
+            mol_new[c][r].insert( ma, i1 );
+          }
+        }
       }
     }
   }

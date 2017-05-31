@@ -309,12 +309,12 @@ void NucleicAcid::set_flag()
        !clipper::Util::is_null( c3x ) &&
        !clipper::Util::is_null( c4x ) ) {
     if ( !clipper::Util::is_null( n_x ) &&
-	 !clipper::Util::is_null( p_x ) &&
-	 !clipper::Util::is_null( c2x ) &&
-	 !clipper::Util::is_null( c5x ) &&
-	 !clipper::Util::is_null( o3x ) &&
-	 !clipper::Util::is_null( o4x ) &&
-	 !clipper::Util::is_null( o5x ) ) {
+         !clipper::Util::is_null( p_x ) &&
+         !clipper::Util::is_null( c2x ) &&
+         !clipper::Util::is_null( c5x ) &&
+         !clipper::Util::is_null( o3x ) &&
+         !clipper::Util::is_null( o4x ) &&
+         !clipper::Util::is_null( o5x ) ) {
       flg = COMPLETE;
     } else {
       flg = INCOMPLETE;
@@ -342,18 +342,18 @@ bool Chain::add_pdb( const clipper::String file )
     // select monomers by occupancy
     for ( int r = 0; r < mol[c].size(); r++ ) {
       if ( mol[c][r].lookup( " C1'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " C2'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " C3'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " C4'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " C5'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " O3'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " O4'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " O5'", clipper::MM::ANY ) >= 0 &&
-	   mol[c][r].lookup( " P  ", clipper::MM::ANY ) >= 0 ) {
-	int a = mol[c][r].lookup( " C4'", clipper::MM::ANY );
-	if ( mol[c][r][a].occupancy() > 0.01 &&
-	     mol[c][r][a].u_iso() < clipper::Util::b2u(100.0) )
-	  mp.insert( mol[c][r] );
+           mol[c][r].lookup( " C2'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " C3'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " C4'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " C5'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " O3'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " O4'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " O5'", clipper::MM::ANY ) >= 0 &&
+           mol[c][r].lookup( " P  ", clipper::MM::ANY ) >= 0 ) {
+        int a = mol[c][r].lookup( " C4'", clipper::MM::ANY );
+        if ( mol[c][r][a].occupancy() > 0.01 &&
+             mol[c][r][a].u_iso() < clipper::Util::b2u(100.0) )
+          mp.insert( mol[c][r] );
       }
     }
     // shift centre-of-mass of chain to the origin
@@ -371,7 +371,7 @@ bool Chain::add_pdb( const clipper::String file )
     for ( int r = 0; r < mp.size(); r++ ) {
       NucleicAcid rp( mp[r] );
       if ( rp.flag() == NucleicAcid::COMPLETE && rp.type() != ' ' )
-	add_monomer( rp );
+        add_monomer( rp );
     }
   }
   return true;
@@ -426,7 +426,7 @@ bool Chain::merge( const Chain& other, const std::vector<double>& wgt )
   if ( wgt.size() != 3*size() ) return false;
   for ( int r = 0; r < dbmonomers.size(); r++ )
     dbmonomers[r].merge( other.dbmonomers[r],
-			 wgt[3*r], wgt[3*r+1], wgt[3*r+2] );
+                         wgt[3*r], wgt[3*r+1], wgt[3*r+2] );
   */
   return true;
 }

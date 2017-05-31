@@ -51,14 +51,14 @@ clipper::RTop_orth NucleicAcidSequence::base_rtop( const clipper::MMonomer& mm, 
       const clipper::Coord_orth cc5( cc2, cn3, cc4, 1.35, 2.09, 0.0 );
       const clipper::Coord_orth cc6( cn3, cc4, cc5, 1.35, 2.09, 0.0 );
       const float score = ( xmap.interp<I>( xmap.coord_map( cc2 ) ) +
-			    xmap.interp<I>( xmap.coord_map( cn3 ) ) +
-			    xmap.interp<I>( xmap.coord_map( cc4 ) ) +
-			    xmap.interp<I>( xmap.coord_map( cc5 ) ) +
-			    xmap.interp<I>( xmap.coord_map( cc6 ) ) );
+                            xmap.interp<I>( xmap.coord_map( cn3 ) ) +
+                            xmap.interp<I>( xmap.coord_map( cc4 ) ) +
+                            xmap.interp<I>( xmap.coord_map( cc5 ) ) +
+                            xmap.interp<I>( xmap.coord_map( cc6 ) ) );
       if ( score > sbest ) {
         sbest = score;
         cn3best = cn3;
-	cc5best = cc5;
+        cc5best = cc5;
       }
     }
     // make rtop
@@ -68,8 +68,8 @@ clipper::RTop_orth NucleicAcidSequence::base_rtop( const clipper::MMonomer& mm, 
     const clipper::Vec3<> v2( clipper::Vec3<>::cross(c1,c2).unit() );
     const clipper::Vec3<> v3( clipper::Vec3<>::cross(v1,v2).unit() );
     clipper::RTop_orth rtop( clipper::Mat33<>( v1[0], v2[0], v3[0],
-					       v1[1], v2[1], v3[1],
-					       v1[2], v2[2], v3[2] ), cn1 );
+                                               v1[1], v2[1], v3[1],
+                                               v1[2], v2[2], v3[2] ), cn1 );
     return rtop;
   }
 
@@ -86,11 +86,11 @@ std::vector<std::vector<double> > NucleicAcidSequence::score( const clipper::Xma
 
   // feature coordinates
   const double fcoords[][3] = { {  1.498,  0.000, -4.489 },
-				{ -0.560,  0.000, -1.928 },
-				{  1.595,  0.000, -3.082 },
-				{  2.839,  0.000, -2.555 },
-				{  4.236,  0.000, -1.404 },
-				{  3.743,  0.000,  0.510 } };
+                                { -0.560,  0.000, -1.928 },
+                                {  1.595,  0.000, -3.082 },
+                                {  2.839,  0.000, -2.555 },
+                                {  4.236,  0.000, -1.404 },
+                                {  3.743,  0.000,  0.510 } };
   const int nfcoords = sizeof(fcoords)/sizeof(fcoords[0]);
 
   // feature data
@@ -409,22 +409,22 @@ std::vector<std::vector<double> > NucleicAcidSequence::score( const clipper::Xma
     if ( !rtops[r].is_null() ) {
       float s0(0.0), s1(0.0), s2(0.0);
       for ( int i = 0; i < nscoords; i++ ) {
-	clipper::Coord_orth co( scoords[i][0], scoords[i][1], scoords[i][2] );
-	float rho =
-	  xmap.interp<clipper::Interp_cubic>( xmap.coord_map( rtops[r]*co ) );
-	s0 += 1.0;
-	s1 += rho;
-	s2 += rho*rho;
+        clipper::Coord_orth co( scoords[i][0], scoords[i][1], scoords[i][2] );
+        float rho =
+          xmap.interp<clipper::Interp_cubic>( xmap.coord_map( rtops[r]*co ) );
+        s0 += 1.0;
+        s1 += rho;
+        s2 += rho*rho;
       }
       s1 /= s0;
       s2 /= s0;
       s2 = sqrt( s2 - s1*s1 );
       //s1 = xref.interp<clipper::Interp_cubic>( (rtops[r]*clipper::Coord_orth(0.0,0.0,0.0)).coord_frac(xref.cell()) );
       for ( int i = 0; i < nfcoords; i++ ) {
-	clipper::Coord_orth co( fcoords[i][0], fcoords[i][1], fcoords[i][2] );
-	float rho =
-	  xmap.interp<clipper::Interp_cubic>( xmap.coord_map( rtops[r]*co ) );
-	resultvec[i] = ( rho - s1 ) / s2;
+        clipper::Coord_orth co( fcoords[i][0], fcoords[i][1], fcoords[i][2] );
+        float rho =
+          xmap.interp<clipper::Interp_cubic>( xmap.coord_map( rtops[r]*co ) );
+        resultvec[i] = ( rho - s1 ) / s2;
       }
     }
     resultvecs[r] = resultvec;
@@ -438,10 +438,10 @@ std::vector<std::vector<double> > NucleicAcidSequence::score( const clipper::Xma
     std::vector<std::pair<float,int> > votes;
     for ( int j = 0; j < nfeatures; j++ ) {
       if ( i != j ) {
-	float s2 = 0.0;
-	for ( int k = 0; k < nfcoords; k++ )
-	  s2 += pow(featurevecs[j][k]-resultvecs[i][k],2.0);
-	votes.push_back( std::pair<float,int>( s2, featuretyps[j] ) );
+        float s2 = 0.0;
+        for ( int k = 0; k < nfcoords; k++ )
+          s2 += pow(featurevecs[j][k]-resultvecs[i][k],2.0);
+        votes.push_back( std::pair<float,int>( s2, featuretyps[j] ) );
       }
     }
     std::sort( votes.begin(), votes.end() );
@@ -453,7 +453,7 @@ std::vector<std::vector<double> > NucleicAcidSequence::score( const clipper::Xma
     std::vector<double> scores(4,0.0);
     for ( int j = 0; j < 4; j++ )
       for ( int k = 0; k < 4; k++ )
-	scores[j] += featureprbs[j][k]*votecounts[k];
+        scores[j] += featureprbs[j][k]*votecounts[k];
     results[i] = scores;
   }
 
@@ -489,10 +489,10 @@ std::pair<double,clipper::String> NucleicAcidSequence::sequence_score( const std
       // double sc = (sccum[r2]-sccum[r1]) + 1.5*sqrt( double(r2-r1+1 ) );
       double sc = ( sccum[r2]-sccum[r1] ) * scwt[r2-r1];
       if ( sc < scmin ) {
-	seqmin = subseq;
-	for ( int r = 0 ; r < r1           ; r++ ) seqmin[r] = '?';
-	for ( int r = r2; r < subseq.size(); r++ ) seqmin[r] = '?';
-	scmin = sc;
+        seqmin = subseq;
+        for ( int r = 0 ; r < r1           ; r++ ) seqmin[r] = '?';
+        for ( int r = r2; r < subseq.size(); r++ ) seqmin[r] = '?';
+        scmin = sc;
       }
     }
   std::pair<double,clipper::String> result( scmin, seqmin );
@@ -545,14 +545,14 @@ clipper::String NucleicAcidSequence::sequence_chain( const clipper::Xmap<float>&
     for ( int o = o1; o <= o2; o++ ) {
       clipper::String subseq = "";
       for ( int r = 0; r < chain.size(); r++ ) {
-	int spos = r+o;
-	if ( spos >= 0 && spos < curseq.length() )
-	  subseq += curseq[spos];
-	else
-	  subseq += "?";
+        int spos = r+o;
+        if ( spos >= 0 && spos < curseq.length() )
+          subseq += curseq[spos];
+        else
+          subseq += "?";
       }
       const std::pair<double,clipper::String>
-	seqscore = sequence_score( scores, subseq );
+        seqscore = sequence_score( scores, subseq );
       if ( seqscore.first < 0.0 ) seqscores.push_back( seqscore );
     }
   }
@@ -565,7 +565,7 @@ clipper::String NucleicAcidSequence::sequence_chain( const clipper::Xmap<float>&
     int inext;
     for ( inext = 1; inext < seqscores.size()-1; inext++ )
       if ( sequence_similarity( seqscores[0].second, seqscores[inext].second )
-	   < 0.75 ) break;
+           < 0.75 ) break;
     if ( seqscores[0].first - seqscores[inext].first < -1.0 )
       return seqscores[0].second;
   }
@@ -579,10 +579,10 @@ clipper::MiniMol NucleicAcidSequence::sequence( const clipper::Xmap<float>& xmap
   for ( int c = 0; c < mol_new.size(); c++ ) {
     if ( !mol_new[c].exists_property( "NON-NA" ) ) {
       clipper::String chnseq = sequence_chain( xmap, mol_new[c], seq );
-      std::cout << chnseq.size() << " " << mol_new[c].size() << " " << chnseq << std::endl;
+      //std::cout << chnseq.size() << " " << mol_new[c].size() << " " << chnseq << std::endl;
       if ( chnseq.find_first_not_of( "?" ) != std::string::npos )
-	for ( int r = 0; r < mol_new[c].size(); r++ )
-	  mol_new[c][r].set_type( chnseq.substr(r,1) );
+        for ( int r = 0; r < mol_new[c].size(); r++ )
+          mol_new[c][r].set_type( chnseq.substr(r,1) );
     }
   }
   return mol_new;

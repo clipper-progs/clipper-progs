@@ -37,8 +37,8 @@ clipper::MiniMol NucleicAcidTools::flag_chains( const clipper::MiniMol& mol )
     for ( int r = 0; r < mol_new[c].size(); r++ ) {
       NucleicAcidDB::NucleicAcid na( mol_new[c][r] );
       if ( na.flag() == NucleicAcidDB::NucleicAcid::NONE ) {
-	flg = true;
-	break;
+        flg = true;
+        break;
       }
     }
     if ( flg )
@@ -49,17 +49,17 @@ clipper::MiniMol NucleicAcidTools::flag_chains( const clipper::MiniMol& mol )
     if ( !mol_new[c].exists_property( "NON-NA" ) ) {
       std::vector<int> flag( mol_new[c].size(), 1 );  // flag NAs as good
       for ( int r = 0; r < mol_new[c].size(); r++ ) {
-	clipper::String type = mol_new[c][r].type().trim();
-	while ( type.length() > 1 ) type = type.substr(1);
-	mol_new[c][r].set_type( type );
-	if ( type == "U" ) {  // detect unknown NAs
-	  if ( mol_new[c][r].lookup( " O4 ", clipper::MM::ANY ) < 0 ) {
-	    if ( mol_new[c][r].lookup( " C4 ", clipper::MM::ANY ) < 0 )
-	      flag[r] =  0;  // not base atoms: maybe unknown
-	    else
-	      flag[r] = -1;  // C4 but no O4: definitely unknown
-	  }
-	}
+        clipper::String type = mol_new[c][r].type().trim();
+        while ( type.length() > 1 ) type = type.substr(1);
+        mol_new[c][r].set_type( type );
+        if ( type == "U" ) {  // detect unknown NAs
+          if ( mol_new[c][r].lookup( " O4 ", clipper::MM::ANY ) < 0 ) {
+            if ( mol_new[c][r].lookup( " C4 ", clipper::MM::ANY ) < 0 )
+              flag[r] =  0;  // not base atoms: maybe unknown
+            else
+              flag[r] = -1;  // C4 but no O4: definitely unknown
+          }
+        }
       }
       if ( flag[0] == 0 )             flag[0] = -1;
       if ( flag[flag.size()-1] == 0 ) flag[flag.size()-1] = -1;
@@ -68,7 +68,7 @@ clipper::MiniMol NucleicAcidTools::flag_chains( const clipper::MiniMol& mol )
       for ( int r = flag.size()-2; r > 0; r-- )
         if ( flag[r] == 0 && flag[r+1] == -1 ) flag[r] = -1;
       for ( int r = 0; r < mol_new[c].size(); r++ )
-	if ( flag[r] == -1 ) mol_new[c][r].set_type( "?" );
+        if ( flag[r] == -1 ) mol_new[c][r].set_type( "?" );
     }
   }
   return mol_new;
@@ -91,9 +91,9 @@ clipper::RTop_orth NucleicAcidTools::symmetry_rtop( const std::vector<clipper::C
       c2 = c1.lattice_copy_near( cref );
       d2 = ( c2 - cref ).lengthsq( cell );
       if ( d2 < d2min ) {
-	d2min = d2;
-	smin = s;
-	dmin = c2 - c1;
+        d2min = d2;
+        smin = s;
+        dmin = c2 - c1;
       }
     }
   clipper::RTop_frac rf( spgr.symop(smin).rot(), spgr.symop(smin).trn()+dmin );
@@ -172,8 +172,8 @@ bool NucleicAcidTools::symm_match( clipper::MiniMol& molwrk, const clipper::Mini
       clipper::RTop_orth rtop = spgr.symop(sym).rtop_orth( cell );
       clipper::Coord_orth cow( 0.0, 0.0, 0.0 );
       for ( int a = 0; a < atomw.size(); a++ ) {
-	atomw[a].transform( rtop );
-	cow += atomw[a].coord_orth();
+        atomw[a].transform( rtop );
+        cow += atomw[a].coord_orth();
       }
       if ( atomw.size() > 0 ) cow = (1.0/double(atomw.size())) * cow;
       clipper::Coord_frac cfw = cow.coord_frac( cell );
@@ -182,24 +182,24 @@ bool NucleicAcidTools::symm_match( clipper::MiniMol& molwrk, const clipper::Mini
 
       // try offsets
       for ( double du = 0.0; du <= 1.01; du += 1.0 )
-	for ( double dv = 0.0; dv < 1.01; dv += 1.0 )
-	  for ( double dw = 0.0; dw < 1.01; dw += 1.0 ) {
-	    clipper::Coord_frac off( rint( off0.u() ) + du,
-				     rint( off0.v() ) + dv,
-				     rint( off0.w() ) + dw );
-	    clipper::Coord_orth ofo = off.coord_orth( cell );
-	    double scr = 0.0;
-	    for ( int a = 0; a < atomw.size(); a++ ) {
-	      clipper::Coord_orth coa = atomw[a].coord_orth() + ofo;
-	      clipper::Coord_grid cga = nxflt.coord_map( coa ).coord_grid();
-	      if ( nxflt.in_map( cga ) ) scr += nxflt.get_data( cga );
-	    }
-	    if ( scr > bestscr ) {
-	      bestscr = scr;
-	      bestsym = sym;
-	      bestoff = off;
-	    }
-	  }
+        for ( double dv = 0.0; dv < 1.01; dv += 1.0 )
+          for ( double dw = 0.0; dw < 1.01; dw += 1.0 ) {
+            clipper::Coord_frac off( rint( off0.u() ) + du,
+                                     rint( off0.v() ) + dv,
+                                     rint( off0.w() ) + dw );
+            clipper::Coord_orth ofo = off.coord_orth( cell );
+            double scr = 0.0;
+            for ( int a = 0; a < atomw.size(); a++ ) {
+              clipper::Coord_orth coa = atomw[a].coord_orth() + ofo;
+              clipper::Coord_grid cga = nxflt.coord_map( coa ).coord_grid();
+              if ( nxflt.in_map( cga ) ) scr += nxflt.get_data( cga );
+            }
+            if ( scr > bestscr ) {
+              bestscr = scr;
+              bestsym = sym;
+              bestoff = off;
+            }
+          }
     }
     // now transform using the best operator
     clipper::Coord_orth cot = bestoff.coord_orth( cell );

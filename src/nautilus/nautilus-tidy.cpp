@@ -37,7 +37,7 @@ int ModelTidy::chain_renumber( clipper::MPolymer& mp, const clipper::MMoleculeSe
   int bestchn = -1;
   int bestscr = 0;
   clipper::MSequenceAlign align( clipper::MSequenceAlign::LOCAL,
-  				 1.0, -1000.0, -4.0 );
+                                   1.0, -1000.0, -4.0 );
   std::pair<std::vector<int>,std::vector<int> > result;
   for ( int chn = 0; chn < seqs.size(); chn++ ) {
     const clipper::String& seqseq = seqs[chn];
@@ -45,10 +45,10 @@ int ModelTidy::chain_renumber( clipper::MPolymer& mp, const clipper::MMoleculeSe
     int scr = 0;
     for ( int i = 0; i < result.first.size(); i++ ) {
       if ( result.first[i] >= 0 ) {
-	if ( chnseq[i] == seqseq[result.first[i]] )
- 	  scr++;
-  	else
-  	  scr--;
+        if ( chnseq[i] == seqseq[result.first[i]] )
+           scr++;
+          else
+            scr--;
       }
     }
     if ( scr > bestscr ) {
@@ -120,7 +120,7 @@ clipper::String ModelTidy::chain_sequence( const clipper::MPolymer& mp )
     char c = ' ';
     for ( int t = 0; t < NTYPE; t++ )
       if ( typ == clipper::String(rtype3[t]) )
-	c = rtype1[t];
+        c = rtype1[t];
     if ( c == ' ' && mp[res].type().length() > 0 )
       c = char( mp[res].type()[0] + 128 );  // use dummy symbols for unknowns
     seq += c;

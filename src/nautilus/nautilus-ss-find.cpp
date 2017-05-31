@@ -46,7 +46,7 @@ void SSfind::prep_search( const clipper::Xmap<float>& xmap, const double rhocut,
       df = df.symmetry_copy_near( xmap.spacegroup(), xmap.cell(), cf ) - cf;
       double r2 = df.lengthsq( xmap.cell() );
       if ( r2 < r2cut )
-	srctrn.push_back( grid.index( ix.coord() ) );
+        srctrn.push_back( grid.index( ix.coord() ) );
     }
 }
 
@@ -63,7 +63,7 @@ std::vector<SearchResult> SSfind::search( const std::vector<Pair_coord>& target_
       const clipper::Coord_map c1( grrot*(op*target_cs[i].first  ) );
       const clipper::Coord_map c2( grrot*(op*target_cs[i].second ) );
       tmp.push_back( std::pair<int,int>( mxgr.index(c1.coord_grid()) - i0,
-					 mxgr.index(c2.coord_grid()) - i0 ) );
+                                         mxgr.index(c2.coord_grid()) - i0 ) );
     }
     index_lists.push_back( tmp );
   }
@@ -84,20 +84,20 @@ std::vector<SearchResult> SSfind::search( const std::vector<Pair_coord>& target_
     const int index0 = mxgr.index( cg );                    // index in list
     if ( mapbox[index0] > rhocut ) {
       for ( int r = 0; r < index_lists.size(); r++ ) {      // loop over rotns
-	const std::vector<std::pair<int,int> >& index_list( index_lists[r] );
-	float hi = mapbox[index0+index_list[0].first ];
-	float lo = mapbox[index0+index_list[0].second];
-	int i = 1;
-	while ( hi - lo > bestlim ) {                     // loop over points
-	  hi = std::min( hi, mapbox[index0+index_list[i].first ] );
-	  lo = std::max( lo, mapbox[index0+index_list[i].second] );
-	  i++;
-	  if ( !( i < index_list.size() ) ) break;
-	}
-	if ( hi - lo > bestlim ) {
-	  bestlim = bestscr = hi - lo;
-	  bestrot = r;
-	}
+        const std::vector<std::pair<int,int> >& index_list( index_lists[r] );
+        float hi = mapbox[index0+index_list[0].first ];
+        float lo = mapbox[index0+index_list[0].second];
+        int i = 1;
+        while ( hi - lo > bestlim ) {                     // loop over points
+          hi = std::min( hi, mapbox[index0+index_list[i].first ] );
+          lo = std::max( lo, mapbox[index0+index_list[i].second] );
+          i++;
+          if ( !( i < index_list.size() ) ) break;
+        }
+        if ( hi - lo > bestlim ) {
+          bestlim = bestscr = hi - lo;
+          bestrot = r;
+        }
       }
     }
     rslts[i].score = bestscr;  // store
