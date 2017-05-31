@@ -57,8 +57,8 @@ using namespace ctruncate;
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.24";
-    clipper::String prog_date = "$Date: 2017/03/30";
+    clipper::String prog_vers = "1.17.25";
+    clipper::String prog_date = "$Date: 2017/05/30";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -660,6 +660,8 @@ int main(int argc, char **argv)
 			}
 			
             std::vector<double> paramsn(nprm2,1.0);
+            //pre-condition paramsn
+            for (int i=0; i!=paramsn.size(); ++i ) paramsn[i] = (params[i] > 0.0) ? params[i] : 1.0;
             
             //reset tr1
             double reso(0.0);
@@ -669,14 +671,14 @@ int main(int argc, char **argv)
                 if ( reso < ctruncate::Best::invresolsq_min() ) reso =  ctruncate::Best::invresolsq_min();
                 tr1[ih] = clipper::data32::I_sigI( ctruncate::Best::value(reso), 0.0);
             }
-            
-            // proeceed with ML calc
+           
+            // proceed with ML calc
             std::vector<bool> mask(nprm2,false);
             clipper::BasisFn_spline basis_fo( xsig, nprm2, 1.0 );
             TargetFn_scaleLogLikeI1I2<clipper::data32::I_sigI,clipper::data32::I_sigI> target_fo(tr1,xsig);
-            ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, paramsn, mask, 1.0, false);
+            ctruncate::ResolutionFn_nonlinear Sigma( hklinf, basis_fo, target_fo, paramsn, mask, 10.0, false);
             paramsn = Sigma.params();
-            
+           
             //generate norm
             for ( HRI ih = xsig.first(); !ih.last(); ih.next() ) {
                 double reso = ih.invresolsq();
@@ -685,7 +687,7 @@ int main(int argc, char **argv)
                 xsig[ih] = clipper::data32::I_sigI(Sigma.f(ih) * ctruncate::Best::value(reso),1.0f);
             }
         }
-		
+	
 		// scale the norm for the anisotropy
 		if (doaniso) {
 			if (anisobysymm && anisodemo) {

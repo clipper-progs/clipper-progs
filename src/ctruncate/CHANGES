@@ -1,3 +1,8 @@
+1.17.25 (30/05/17)
+- case of NaN step size now throws
+- bring back procondition of norm
+- increase dampening
+
 1.17.24 (30/03/17)
 - revert to using ML norm, but do not precondition
 - will throw if do not converge

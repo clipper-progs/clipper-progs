@@ -1238,6 +1238,7 @@ namespace ctruncate {
             s = sqrt(s);
 
             if (std::isnan(g)) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: gradient is Nan"));
+            if (std::isnan(s)) clipper::Message::message( clipper::Message_fatal("ResolutionFn_nonlinear: step is Nan"));
  
             // make gradient shift to match NR shift
             for ( int k = 0; k != nparams; ++k ) shiftg[k] = drdp[k] * s / g;
