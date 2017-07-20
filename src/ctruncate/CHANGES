@@ -1,3 +1,6 @@
+1.17.26 (20/07/17)
+- protect against column type mismatch
+
 1.17.25 (30/05/17)
 - case of NaN step size now throws
 - bring back procondition of norm

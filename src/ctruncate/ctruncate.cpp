@@ -53,12 +53,42 @@ using namespace ctruncate;
 
 // replacement for Wilson/Truncate
 
+clipper::String mtz_match_path_type( const clipper::String& path, const CCP4MTZfile& mtzfile)
+{
+	clipper::String cpath(path), result;
+	std::vector<clipper::String> list;
+	if ( cpath.find("/")==clipper::String::npos && cpath.find("[")==clipper::String::npos ) cpath = "/*/*/["+cpath+"]";
+	if ( cpath.find( "[" ) != clipper::String::npos ) {
+		list = cpath.split( "[], " );
+	}
+	
+	std::vector<String> name(cpath.split("/"));
+	for (int i = 1; i != list.size(); ++i ) {
+		cpath = list[0]+list[i];
+		std::vector<String> name(cpath.split("/"));
+		std::vector<clipper::String> cols(mtzfile.column_paths());
+		for (std::vector<clipper::String>::iterator it = cols.begin(); it != cols.end() ; ++it) {
+			std::vector<clipper::String> col(it->split(" "));
+			std::vector<String> colname(col[0].split("/"));
+			if (name.size() == colname.size()) 
+				if (name[0] == "*" || name[0] == colname[0] ) 
+					if (name[1] == "*" || name[1] == colname[1] ) {
+						if (name[2] == colname[2])
+							result += col[1];
+					} else {
+						result += "N";
+					}
+		}
+	}
+	return result;
+}
+
 
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.25";
-    clipper::String prog_date = "$Date: 2017/05/30";
+    clipper::String prog_vers = "1.17.26";
+    clipper::String prog_date = "$Date: 2017/07/20";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults
@@ -268,21 +298,41 @@ int main(int argc, char **argv)
     HKL_data<data32::I_sigI_ano> jsig_ano(hklinf);   // post-truncate anomalous I and sigma
     HKL_data<data32::F_sigF_ano> fsig_ano(hklinf);   // post-truncate anomalous F and sigma
     HKL_data<data32::Flag> free(hklinf);
-    
-    clipper::HKL_data<clipper::data32::F_sigF> faniso( hklinf );
-    
+	
+	//sanity check that mtz columns have type we want
+	if (refl_mean) {
+		clipper::String type(mtz_match_path_type(meancol,mtzfile) );
+		std::cout << "** " << type << std::endl;
+		if (!amplitudes && (type.find("F")!=clipper::String::npos) ) {
+			clipper::Message::message( Message_warn( "Input column type mismatch: structure factors rather than intensities") );
+			amplitudes = true;
+		} else if (amplitudes && (type.find("J")!=clipper::String::npos) ) {
+			clipper::Message::message( Message_warn( "Input column type mismatch: intensities rather than structure factors") );
+			amplitudes = false;
+		}
+	}
+	if (anomalous) {
+		clipper::String type(mtz_match_path_type(anocols,mtzfile) );
+		if (!amplitudes && (type.find("G")!=clipper::String::npos) ) {
+			clipper::Message::message( Message_warn( "Input column type mismatch: structure factors rather than intensities"));
+			amplitudes = true;
+		} else if (amplitudes && (type.find("K")!=clipper::String::npos) ) {
+			clipper::Message::message( Message_warn( "Input column type mismatch: intensities rather than structure factors"));
+			amplitudes = false;
+		}
+	}
     try {
-    if (amplitudes ) {
-        if ( refl_mean )
-			mtzfile.import_hkl_data( fsig, meancol );
-		if (anomalous)
-            mtzfile.import_hkl_data( fsig_ano, anocols );
-    } else {
-        if ( refl_mean )
-            mtzfile.import_hkl_data( isig_import, meancol );
-        if (anomalous)
-            mtzfile.import_hkl_data( isig_ano_import, anocols );
-    }
+		if (amplitudes ) {
+			if ( refl_mean )
+				mtzfile.import_hkl_data( fsig, meancol );
+			if (anomalous)
+				mtzfile.import_hkl_data( fsig_ano, anocols );
+		} else {
+			if ( refl_mean )
+				mtzfile.import_hkl_data( isig_import, meancol );
+			if (anomalous)
+				mtzfile.import_hkl_data( isig_ano_import, anocols );
+		}
     } catch (...) {
         std::cout << std::endl;
         std::cout << "Error: ";
@@ -295,7 +345,7 @@ int main(int argc, char **argv)
         std::cout << std::endl;
         return(1);
     }
- 
+	
     ReflectionFile reflnfile(mtzfile,ipfile);
     try {
         if (freein) mtzfile.import_hkl_data( free, freecol );
@@ -857,7 +907,7 @@ int main(int argc, char **argv)
 			}
 			
 			printf("$$\n\n");
-		}		
+		} 
 		
 		// output data
 		{
@@ -1007,8 +1057,109 @@ int main(int argc, char **argv)
 				CMtz::MtzFree( mtz );
 			}
 		}
+	} else if (mtzoutarg != 0) {
+		// if the user gives output file and has amplitudes, amuse them.
+		CCP4MTZfile mtzout;
+		HKL_data<data32::D_sigD> Dano(hklinf);   // anomalous difference and sigma 
+		HKL_data<data32::ISym> freidal_sym(hklinf);
+		HKL_data<data32::G_sigG_ano> fsig_ano_export(hklinf); // do not want to output cov term
+		if (anomalous) {
+			for ( HRI ih = freidal_sym.first(); !ih.last(); ih.next() ) {
+				freidal_sym[ih].isym() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0 :
+				( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() ) ) ? 1 :
+				( !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 2 : 0;
+			}
+			for ( HRI ih = fsig.first(); !ih.last(); ih.next() ) {
+				fsig[ih].f() = fsig_ano[ih.hkl()].f();
+				fsig[ih].sigf() = fsig_ano[ih.hkl()].sigf();
+			}
+			for ( HRI ih = Dano.first(); !ih.last(); ih.next() ) {
+				Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? (fsig_ano[ih.hkl()].f_pl() - fsig_ano[ih.hkl()].f_mi()) : clipper::Util::nan();
+				Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  &&  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? std::sqrt(fsig_ano[ih.hkl()].sigf_pl()*fsig_ano[ih.hkl()].sigf_pl()+fsig_ano[ih.hkl()].sigf_mi()*fsig_ano[ih.hkl()].sigf_mi() ) : clipper::Util::nan();
+				if ( ih.hkl_class().centric() ) {
+					Dano[ih].d() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+					Dano[ih].sigd() = ( !Util::is_nan(fsig_ano[ih.hkl()].f_pl() )  ||  !Util::is_nan(fsig_ano[ih.hkl()].f_mi() ) ) ? 0.0 : clipper::Util::nan();
+				}
+			}
+			for ( HRI ih = fsig_ano_export.first(); !ih.last(); ih.next() ) {
+				fsig_ano_export[ih] = clipper::data32::G_sigG_ano(fsig_ano[ih.hkl()].f_pl(), fsig_ano[ih.hkl()].f_mi(), fsig_ano[ih.hkl()].sigf_pl(), fsig_ano[ih.hkl()].sigf_mi() );
+			}
+		}			
+		
+		//mtzout.open_append( args[mtzinarg], outfile );
+		mtzout.open_write( outfile );
+		mtzout.export_crystal ( cxtl, outcol );
+		mtzout.export_dataset ( cset, outcol );
+		//mtzout.export_hkl_info( hklinf );
+		mtzout.export_hkl_info( hkl_list );
+		//mtzout.export_hkl_data( jsig, outcol );
+		//clipper::String labels;
+		if ( refl_mean ) {
+			clipper::String labels;
+			if (appendcol == "") labels = outcol + "[F,SIGF]";
+			else labels = outcol + "[F_" + appendcol + ",SIGF_" + appendcol + "]";
+			mtzout.export_hkl_data( fsig, labels );
+		}
+		if (freein) {
+			if (appendcol != "") {
+				String::size_type loc = freecol.find("]",0);
+				freecol.insert(loc,"_"+appendcol);
+			}
+			mtzout.export_hkl_data( free, outcol + freecol.tail() );
+		}
+		
+		if (anomalous) {
+			clipper::String labels;
+			if ( !refl_mean ) {
+				if (appendcol == "") labels = "[FMEAN,SIGFMEAN]";
+				else labels = "[FMEAN_" + appendcol + ",SIGFMEAN_" + appendcol + "]";
+				mtzout.export_hkl_data( fsig, outcol+labels.tail() );
+				labels.clear();
+			}
+			if (appendcol == "") labels = "[DANO,SIGDANO]";
+			else labels = "[DANO_" + appendcol + ",SIGDANO_" + appendcol + "]";
+			mtzout.export_hkl_data( Dano, outcol+labels.tail() );
+			labels.clear();
+			if (appendcol == "") labels = "[F(+),SIGF(+),F(-),SIGF(-)]";
+			else labels = "[F_" + appendcol + "(+),SIGF_" + appendcol + "(+),F_" + appendcol + "(-),SIGF_" + appendcol + "(-)]";
+			mtzout.export_hkl_data( fsig_ano_export, outcol+labels.tail() );
+			labels.clear();
+			if (appendcol == "") labels = "[ISYM]";
+			else labels = "[ISYM_" + appendcol + "]";
+			mtzout.export_hkl_data( freidal_sym, outcol+labels.tail() );
+		}
+		
+		//copy old history and say something about ctruncate run
+		if (history.size() != 0 ) {
+			for (int i = 0 ; i != history.size() ; ++i ) histin.push_back(history[i]);
+		}
+		
+		mtzout.set_history(histin);
+		
+		mtzout.set_spacegroup_confidence(spgr_confidence);
+		
+		//mtzout.close_append();
+		mtzout.close_write();
+		
+		// Clipper will change H3 to R3, so change it back
+		if ((spgr.symbol_hm())[0] == 'R') {			
+			CMtz::MTZ *mtz=NULL;
+			int read_refs=1;  // need to read in reflections, otherwise they won't be written out
+			mtz = CMtz::MtzGet(outfile.c_str(), read_refs);
+			// write title to output file
+			char title[72];
+			CMtz::ccp4_lrtitl(mtz, title);
+			strncpy( mtz->title, title, 71 );
+			//reset spacegroup
+			char spacegroup[20];
+			CSym::CCP4SPG *spg = CSym::ccp4spg_load_by_ccp4_num(CMtz::MtzSpacegroupNumber(mtz));
+			strcpy(spacegroup,spg->symbol_old);
+			strcpy(mtz->mtzsymm.spcgrpname,spacegroup);
+			CMtz::MtzPut( mtz, outfile.c_str() );
+			CMtz::MtzFree( mtz );
+		}
 	}
-    
+	
     if (outxml) {
         time_t now = std::time(0);
 		std::stringstream ss1,ss2,ss3;
