@@ -87,8 +87,8 @@ clipper::String mtz_match_path_type( const clipper::String& path, const CCP4MTZf
 int main(int argc, char **argv)
 {
     clipper::String prog_string = "ctruncate";
-    clipper::String prog_vers = "1.17.26";
-    clipper::String prog_date = "$Date: 2017/07/20";
+    clipper::String prog_vers = "1.17.27";
+    clipper::String prog_date = "$Date: 2017/08/14";
 	ctruncate::CCP4Program prog( prog_string.c_str(), prog_vers.c_str(), prog_date.c_str() );
     
     // defaults

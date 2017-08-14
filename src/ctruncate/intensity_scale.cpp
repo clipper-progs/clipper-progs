@@ -1212,6 +1212,11 @@ namespace ctruncate {
             // calc target fn and derivs
             calc_derivs( params_, r0, drdp, drdp2 );
 
+            // zero diagonal values in Hessian are bad.  Get NaNs
+            clipper::ftype big(0.0);
+            for (int i=0; i!=nparams;++i) if (std::fabs(drdp2(i,i)) > std::fabs(big) ) big = drdp2(i,i);
+            for (int i=0; i!=nparams;++i) if (std::fabs(drdp2(i,i)) < std::numeric_limits<clipper::ftype>::epsilon() ) drdp2(i,i)=big;
+            
 			// apply mask
             for (int i = 0; i != nparams ; ++i ) {
 				if(mask[i]) drdp[i]=0.0;
