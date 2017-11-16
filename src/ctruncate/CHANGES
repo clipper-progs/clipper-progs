@@ -1,3 +1,6 @@
+1.17.28 (15/11/17)
+- correct guard on high resolution end of Best curves
+
 1.17.27 (14/08/17)
 - protect against 0 Hessian diagonal element in optimisation
 

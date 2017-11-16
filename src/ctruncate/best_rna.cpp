@@ -605,7 +605,7 @@ namespace ctruncate {
         int s1 = (int) std::floor((ssqr - offset)/step); //truncations to lower value
         if (s1 < 0) return clipper::Util::nan(); //lower than 10.5409 A resolution
         const unsigned int best_limit = sizeof(best_rna)/sizeof(float)-1;
-        if (s1 >= best_limit) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
+        if (s1 > best_limit) return clipper::Util::nan(); //beyond highest resolution for BEST data (about 0.9 A)
         //linear interpolation
         double ssqr1 = s1*step + offset;
         double frac = (ssqr - ssqr1)/step;
