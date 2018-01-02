@@ -477,6 +477,11 @@ namespace ctruncate {
             ss << "  </Moments>" << std::endl;
         }
         
+		float invresolsq(1.0);
+		if (_a_reso.size() != 1 && _c_reso.size() != 1) invresolsq = std::max(_a_reso[_a_reso.size()-1],_c_reso[_c_reso.size()-1]) + 0.01;
+		else if (_a_reso.size() != 1) invresolsq = _a_reso[_a_reso.size()-1] + 0.01;
+		else if (_c_reso.size() != 1) invresolsq = _c_reso[_c_reso.size()-1] + 0.01;
+		
         if (_a_reso.size() != 1) {
             ss << "<CCP4Table groupID=\"graphMoments\" id=\"acentricMoments\" title=\""<< ((is_intensity() ) ? "intensity" : "amplitudes") << " moments vs resolution\">" << std::endl;
             if (is_intensity() ) {
@@ -489,9 +494,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_second() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_second() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_second() << "\" y2=\"" << std::setw(9) << acentric_second() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_second() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_second() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_second() << "\" y2=\"" << std::setw(9) << acentric_second() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Intensity third moment &lt;|I^3|&gt;: " << std::fixed << std::setprecision(2) << acentric_third() << "</title>" << std::endl;
@@ -502,9 +507,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_third() << "\" y2=\"" << std::setw(9) << acentric_third() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_third() << "\" y2=\"" << std::setw(9) << acentric_third() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Intensity fourth moment &lt;|I^4|&gt;: " << std::fixed << std::setprecision(2) << acentric_fourth() << "</title>" << std::endl;
@@ -515,9 +520,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_fourth() << "\" y2=\"" << std::setw(9) << acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_fourth() << "\" y2=\"" << std::setw(9) << acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<headers separator=\" \">\n 1/resol^2 &lt;I^2&gt; &lt;I^3&gt; &lt;I^4&gt;\n </headers>" << std::endl;
             } else {
@@ -530,9 +535,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_first() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_first() << "\" y2=\"" << std::setw(9) << acentric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_first() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_first() << "\" y2=\"" << std::setw(9) << acentric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Amplitude variance &lt;|E^2-1|&gt;: " << std::fixed << std::setprecision(2) << acentric_variance() << "</title>" << std::endl;
@@ -543,9 +548,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_variance() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_variance() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_variance() << "\" y2=\"" << std::setw(9) << acentric_variance() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_variance() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_variance() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_variance() << "\" y2=\"" << std::setw(9) << acentric_variance() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Amplitude third moment &lt;|E^3|&gt;: " << std::fixed << std::setprecision(2) << acentric_first() << "</title>" << std::endl;
@@ -556,9 +561,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_third() << "\" y2=\"" << std::setw(9) << acentric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_third() << "\" y2=\"" << std::setw(9) << acentric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<title>Amplitude fourth moment &lt;|I^3|&gt;: " << std::fixed << std::setprecision(2) << acentric_first() << "</title>" << std::endl;
                 ss << "<xscale>oneoversqrt</xscale>" << std::endl;
@@ -568,9 +573,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_fourth() << "\" y2=\"" << std::setw(9) << acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_acentric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << acentric_fourth() << "\" y2=\"" << std::setw(9) << acentric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<headers separator=\" \">\n  1/resol^2 &lt;E&gt; &lt;|E^2-1|&gt; &lt;E^3&gt; &lt;E^4&gt;\n  </headers>" << std::endl;
             }
@@ -598,9 +603,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_second() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_second() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_second() << "\" y2=\"" << std::setw(9) << centric_second() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_second() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_second() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_second() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_second() << "\" y2=\"" << std::setw(9) << centric_second() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Intensity third moment &lt;|I^3|&gt;: " << std::fixed << std::setprecision(2) << centric_third() << "</title>" << std::endl;
@@ -611,9 +616,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_third() << "\" y2=\"" << std::setw(9) << centric_third() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_third() << "\" y2=\"" << std::setw(9) << centric_third() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Intensity fourth moment &lt;|I^4|&gt;: " << std::fixed << std::setprecision(2) << centric_fourth() << "</title>" << std::endl;
@@ -624,9 +629,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_fourth() << "\" y2=\"" << std::setw(9) << centric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_fourth() << "\" y2=\"" << std::setw(9) << centric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<headers separator=\" \">\n 1/resol^2 &lt;I^2&gt; &lt;I^3&gt; &lt;I^4&gt;\n </headers>" << std::endl;
             } else {
@@ -639,9 +644,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_first() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_first() << "\" y2=\"" << std::setw(9) << centric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_first() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_first() << "\" y2=\"" << std::setw(9) << centric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Amplitude variance &lt;|E^2-1|&gt;: " << std::fixed << std::setprecision(2) << centric_variance() << "</title>" << std::endl;
@@ -652,9 +657,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_variance() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_variance() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_variance() << "\" y2=\"" << std::setw(9) << centric_variance() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_variance() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_variance() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_first() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_first() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_variance() << "\" y2=\"" << std::setw(9) << centric_variance() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<plot>" << std::endl;
                 ss << "<title>Amplitude third moment &lt;|E^3|&gt;: " << std::fixed << std::setprecision(2) << centric_first() << "</title>" << std::endl;
@@ -665,9 +670,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_third() << "\" y2=\"" << std::setw(9) << centric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_third() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_third() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_third() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_third() << "\" y2=\"" << std::setw(9) << centric_first() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<title>Amplitude fourth moment &lt;|I^3|&gt;: " << std::fixed << std::setprecision(2) << centric_first() << "</title>" << std::endl;
                 ss << "<xscale>oneoversqrt</xscale>" << std::endl;
@@ -677,9 +682,9 @@ namespace ctruncate {
                 ss << "<linestyle>-</linestyle>" << std::endl;
                 ss << "<colour>red</colour>" << std::endl;
                 ss << "</plotline>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
-                ss << "<line x1=\"   0.0000\" x2=\"   1.0000\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_fourth() << "\" y2=\"" << std::setw(9) << centric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_untwinned_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_untwinned_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << theo_perfect_centric_fourth() << "\" y2=\"" << std::setw(9) << theo_perfect_centric_fourth() <<"\" linestyle=\"-\" linecolour=\"black\"/>" << std::endl;
+                ss << "<line x1=\"   0.0000\" x2=\"" << std::fixed << std::setw(8) << std::setprecision(4) << invresolsq << "\" y1=\"" << std::fixed << std::setw(9) << std::setprecision(4) << centric_fourth() << "\" y2=\"" << std::setw(9) << centric_fourth() <<"\" linestyle=\"-\" linecolour=\"red\"/>" << std::endl;
                 ss << "</plot>" << std::endl;
                 ss << "<headers separator=\" \">\n  1/resol^2 &lt;E&gt; &lt;|E^2-1|&gt; &lt;E^3&gt; &lt;E^4&gt;\n  </headers>" << std::endl;
             }
