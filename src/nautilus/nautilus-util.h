@@ -16,14 +16,17 @@ class NautilusUtil {
 
 class NautilusLog {
  public:
-  NautilusLog() : currentcpu(0.0) { log(""); }
+  NautilusLog( clipper::String& title ) : title_(title), currentcpu(0.0) { log(""); }
   void log( const clipper::String& id );
   void log( const clipper::String& id, const clipper::MiniMol& mol, bool view );
-  clipper::String log_info( const clipper::MiniMol& mol );
-  void xml( const clipper::String& file, const clipper::MiniMol& mol );
+  clipper::String log_info( const clipper::MiniMol& mol, bool summary );
+  void xml( const clipper::String& file ) const; //, const clipper::MiniMol& mol ); edited SWH
   void profile();
  private:
+  struct cycdat { int nchns, nseq, nres, nmax; }; // added by SWH
+  std::vector<cycdat> data; //added by SWH
   std::vector<std::pair<std::string,double> > prof;
+  clipper::String title_;
   double currentcpu;
 };
 

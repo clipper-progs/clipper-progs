@@ -1,7 +1,7 @@
 // Clipper ssfind
 /* Copyright 2008 Kevin Cowtan & University of York all rights reserved */
 
-#include <clipper/clipper.h>
+//#include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
 #include <clipper/clipper-contrib.h>
 #include <clipper/clipper-minimol.h>
@@ -20,7 +20,7 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.5", "$Date: 2017/05/30" );
+  CCP4Program prog( "cnautilus", "0.5.1", "$Date: 2017/05/30" ); //edited
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2011-2017 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -43,6 +43,7 @@ int main( int argc, char** argv )
   clipper::String oppdb = "nautilus.pdb";
   clipper::String opmap = "NONE";
   clipper::String opxml = "NONE";
+  clipper::String msg; // added by SWH
   int ncyc = 3;
   bool doanis = false;
   int nhit = 100;
@@ -224,12 +225,12 @@ int main( int argc, char** argv )
   clipper::MiniMol mol_wrk_in = mol_wrk;
 
   // map stats
-  natools.init_stats( xwrk );
-  NautilusLog log;
+  natools.init_stats( xwrk ); 
+  NautilusLog log( title ); // edited
   std::cout << std::endl;
 
   for ( int cyc = 0; cyc < ncyc; cyc++ ) {
-    std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl;
+    std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << std::endl; // edited
 
     // adjust labels and label non-NA chains to keep
     mol_wrk = NucleicAcidTools::flag_chains( mol_wrk );
@@ -276,12 +277,12 @@ int main( int argc, char** argv )
     //for ( int c = 0; c < mol_wrk.size(); c++ ) { for ( int r = 0; r < mol_wrk[c].size(); r++ ) std::cout << mol_wrk[c][r].type().trim(); std::cout << std::endl; }
 
     prog.summary_beg();
-    clipper::String msg = log.log_info( mol_wrk );
-    std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << msg << std::endl;
+    msg = log.log_info( mol_wrk, true ); // edited
+    std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << msg << std::endl ;
     prog.summary_end();
 
-    // file output
-    if ( opxml != "NONE" ) log.xml( opxml, mol_wrk );
+    // file output edited SWH Nov'17
+    if ( opxml != "NONE" ) log.xml( opxml ); //, mol_wrk );
   }
 
   // move to match input model
@@ -335,7 +336,8 @@ int main( int argc, char** argv )
   clipper::MMDBfile pdbfile;
   pdbfile.export_minimol( mol_new );
   pdbfile.write_file( oppdb );
-
+  msg = log.log_info( mol_new, true );	// added by SWH
+  std::cout << "$TEXT:Result: $$ $$" << std::endl << msg << "\n$$" << std::endl; // added by SWH
   log.profile();
   prog.set_termination_message( "Normal termination" );
 }
