@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     // command input
     CCP4CommandInput args( argc, argv, true );
     int arg = 0;
-    
+
     while ( ++arg < args.size() )
     {
         if ( args[arg] == "-title" )
@@ -77,10 +77,10 @@ int main(int argc, char** argv)
             if ( ++arg < args.size() )
                 if ( args[arg] == "ccp4i2" )
                    i2mode = true;
-        } 
+        }
     }
-   
-    if (ippdb == "NONE") 
+
+    if (ippdb == "NONE")
     {
         std::cout << "Usage: ccontacts" << std::endl << std::endl;
         std::cout << "\t-pdbin <.pdb>\t\tCOMPULSORY: input PDB file to examine" << std::endl;
@@ -109,9 +109,9 @@ int main(int argc, char** argv)
     }
     catch (...)
     {
-        std::cout << std::endl << "There has been an unexpected error reading coordinates" << std::endl ;
+        std::cout << std::endl << "There has been an error reading the coordinates" << std::endl ;
     }
-    
+
     std::cout << "done." << std::endl;
 
     clipper::MAtomNonBond manb = clipper::MAtomNonBond( mmol, 1.0 );
@@ -124,13 +124,13 @@ int main(int argc, char** argv)
 
 }
 
-struct salt_bridge 
+struct salt_bridge
 {
     clipper::MMonomer positive, negative;
     clipper::MPolymer positive_chain, negative_chain;
     clipper::Coord_orth centroid_positive, centroid_negative;
     clipper::ftype distance;
-    int symop_positive, symop_negative;
+    clipper::String symop_negative; // we'll look up the positive residues within this copy, so symop=0
 };
 
 std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, clipper::MAtomNonBond& manb )
@@ -146,13 +146,13 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
             if ( mmol[poly][mon].type().trim() == "LYS" )
             {
                 natom_1 = mmol[poly][mon].lookup("NZ",clipper::MM::ANY);
-                    
+
                 if ( natom_1 != -1 )
                 {
                     atom_1 = mmol[poly][mon][natom_1];
                     centroid_positive = atom_1.coord_orth();
                     const std::vector<clipper::MAtomIndexSymmetry> neighbourhood = manb.atoms_near ( atom_1.coord_orth(), 2.8 );
-                    
+
                     for ( int i = 0; i < neighbourhood.size() ; i++ )
                     {
                         clipper::MMonomer mon_tmp = mmol[neighbourhood[i].polymer()][neighbourhood[i].monomer()];
@@ -161,12 +161,12 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                         {
                             int index_1 = mon_tmp.lookup("OD1",clipper::MM::ANY);
                             int index_2 = mon_tmp.lookup("OD2",clipper::MM::ANY);
-                            
+
                             if ( ( index_1 != -1 ) && ( index_2 != -1 ) ) // everything alright, calculate centroid and add salt bridge if distance checks
                             {
                                 const clipper::Coord_orth sum = mon_tmp[index_1].coord_orth() + mon_tmp[index_2].coord_orth();
                                 centroid_negative = 0.5 * sum ;
-                                
+
                                 if ( clipper::Coord_orth::length (centroid_positive, centroid_negative ) < 4.0 )
                                 {
                                     salt_bridge sb_tmp;
@@ -177,23 +177,22 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                                     sb_tmp.centroid_positive = centroid_positive;
                                     sb_tmp.centroid_negative = centroid_negative;
                                     sb_tmp.distance = clipper::Coord_orth::length (centroid_positive, centroid_negative );
-                                    sb_tmp.symop_positive = 0;
-                                    sb_tmp.symop_negative = neighbourhood[i].symmetry();
+                                    sb_tmp.symop_negative = mmol.spacegroup().symop(neighbourhood[i].symmetry()).format();
                                     results.push_back ( sb_tmp );
                                     break; // do not check the rest of the neighbours because we have what we were looking for
-                                } 
+                                }
                             }
                         }
                         else if ( mon_tmp.type().trim() == "GLU" )
                         {
                             int index_1 = mon_tmp.lookup("OE1",clipper::MM::ANY);
                             int index_2 = mon_tmp.lookup("OE2",clipper::MM::ANY);
-                            
+
                             if ( ( index_1 != -1 ) && ( index_2 != -1 ) ) // everything alright, calculate centroid and add salt bridge if distance checks
                             {
                                 const clipper::Coord_orth sum = mon_tmp[index_1].coord_orth() + mon_tmp[index_2].coord_orth();
                                 centroid_negative = 0.5 * sum ;
-                                
+
                                 if ( clipper::Coord_orth::length (centroid_positive, centroid_negative ) < 4.0 )
                                 {
                                     salt_bridge sb_tmp;
@@ -204,16 +203,15 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                                     sb_tmp.centroid_positive = centroid_positive;
                                     sb_tmp.centroid_negative = centroid_negative;
                                     sb_tmp.distance = clipper::Coord_orth::length (centroid_positive, centroid_negative );
-                                    sb_tmp.symop_positive = 0;
-                                    sb_tmp.symop_negative = neighbourhood[i].symmetry();
+                                    sb_tmp.symop_negative = mmol.spacegroup().symop(neighbourhood[i].symmetry()).format();
                                     results.push_back ( sb_tmp );
                                     break; // do not check the rest of the neighbours because we have what we were looking for
-                                } 
+                                }
                             }
                         }
                     }
                 }
-                else 
+                else
                     break;
             }
             else if ( mmol[poly][mon].type().trim() == "ARG" )
@@ -225,12 +223,12 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                 {
                     atom_1 = mmol[poly][mon][natom_1];
                     atom_2 = mmol[poly][mon][natom_2];
-                    
+
                     const clipper::Coord_orth sum_positive = atom_1.coord_orth() + atom_2.coord_orth();
                     centroid_positive = 0.5 * sum_positive;
-                    
+
                     const std::vector<clipper::MAtomIndexSymmetry> neighbourhood = manb.atoms_near ( atom_1.coord_orth(), 2.8 );
-                    
+
                     for ( int i = 0; i < neighbourhood.size() ; i++ )
                     {
                         clipper::MMonomer mon_tmp = mmol[neighbourhood[i].polymer()][neighbourhood[i].monomer()];
@@ -239,12 +237,12 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                         {
                             int index_1 = mon_tmp.lookup("OD1",clipper::MM::ANY);
                             int index_2 = mon_tmp.lookup("OD2",clipper::MM::ANY);
-                            
+
                             if ( ( index_1 != -1 ) && ( index_2 != -1 ) ) // everything alright, calculate centroid and add salt bridge if distance checks
                             {
                                 const clipper::Coord_orth sum = mon_tmp[index_1].coord_orth() + mon_tmp[index_2].coord_orth();
                                 centroid_negative = 0.5 * sum ;
-                                
+
                                 if ( clipper::Coord_orth::length (centroid_positive, centroid_negative ) < 4.0 )
                                 {
                                     salt_bridge sb_tmp;
@@ -255,23 +253,22 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                                     sb_tmp.centroid_positive = centroid_positive;
                                     sb_tmp.centroid_negative = centroid_negative;
                                     sb_tmp.distance = clipper::Coord_orth::length (centroid_positive, centroid_negative );
-                                    sb_tmp.symop_positive = 0;
-                                    sb_tmp.symop_negative = neighbourhood[i].symmetry();
+                                    sb_tmp.symop_negative = mmol.spacegroup().symop(neighbourhood[i].symmetry()).format();
                                     results.push_back ( sb_tmp );
                                     break; // do not check the rest of the neighbours because we have what we were looking for
-                                } 
+                                }
                             }
                         }
                         else if ( mon_tmp.type().trim() == "GLU" )
                         {
                             int index_1 = mon_tmp.lookup("OE1",clipper::MM::ANY);
                             int index_2 = mon_tmp.lookup("OE2",clipper::MM::ANY);
-                            
+
                             if ( ( index_1 != -1 ) && ( index_2 != -1 ) ) // everything alright, calculate centroid and add salt bridge if distance checks
                             {
                                 const clipper::Coord_orth sum = mon_tmp[index_1].coord_orth() + mon_tmp[index_2].coord_orth();
                                 centroid_negative = 0.5 * sum ;
-                                
+
                                 if ( clipper::Coord_orth::length (centroid_positive, centroid_negative ) < 4.0 )
                                 {
                                     salt_bridge sb_tmp;
@@ -282,16 +279,15 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
                                     sb_tmp.centroid_positive = centroid_positive;
                                     sb_tmp.centroid_negative = centroid_negative;
                                     sb_tmp.distance = clipper::Coord_orth::length (centroid_positive, centroid_negative );
-                                    sb_tmp.symop_positive = 0;
-                                    sb_tmp.symop_negative = neighbourhood[i].symmetry();
+                                    sb_tmp.symop_negative = mmol.spacegroup().symop(neighbourhood[i].symmetry()).format();
                                     results.push_back ( sb_tmp );
                                     break; // do not check the rest of the neighbours because we have what we were looking for
-                                } 
+                                }
                             }
                         }
                     }
                 }
-                else 
+                else
                     break;
             }
 
@@ -299,13 +295,13 @@ std::vector < salt_bridge > calculate_salt_bridges ( clipper::MiniMol& mmol, cli
 }
 
 
-void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::String ippdb, bool i2mode ) 
+void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::String ippdb, bool i2mode )
 {
 
     std::fstream of_scm; std::fstream of_py; std::fstream logfile;
     of_scm.open("ccontacts-results.scm", std::fstream::out);
     of_py.open ("ccontacts-results.py" , std::fstream::out);
-    
+
     std::vector < clipper::String > name_vec = ippdb.split(".");
     logfile.open(clipper::String(name_vec[0]+"_contacts.txt").c_str(), std::fstream::out );
 
@@ -313,11 +309,11 @@ void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::Str
     insert_coot_prologue_python ( of_py );
     insert_coot_files_loadup_scheme (of_scm, ippdb, i2mode );
     insert_coot_files_loadup_python (of_py , ippdb, i2mode );
-    
+
     std::cout << std::endl << "List of detected salt bridges: " << std::endl ;
-    std::cout << std::endl << "\tPositive    Distance    Negative";
-    std::cout << std::endl << "\t--------------------------------" << std::endl;
-    
+    std::cout << std::endl << "\tPositive    Distance    Negative  (symop)";
+    std::cout << std::endl << "\t------------------------------------------" << std::endl;
+
     int inter, intra;
     inter = 0; intra = 0;
 
@@ -328,31 +324,31 @@ void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::Str
         std::cout << "\t" << salt_bridges[i].positive_chain.id() << "/" << std::fixed << std::setw( 3 ) << salt_bridges[i].positive.id().trim() << " " << salt_bridges[i].positive.type();
         std::cout << std::fixed << std::setw( 4 ) << std::setprecision( 2 ) << " -- [" << salt_bridges[i].distance << "] -- " ;
         std::cout << salt_bridges[i].negative_chain.id() << "/" << std::fixed << std::setw (3) << salt_bridges[i].negative.id().trim() << " " << salt_bridges[i].negative.type();
-        
+        std::cout << "  " << salt_bridges[i].symop_negative;
+
         logfile << "\t" << salt_bridges[i].positive_chain.id() << "/" << std::fixed << std::setw( 3 ) << salt_bridges[i].positive.id().trim() << " " << salt_bridges[i].positive.type();
         logfile << std::fixed << std::setw( 4 ) << std::setprecision( 2 ) << " -- [" << salt_bridges[i].distance << "] -- " ;
         logfile << salt_bridges[i].negative_chain.id() << "/" << std::fixed << std::setw (3) << salt_bridges[i].negative.id().trim() << " " << salt_bridges[i].negative.type() << std::endl;
-        
-        message = salt_bridges[i].positive_chain.id() + "/" + salt_bridges[i].positive.id().trim() + " " 
-                  + salt_bridges[i].positive.type().trim() + " - " + salt_bridges[i].negative_chain.id() 
+
+        message = salt_bridges[i].positive_chain.id() + "/" + salt_bridges[i].positive.id().trim() + " "
+                  + salt_bridges[i].positive.type().trim() + " - " + salt_bridges[i].negative_chain.id()
                   + "/" + salt_bridges[i].negative.id().trim() + " " + salt_bridges[i].negative.type().trim();
-        
-        if ( salt_bridges[i].symop_negative != 0 ) std::cout << "*" ;
+
         std::cout << std::endl ;
         salt_bridges[i].positive_chain.id() == salt_bridges[i].negative_chain.id() ? intra++ : inter++;
 
         clipper::String atom_name;
-        
+
         if ( salt_bridges[i].positive.type().trim() == "LYS" )
             atom_name = "NZ";
-        else 
+        else
             atom_name = "NH1";
 
         insert_coot_go_to_res_scheme ( of_scm, salt_bridges[i].positive_chain.id(), salt_bridges[i].positive.seqnum(), atom_name, message );
         insert_coot_go_to_res_python ( of_py,  salt_bridges[i].positive_chain.id(), salt_bridges[i].positive.seqnum(), atom_name, message );
     }
 
-    std::cout << std::endl << "Total: " << salt_bridges.size() << "\tIntramolecular: " << intra << "\tInterfacing: " << inter << std::endl; 
+    std::cout << std::endl << "Total: " << salt_bridges.size() << "\tIntramolecular: " << intra << "\tInterfacing: " << inter << std::endl;
 
     insert_coot_epilogue_scheme ( of_scm );
     insert_coot_epilogue_python ( of_py );
@@ -367,7 +363,7 @@ void print_salt_bridges ( std::vector < salt_bridge > salt_bridges, clipper::Str
 void insert_coot_prologue_scheme ( std::fstream& output )
 {
 
-    output  << "; This script has been created by ccontacts (Jon Agirre, University of York)\n"        
+    output  << "; This script has been created by ccontacts (Jon Agirre, University of York)\n"
             << "(set-graphics-window-size 1873 968)\n"
             << "(set-graphics-window-position 0 0)\n"
             << "(set-go-to-atom-window-position 0 19)\n"
@@ -397,7 +393,7 @@ void insert_coot_prologue_scheme ( std::fstream& output )
             << "(set-default-bond-thickness 5)\n"
             << "(scale-zoom  0.20)\n"
             << "(set-nomenclature-errors-on-read \"auto-correct\")"
-            << "(set-show-environment-distances-bumps 0)\n" 
+            << "(set-show-environment-distances-bumps 0)\n"
             << "(set-show-environment-distances 1)\n"
             << "(set-environment-distances-distance-limits 2.5 4.1 )\n"
             << "(set-run-state-file-status 0)\n";
@@ -408,7 +404,7 @@ void insert_coot_prologue_scheme ( std::fstream& output )
 void insert_coot_prologue_python ( std::fstream& output )
 {
 
- output  << "# This script has been created by ccontacts (Jon Agirre, University of York)\n"           
+ output  << "# This script has been created by ccontacts (Jon Agirre, University of York)\n"
             << "set_graphics_window_size (1873, 968)\n"
             << "set_graphics_window_position (0, 0)\n"
             << "set_go_to_atom_window_position (0, 19)\n"
@@ -441,14 +437,14 @@ void insert_coot_prologue_python ( std::fstream& output )
             << "set_show_environment_distances_bumps (0)\n"
             << "set_show_environment_distances (1)\n"
             << "set_environment_distances_distance_limits ( 2.5,  4.1 )\n"
-            << "toggle_idle_spin_function\n";   
+            << "toggle_idle_spin_function\n";
 
 }
 
 
 void insert_coot_files_loadup_scheme ( std::fstream& output, const clipper::String& pdb, bool mode )
 {
-    if (!mode) 
+    if (!mode)
         output << "(handle-read-draw-molecule \"" << pdb << "\")\n";
 
     output << "(interesting-things-gui \"Contact list\"\n\t(list\n\t\t";
@@ -457,9 +453,9 @@ void insert_coot_files_loadup_scheme ( std::fstream& output, const clipper::Stri
 
 void insert_coot_files_loadup_python ( std::fstream& output, const clipper::String& pdb, bool mode )
 {
-    if (!mode) 
+    if (!mode)
         output  << "handle_read_draw_molecule (\"" << pdb << "\")\n";
-        
+
     output << "interesting_things_gui (\"Contact list\",[\n";
 }
 
