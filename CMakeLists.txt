@@ -18,6 +18,10 @@ target_link_libraries(cextend ${CCP4_LIBRARIES})
 add_executable(ccontacts src/ccontacts.cpp)
 target_link_libraries(ccontacts ${CCP4_LIBRARIES})
 
+add_executable(csheetbend src/sheetbend/csheetbend.cpp
+	                  src/sheetbend/shiftfield.cpp )
+target_link_libraries(csheetbend ${CCP4_LIBRARIES})
+
 add_executable(chltofom src/chltofom.cpp)
 target_link_libraries(chltofom ${CCP4_LIBRARIES})
 
@@ -179,7 +183,7 @@ install(FILES src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
         DESTINATION lib/data)
 
 install(TARGETS ccontacts cextend chltofom cphasematch csfcalc cfft cinvfft csigmaa
-                cecalc cphasecombine cpatterson caniso convert2mtz
+                csheetbend cecalc cphasecombine cpatterson caniso convert2mtz
                 csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut
                 comit cmapcoeff cmtzsplit cmtzjoin
                 ctruncate cpirate cmakereference
