@@ -11,6 +11,12 @@
 
 #include "clipper/core/clipper_util.h"
 
+#if __cplusplus < 201103L
+#define CONST_CONSTEXPR const
+#else
+#define CONST_CONSTEXPR constexpr
+#endif
+
 namespace ctruncate {
 
     class Best {
@@ -25,9 +31,9 @@ namespace ctruncate {
         static clipper::ftype invresolsq_min();
         
     private:
-        static const double k = 8.563714792513845e-06;         // magic scale factor to put best data on scale for average electron squared
-        static const double offset = 0.009; // low resolution shell at 10.5409 A resolution
-        static const double step = 0.004091973;
+        CONST_CONSTEXPR static double k = 8.563714792513845e-06;         // magic scale factor to put best data on scale for average electron squared
+        CONST_CONSTEXPR static double offset = 0.009; // low resolution shell at 10.5409 A resolution
+        CONST_CONSTEXPR static double step = 0.004091973;
     };
 
  }

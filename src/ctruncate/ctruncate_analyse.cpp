@@ -1879,7 +1879,7 @@ namespace ctruncate {
         ss << "<headers separator=\" \">\n 1/resol^2 completeness";
         for (int ii = _completeness.size()-1; ii != 0; --ii) {
             if (this->is_intensity() ) ss << " I/sigI&gt;" << int(_completeness[ii].IoversigI());
-            else ss << ss << " F/sigF&gt;" << int(_completeness[ii].IoversigI());
+            else ss << " F/sigF&gt;" << int(_completeness[ii].IoversigI());
         }
         ss << " Rstandard\n </headers>" << std::endl;
 		ss << "<data>" << std::endl;;

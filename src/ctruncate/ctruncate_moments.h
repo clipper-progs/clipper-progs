@@ -15,6 +15,12 @@
 #include "clipper/clipper-ccp4.h"
 #include "intensity_target.h"
 
+#if __cplusplus < 201103L
+#define CONST_CONSTEXPR const
+#else
+#define CONST_CONSTEXPR constexpr
+#endif
+
 namespace ctruncate {
 			
 	class Moments {
@@ -79,31 +85,31 @@ namespace ctruncate {
         clipper::ftype theo_perfect_centric_variance();
 		
 	private:
-		static const clipper::ftype E_THEO_UNTWINNED_CENTRIC_FIRST=0.798;
-		static const clipper::ftype E_THEO_PERFECT_CENTRIC_FIRST=0.886;
-		static const clipper::ftype E_THEO_PERFECT_ACENTRIC_FIRST=0.94;
-		static const clipper::ftype E_THEO_UNTWINNED_CENTRIC_SECOND=0.0;
-		static const clipper::ftype E_THEO_PERFECT_CENTRIC_SECOND=0.0;
-		static const clipper::ftype E_THEO_PERFECT_ACENTRIC_SECOND=0.0;
-		static const clipper::ftype E_THEO_UNTWINNED_CENTRIC_THIRD=1.596;
-		static const clipper::ftype E_THEO_PERFECT_CENTRIC_THIRD=1.329;
-		static const clipper::ftype E_THEO_PERFECT_ACENTRIC_THIRD=1.175;
-		static const clipper::ftype E_THEO_UNTWINNED_CENTRIC_FOURTH=3.0;
-		static const clipper::ftype E_THEO_PERFECT_CENTRIC_FOURTH=2.0;
-		static const clipper::ftype E_THEO_PERFECT_ACENTRIC_FOURTH=1.5;
-		static const clipper::ftype E_THEO_UNTWINNED_CENTRIC_VAR=0.968;
-		static const clipper::ftype E_THEO_UNTWINNED_ACENTRIC_VAR=0.736;
-		static const clipper::ftype Z_THEO_UNTWINNED_ACENTRIC_VAR=0.0;
-		static const clipper::ftype Z_THEO_UNTWINNED_CENTRIC_FIRST=0.0;
-		static const clipper::ftype Z_THEO_PERFECT_CENTRIC_FIRST=0.0;
-		static const clipper::ftype Z_THEO_PERFECT_ACENTRIC_FIRST=0.0;
-		static const clipper::ftype Z_THEO_UNTWINNED_CENTRIC_THIRD=15.0;
-		static const clipper::ftype Z_THEO_PERFECT_CENTRIC_THIRD=6.0;
-		static const clipper::ftype Z_THEO_PERFECT_ACENTRIC_THIRD=3.0;
-		static const clipper::ftype Z_THEO_UNTWINNED_CENTRIC_FOURTH=105.0;
-		static const clipper::ftype Z_THEO_PERFECT_CENTRIC_FOURTH=24.0;
-		static const clipper::ftype Z_THEO_PERFECT_ACENTRIC_FOURTH=7.5;
-		static const clipper::ftype E_THEO_PERFECT_ACENTRIC_VAR=0.541;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_CENTRIC_FIRST=0.798;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_CENTRIC_FIRST=0.886;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_ACENTRIC_FIRST=0.94;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_CENTRIC_SECOND=0.0;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_CENTRIC_SECOND=0.0;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_ACENTRIC_SECOND=0.0;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_CENTRIC_THIRD=1.596;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_CENTRIC_THIRD=1.329;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_ACENTRIC_THIRD=1.175;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_CENTRIC_FOURTH=3.0;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_CENTRIC_FOURTH=2.0;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_ACENTRIC_FOURTH=1.5;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_CENTRIC_VAR=0.968;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_UNTWINNED_ACENTRIC_VAR=0.736;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_UNTWINNED_ACENTRIC_VAR=0.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_UNTWINNED_CENTRIC_FIRST=0.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_CENTRIC_FIRST=0.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_ACENTRIC_FIRST=0.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_UNTWINNED_CENTRIC_THIRD=15.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_CENTRIC_THIRD=6.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_ACENTRIC_THIRD=3.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_UNTWINNED_CENTRIC_FOURTH=105.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_CENTRIC_FOURTH=24.0;
+		CONST_CONSTEXPR static clipper::ftype Z_THEO_PERFECT_ACENTRIC_FOURTH=7.5;
+		CONST_CONSTEXPR static clipper::ftype E_THEO_PERFECT_ACENTRIC_VAR=0.541;
 		
 		const clipper::HKL_data_base *_base; //!< data
 		clipper::HKL_data<clipper::data64::I_sigI> _normalised; //!< store norm
