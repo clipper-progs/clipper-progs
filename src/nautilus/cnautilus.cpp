@@ -20,7 +20,7 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.5.1", "$Date: 2017/05/30" ); //edited
+  CCP4Program prog( "cnautilus", "0.5.2", "$Date: 2019/03/18" ); //edited
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2011-2017 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -44,6 +44,7 @@ int main( int argc, char** argv )
   clipper::String opmap = "NONE";
   clipper::String opxml = "NONE";
   clipper::String msg; // added by SWH
+  clipper::MMDBManager::TYPE cifflag = clipper::MMDBManager::Default;
   int ncyc = 3;
   bool doanis = false;
   int nhit = 100;
@@ -89,6 +90,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) nhit = clipper::String(args[arg]).i();
     } else if ( args[arg] == "-resolution" ) {
       if ( ++arg < args.size() ) res_in = clipper::String(args[arg]).f();
+    } else if ( args[arg] == "-cif" ){      // for cif output
+      cifflag = clipper::MMDBManager::CIF;
     } else if ( args[arg] == "-search-step" ) {
       if ( ++arg < args.size() ) srchst = clipper::String(args[arg]).f();
     } else if ( args[arg] == "-verbose" ) {
@@ -99,7 +102,9 @@ int main( int argc, char** argv )
     }
   }
   if ( args.size() <= 1 ) {
-    std::cout << "\nUsage: cnautilus\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-xmlout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl <colpath> or -colin-phifom <colpath>\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-cycles <number>\n\t-anisotropy-correction <number>\n\t-fragments <number>\n\t-resolution <resolution/A>\n\t-pdbin-ref <filename>\n.\n";
+    std::cout << "\nUsage: cnautilus\n\t-mtzin <filename>\t\tCOMPULSORY\n\t-seqin <filename>\n\t-pdbin <filename>\n\t-pdbout <filename>\n\t-xmlout <filename>\n\t-colin-fo <colpath>\n\t-colin-hl <colpath> or -colin-phifom <colpath>\n\t-colin-fc <colpath>\n\t-colin-free <colpath>\n\t-cycles <number>\n\t-anisotropy-correction\n\t-fragments <number>\n\t-resolution <resolution/A>\n\t-pdbin-ref <filename>\n\t-cif\t\t*will only output model in cif format\n\t-search-step <float>\t*search angle step\n\t-verbose <number>\n";
+    std::cout << "\nAn input mtz file for the work structure is required. Chains will be located and \ngrown for the work structure and written to the output pdb/cif file.\n";
+    std::cout << "This involves following steps:\n finding, growing, joining, linking, pruning, rebuilding chains, sequencing, and rebuilding bases.\nIf the optional input pdb file is provided for the work structure, then the input model is extended.\n";
     return 1;
   }
 
@@ -148,7 +153,7 @@ int main( int argc, char** argv )
     uaniso = sfscl.u_aniso_orth( SFscale::F );
     // scale map coeffs
     Compute_scale_u_aniso_fphi compute_aniso( 1.0, -uaniso );
-    if ( ipcol_fc != "NONE" ) fphi.compute( fphi, compute_aniso );    
+    if ( ipcol_fc != "NONE" ) fphi.compute( fphi, compute_aniso );
     // output
     std::cout << std::endl << "Applying anisotropy correction:"
               << std::endl << uaniso.format() << std::endl << std::endl;
@@ -184,7 +189,7 @@ int main( int argc, char** argv )
     std::cout << mol_tmp.spacegroup().symbol_hm() << " " << mol_tmp.cell().format() << " " << mol_tmp.atom_list().size() << std::endl;
     for ( int c = 0; c < mol_tmp.size(); c++ ) mol_wrk.insert( mol_tmp[c] );
   }
-  
+
   // work map
   if ( ipcol_hl == "NONE" )
     wrk_hl.compute( wrk_pw, clipper::data32::Compute_abcd_from_phifom() );
@@ -225,7 +230,7 @@ int main( int argc, char** argv )
   clipper::MiniMol mol_wrk_in = mol_wrk;
 
   // map stats
-  natools.init_stats( xwrk ); 
+  natools.init_stats( xwrk );
   NautilusLog log( title ); // edited
   std::cout << std::endl;
 
@@ -286,10 +291,10 @@ int main( int argc, char** argv )
   }
 
   // move to match input model
-  if ( mol_wrk_in.size() > 0 )
+  if ( mol_wrk_in.size() > 0 ){
     NucleicAcidTools::symm_match( mol_wrk, mol_wrk_in );
-
-  // output
+    log.log( "SYMMA", mol_wrk, verbose >=5 );
+  }
 
   // set up residue types
   const clipper::String basetypes = "ACGTU";
@@ -307,35 +312,18 @@ int main( int argc, char** argv )
     }
     mol_new.insert( mpx );
   }
-
-  // set up default chain labels
-  std::vector<clipper::String> labels;
-  labels.push_back( "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" );
-  labels.push_back( "0123456789" );
-  int label = 0;
-  std::vector<int> nresc( labels[1].length(), 0 );
-  for ( int chn = 0; chn < mol_new.size(); chn++ ) {
-    if ( label < labels[0].length() ) {
-      if ( mol_new[chn].id() == "" ) {
-        mol_new[chn].set_id( labels[0].substr( label, 1 ) );
-        label++;
-      }
-    } else {
-      int c = label - labels[0].length();
-      int c1 = c % labels[1].length();
-      mol_new[chn].set_id( labels[1].substr( c1, 1 ) );
-      for ( int res = 0; res < mol_new[chn].size(); res++ )
-        mol_new[chn][res].set_seqnum( res + nresc[c1] + 1 );
-      nresc[c1] += mol_new[chn].size()+5;
-      label++;
-    }
-  }
+  log.log( "SETRES", mol_wrk, verbose >=5 );
 
   // add true sequence numbers
   ModelTidy::chain_renumber( mol_new, seq_wrk );
+  log.log( "TIDY", mol_new, verbose >= 5 );
+  //new chain labelling routine, for 2-char label, SWH
+  NucleicAcidTools::chain_label( mol_new, cifflag );
+  log.log( "LABE", mol_new, verbose >= 5 );
+  // final file output
   clipper::MMDBfile pdbfile;
   pdbfile.export_minimol( mol_new );
-  pdbfile.write_file( oppdb );
+  pdbfile.write_file( oppdb, cifflag );
   msg = log.log_info( mol_new, true );	// added by SWH
   std::cout << "$TEXT:Result: $$ $$" << std::endl << msg << "\n$$" << std::endl; // added by SWH
   log.profile();
