@@ -19,7 +19,8 @@ add_executable(ccontacts src/ccontacts.cpp)
 target_link_libraries(ccontacts ${CCP4_LIBRARIES})
 
 add_executable(csheetbend src/sheetbend/csheetbend.cpp
-	                  src/sheetbend/shiftfield.cpp )
+	                  src/sheetbend/shiftfield.cpp
+	                  src/sheetbend/pseudoregularize.cpp )
 target_link_libraries(csheetbend ${CCP4_LIBRARIES})
 
 add_executable(chltofom src/chltofom.cpp)
