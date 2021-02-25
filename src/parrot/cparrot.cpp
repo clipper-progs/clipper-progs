@@ -17,7 +17,7 @@ extern "C" {
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.4", "$Date: 2015/05/20" );
+  CCP4Program prog( "cparrot", "1.0.5", "$Date: 2021/02/25" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;

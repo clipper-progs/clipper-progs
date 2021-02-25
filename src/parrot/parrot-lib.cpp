@@ -262,8 +262,8 @@ double ParrotUtil::matthews_probability( double cmatt, double resol, TYPE type )
 std::vector<std::pair<double,double> > ParrotUtil::solvent_probability( clipper::MMoleculeSequence seq, clipper::Spacegroup spgr, clipper::Cell cell, clipper::Resolution reso )
 {
   // count sequence elements
-  clipper::String codes = "ABCDEFGHIJKLMNOPQRSTUVWYXZ";
-  double protmw[] = {  71.0,   0.0, 102.0, 114.0, 128.0,  /* ABCDE */
+  clipper::String codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  double protmw[] = {  71.0,   0.0, 103.0, 115.0, 129.0,  /* ABCDE */
                       147.0,  57.0, 138.0, 113.0,   0.0,  /* FGHIJ */
                       129.0, 113.0, 131.0, 114.0,   0.0,  /* KLMNO */
                        97.0, 128.0, 157.0,  87.0, 101.0,  /* PQRST */
