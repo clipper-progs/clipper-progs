@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(clipper-progs C CXX)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
+
 find_package(CCP4 REQUIRED mmdb2 ccp4c clipper-core clipper-ccp4 clipper-mmdb
                            clipper-contrib clipper-minimol clipper-cif)
 include_directories(${CCP4_INCLUDE_DIRS})
