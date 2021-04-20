@@ -17,7 +17,7 @@ extern "C" {
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cparrot", "1.0.5", "$Date: 2021/02/25" );
+  CCP4Program prog( "cparrot", "1.0.6", "$Date: 2021/04/20" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2008-2010 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -40,6 +40,7 @@ int main( int argc, char** argv )
   clipper::String ipcol_wrk_hl = "NONE";
   clipper::String ipcol_wrk_pw = "NONE";
   clipper::String ipcol_wrk_fc = "NONE";
+  clipper::String ipcol_wrk_fmsk = "NONE";
   clipper::String ipcol_wrk_fr = "NONE";
   clipper::String opfile = "parrot.mtz";
   clipper::String opcol = "parrot";
@@ -100,6 +101,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) ipcol_wrk_pw = args[arg];
     } else if ( key == "-colin-fc"     || key == "-colin-wrk-fc" ) {
       if ( ++arg < args.size() ) ipcol_wrk_fc = args[arg];
+    } else if ( key == "-colin-fmsk"     || key == "-colin-wrk-fmsk" ) {
+      if ( ++arg < args.size() ) ipcol_wrk_fmsk = args[arg];
     } else if ( key == "-colin-free"   || key == "-colin-wrk-free" ) {
       if ( ++arg < args.size() ) ipcol_wrk_fr = args[arg];
     } else if ( key == "-mtzout" ) {
@@ -236,11 +239,13 @@ int main( int argc, char** argv )
   clipper::HKL_data<ABCD>    wrk_hl( hkls_wrk, cxtl );
   clipper::HKL_data<Phi_fom> wrk_pw( hkls_wrk, cxtl );
   clipper::HKL_data<F_phi>   wrk_fp( hkls_wrk, cxtl );
+  clipper::HKL_data<F_phi>   wrk_fmsk( hkls_wrk, cxtl );
   clipper::HKL_data<Flag>    flag( hkls_wrk, cxtl );
   mtzfile.import_hkl_data( wrk_f , ipcol_wrk_fo );
   if ( ipcol_wrk_hl != "NONE" ) mtzfile.import_hkl_data( wrk_hl,ipcol_wrk_hl );
   if ( ipcol_wrk_pw != "NONE" ) mtzfile.import_hkl_data( wrk_pw,ipcol_wrk_pw );
   if ( ipcol_wrk_fc != "NONE" ) mtzfile.import_hkl_data( wrk_fp,ipcol_wrk_fc );
+  if ( ipcol_wrk_fmsk != "NONE" ) mtzfile.import_hkl_data( wrk_fmsk,ipcol_wrk_fmsk );
   if ( ipcol_wrk_fr != "NONE" ) mtzfile.import_hkl_data( flag,  ipcol_wrk_fr );
   clipper::String oppath = mtzfile.assigned_paths()[0].notail() + "/";
   mtzfile.close_read();
@@ -323,6 +328,7 @@ int main( int argc, char** argv )
   clipper::Xmap<float> map_ref( spgr_ref, cell_ref, grid_ref );
   clipper::Xmap<float> map_sim( spgr_ref, cell_ref, grid_ref );
   clipper::Xmap<float> map_wrk( spgr_wrk, cell_wrk, grid_wrk );
+  clipper::Xmap<float> map_wrk_fmsk( spgr_wrk, cell_wrk, grid_wrk );
   clipper::Xmap<float> map_mod( spgr_wrk, cell_wrk, grid_wrk );
   clipper::Xmap<float> map_wrk_gamma( spgr_wrk, cell_wrk, grid_wrk );
   clipper::Xmap<float> map_mod_gamma( spgr_wrk, cell_wrk, grid_wrk );
@@ -418,6 +424,10 @@ int main( int argc, char** argv )
     map_sim.fft_from( sim_fp );
     map_ref.fft_from( ref_fp );
     map_wrk.fft_from( wrk_fp );
+    if ( cycle==0 && ipcol_wrk_fmsk != "NONE" )
+      map_wrk_fmsk.fft_from( wrk_fmsk );
+    else
+      map_wrk_fmsk = map_wrk;
 
     // mask radius
     double autorad = 1.0 * ParrotUtil::effective_resolution( wrk_pw );
@@ -426,7 +436,7 @@ int main( int argc, char** argv )
 
     // mask calculation from density
     if ( domask ) {
-      clipper::Xmap<float> lmom1( map_wrk ), lmom2( map_wrk );
+      clipper::Xmap<float> lmom1( map_wrk_fmsk ), lmom2( map_wrk_fmsk );
       for ( MRI ix = lmom2.first(); !ix.last(); ix.next() )
         lmom2[ix] = clipper::Util::sqr( lmom2[ix] );
       // now calculate local mom1, local mom1 squared
