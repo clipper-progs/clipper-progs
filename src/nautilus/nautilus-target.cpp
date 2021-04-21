@@ -386,6 +386,60 @@ const NucleicAcidDB::Chain NucleicAcidTargets::join_sugars( const clipper::Xmap<
 }
 
 
+const clipper::MiniMol NucleicAcidTargets::phosphate( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol, const clipper::MiniMol& mol_pho )
+{
+  clipper::MiniMol mol_new = mol;
+
+  // build bi-units on phosphates from db fragments
+  for ( int c = 0; c < mol_pho.size(); c++ ) {
+    for ( int r = 0; r < mol_pho[c].size()-1; r++ ) {
+      std::vector<clipper::Coord_orth> v1(3), v2(3);
+      int i3 = mol_pho[c][r  ].lookup( " O3'", clipper::MM::ANY );
+      int ip = mol_pho[c][r+1].lookup( " P  ", clipper::MM::ANY );
+      int i5 = mol_pho[c][r+1].lookup( " O5'", clipper::MM::ANY );
+      if ( i3 >= 0 && ip >= 0 && i5 >= 0 ) {
+        v1[0] = mol_pho[c][r  ][i3].coord_orth();
+        v1[1] = mol_pho[c][r+1][ip].coord_orth();
+        v1[2] = mol_pho[c][r+1][i5].coord_orth();
+        float smax = -1.0e20;
+        clipper::MPolymer mpmax;
+        for ( int j = 0; j < nadb.size()-1; j++ ) {
+          NucleicAcidDB::Chain frag = nadb.extract( j, 2 );
+          if ( frag.is_continuous() ) {
+            v2[0] = frag[0].coord_o3();
+            v2[1] = frag[1].coord_p();
+            v2[2] = frag[1].coord_o5();
+            clipper::RTop_orth rtdb( v2, v1 );
+            frag.transform( rtdb );
+            //std::cout << c << " " << r << std::endl;
+            //std::cout << "A: " << v1[0].format() << " " << v1[1].format() << " " << v1[2].format() << std::endl;
+            //v2[0] = frag[0].coord_o3();
+            //v2[1] = frag[1].coord_p();
+            //v2[2] = frag[1].coord_o5();
+            //std::cout << "B: " << v2[0].format() << " " << v2[1].format() << " " << v2[2].format() << std::endl;
+            float score = ( score_sugar( xmap, frag[0] ) +
+                            score_sugar( xmap, frag[1] ) );
+            if ( score > smax ) {
+              clipper::MPolymer mpx;
+              frag[0].set_type( '?' );
+              frag[1].set_type( '?' );
+              mpx.insert( frag[0].mmonomer() );
+              mpx.insert( frag[1].mmonomer() );
+              smax = score;
+              mpmax = mpx;
+            }
+          }
+        }
+        mol_new.insert( mpmax );
+      }
+    }
+  }
+  //std::cout << mol_new.size() << std::endl;
+
+  return mol_new;
+}
+
+
 const clipper::MiniMol NucleicAcidTargets::find( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol, int nsugar, int nphosp, double step )
 {
   clipper::MiniMol mol_new = mol;

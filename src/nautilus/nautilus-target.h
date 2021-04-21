@@ -49,6 +49,7 @@ class NucleicAcidTargets {
 
   const NucleicAcidDB::Chain join_sugars( const clipper::Xmap<float>& xmap, const NucleicAcidDB::NucleicAcid& na1, const NucleicAcidDB::NucleicAcid& na2, int len, double rmsdlim ) const;
 
+  const clipper::MiniMol phosphate( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol, const clipper::MiniMol& mol_pho );
   const clipper::MiniMol find( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol, int nsugar, int nphosp, double step );
   const clipper::MiniMol grow( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol, int ngrow, double fcut ) const;
   const clipper::MiniMol link( const clipper::Xmap<float>& xmap, const clipper::MiniMol& mol ) const;

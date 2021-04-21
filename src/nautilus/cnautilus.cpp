@@ -20,7 +20,7 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.5.2", "$Date: 2019/03/18" ); //edited
+  CCP4Program prog( "cnautilus", "0.5.3", "$Date: 2021/04/20" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2011-2017 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -40,6 +40,7 @@ int main( int argc, char** argv )
   clipper::String ipseq = "NONE";
   clipper::String ippdb = "NONE";
   clipper::String ippdb_ref = "NONE";
+  clipper::String ippdb_pho = "NONE";
   clipper::String oppdb = "nautilus.pdb";
   clipper::String opmap = "NONE";
   clipper::String opxml = "NONE";
@@ -60,6 +61,8 @@ int main( int argc, char** argv )
       if ( ++arg < args.size() ) title = args[arg];
     } else if ( args[arg] == "-pdbin-ref" ) {
       if ( ++arg < args.size() ) ippdb_ref = args[arg];
+    } else if ( args[arg] == "-pdbin-phosphate" ) {
+      if ( ++arg < args.size() ) ippdb_pho = args[arg];
     } else if ( args[arg] == "-mtzin" ) {
       if ( ++arg < args.size() ) ipmtz = args[arg];
     } else if ( args[arg] == "-seqin" ) {
@@ -190,6 +193,18 @@ int main( int argc, char** argv )
     for ( int c = 0; c < mol_tmp.size(); c++ ) mol_wrk.insert( mol_tmp[c] );
   }
 
+  // Get model phosphates
+  clipper::MiniMol mol_pho( hkls.spacegroup(), hkls.cell() );
+  if ( ippdb_pho != "NONE" ) {
+    clipper::MiniMol mol_tmp;
+    clipper::MMDBfile mmdb;
+    mmdb.SetFlag( mmdbflags );
+    mmdb.read_file( ippdb_pho );
+    mmdb.import_minimol( mol_tmp );
+    std::cout << mol_tmp.spacegroup().symbol_hm() << " " << mol_tmp.cell().format() << " " << mol_tmp.atom_list().size() << std::endl;
+    for ( int c = 0; c < mol_tmp.size(); c++ ) mol_pho.insert( mol_tmp[c] );
+  }
+
   // work map
   if ( ipcol_hl == "NONE" )
     wrk_hl.compute( wrk_pw, clipper::data32::Compute_abcd_from_phifom() );
@@ -233,6 +248,9 @@ int main( int argc, char** argv )
   natools.init_stats( xwrk );
   NautilusLog log( title ); // edited
   std::cout << std::endl;
+
+  // initial phosphates from PDB
+  if ( mol_pho.size() > 0 ) mol_wrk = natools.phosphate( xwrk, mol_wrk, mol_pho );
 
   for ( int cyc = 0; cyc < ncyc; cyc++ ) {
     std::cout << "Internal cycle " << clipper::String( cyc+1, 3 ) << std::endl << std::endl; // edited
