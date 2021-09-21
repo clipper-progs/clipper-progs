@@ -43,8 +43,6 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
 {
   clipper::MiniMol mol_new = mol;
 
-  typedef clipper::Interp_cubic I;
-
   // build bases in default position
   for ( int c = 0; c < mol_new.size(); c++ ) {
     if ( !mol_new[c].exists_property( "NON-NA" ) ) {
@@ -115,10 +113,12 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
       clipper::MAtom ma = clipper::MAtom::null();
       ma.set_occupancy( 1.0 ); ma.set_u_iso( 0.25 ); ma.set_element( "O" );
       for ( int r = 1; r < mol_new[c].size(); r++ ) {
+        const int i1 = mol_new[c][r].lookup(" OP1",clipper::MM::ANY);
+        const int i2 = mol_new[c][r].lookup(" OP2",clipper::MM::ANY);
         const int i3 = mol_new[c][r-1].lookup(" O3'",clipper::MM::ANY);
         const int ip = mol_new[c][r].lookup(" P  ",clipper::MM::ANY);
         const int i5 = mol_new[c][r].lookup(" O5'",clipper::MM::ANY);
-        if ( i3 >= 0 && ip >= 0 && i5 >= 0 ) {
+        if ( i1 < 0 && i2 < 0 && i3 >= 0 && ip >= 0 && i5 >= 0 ) {
           const clipper::Coord_orth c3 = mol_new[c][r-1][i3].coord_orth();
           const clipper::Coord_orth cp = mol_new[c][r][ip].coord_orth();
           const clipper::Coord_orth c5 = mol_new[c][r][i5].coord_orth();
@@ -138,10 +138,11 @@ clipper::MiniMol NucleicAcidRebuildBases::rebuild_bases( const clipper::Xmap<flo
       }
       // insert O2'
       for ( int r = 0; r < mol_new[c].size(); r++ ) {
+        const int io = mol_new[c][r].lookup(" O2'",clipper::MM::ANY);
         const int i1 = mol_new[c][r].lookup(" C1'",clipper::MM::ANY);
         const int i2 = mol_new[c][r].lookup(" C2'",clipper::MM::ANY);
         const int i3 = mol_new[c][r].lookup(" C3'",clipper::MM::ANY);
-        if ( i1 >= 0 && i2 >= 0 && i3 >= 0 ) {
+        if ( io < 0 && i1 >= 0 && i2 >= 0 && i3 >= 0 ) {
           const clipper::Coord_orth c1 = mol_new[c][r][i1].coord_orth();
           const clipper::Coord_orth c2 = mol_new[c][r][i2].coord_orth();
           const clipper::Coord_orth c3 = mol_new[c][r][i3].coord_orth();

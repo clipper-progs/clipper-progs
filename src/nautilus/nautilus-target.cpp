@@ -25,7 +25,6 @@ void NucleicAcidTarget::init( const float c_hi[][3], const float c_lo[][3], cons
 
 void NucleicAcidTarget::init_stats( const clipper::Xmap<float>& xmap )
 {
-  typedef clipper::Xmap<float>::Map_reference_index MRI;
   int nmax = 45;
   double s = 1.0/double(nmax);
   smin.resize(nmax*nmax*nmax);

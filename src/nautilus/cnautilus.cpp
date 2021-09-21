@@ -20,7 +20,7 @@
 
 int main( int argc, char** argv )
 {
-  CCP4Program prog( "cnautilus", "0.5.3", "$Date: 2021/04/20" );
+  CCP4Program prog( "cnautilus", "0.5.4", "$Date: 2021/09/21" );
   prog.set_termination_message( "Failed" );
 
   std::cout << std::endl << "Copyright 2011-2017 Kevin Cowtan and University of York." << std::endl << std::endl;
@@ -317,15 +317,31 @@ int main( int argc, char** argv )
   // set up residue types
   const clipper::String basetypes = "ACGTU";
   clipper::MiniMol mol_new( xwrk.spacegroup(), xwrk.cell() );
-  for ( int i = 0; i < mol_wrk.size(); i++ ) {
-    clipper::MPolymer mpx = mol_wrk[i];
+  for ( int c = 0; c < mol_wrk.size(); c++ ) {
+    clipper::MPolymer mpx = mol_wrk[c];
     if ( !mpx.exists_property( "NON-NA" ) ) {
+      bool dna = false;
       for ( int r = 0; r < mpx.size(); r++ ) {
         const clipper::String type = mpx[r].type().trim()+" ";
         const char ctype = type[0];
         int t = NucleicAcidTools::base_index( ctype );
         if ( t >= 0 ) mpx[r].set_type( "  "+basetypes.substr(t,1) );
         else          mpx[r].set_type( "  U" );
+        if ( mpx[r].type().trim() == "T" ) dna = true;
+      }
+      // for DNA, prefix type with D and remove O2'
+      if ( dna ) {
+        for ( int r = 0; r < mpx.size(); r++ ) {
+          const clipper::String type = " D" + mpx[r].type().trim();
+          mpx[r].set_type( type );
+          const int io2 = mpx[r].lookup( " O2'", clipper::MM::ANY );
+          clipper::MMonomer mm;
+          mm.copy( mpx[r], clipper::MM::COPY_MP );
+          for ( int a = 0; a < mpx[r].size(); a++ ) {
+            if ( a != io2 ) mm.insert( mpx[r][a] );
+          }
+          mpx[r] = mm;
+        }
       }
     }
     mol_new.insert( mpx );
