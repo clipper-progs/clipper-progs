@@ -867,13 +867,13 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> sumov(nbins,0.0);
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size() );
 		
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
 			if (!hkldata.missing(ih.index() ) ) {
 				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
 				clipper::ftype s = ih.invresolsq();
-				hkldata.data_export(ih.hkl(),working);
+				hkldata.data_export(ih.hkl(),working.data());
 				clipper::ftype Ip(working[0]);
 				clipper::ftype sp(working[1]);
 				clipper::ftype Im(working[2]);
@@ -930,13 +930,13 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> meanI(nbins,0.0);
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size() );
 				
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
 			if (!hkldata.missing(ih.index() ) ) {
 				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
 				clipper::ftype s = ih.invresolsq();
-				hkldata.data_export(ih.hkl(),working);
+				hkldata.data_export(ih.hkl(),working.data() );
 				clipper::ftype Ip(working[0]);
 				clipper::ftype Im(working[2]);
 				int bin = this->operator()(s);
@@ -997,13 +997,13 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> sumov(nbins,0.0);
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size() );
 		
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first_data(); !ih.last(); hkldata.next_data(ih) ) {
 			if (!hkldata.missing(ih.index() ) ) {
 				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
 				clipper::ftype s = ih.invresolsq();
-				hkldata.data_export(ih.hkl(),working);
+				hkldata.data_export(ih.hkl(),working.data() );
 				clipper::ftype Ip(working[0]);
 				clipper::ftype sp(working[1]);
 				clipper::ftype Im(working[2]);
@@ -1297,7 +1297,7 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> sumov(nbins,0.0);
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size() );
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
 			clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
 			int bin = this->operator()(ih.invresolsq() );
@@ -1305,7 +1305,7 @@ namespace ctruncate {
 				clipper::ftype I(0.0);
 				clipper::ftype sig(1.0);
 				clipper::ftype s = ih.invresolsq();
-				hkldata.data_export(ih.hkl(),working);
+				hkldata.data_export(ih.hkl(),working.data() );
 				if (this->is_anomalous() ) {
 					clipper::ftype Ip(working[0]);
 					clipper::ftype sp(working[1]);
@@ -1377,14 +1377,14 @@ namespace ctruncate {
 		
 		std::vector<clipper::ftype> sumov(nbins,0.0);
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size() );
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
 			if (!hkldata.missing(ih.index() ) ) {
 				clipper::ftype I;
 				clipper::ftype sig;
 				clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
 				clipper::ftype s = ih.invresolsq();
-				hkldata.data_export(ih.hkl(),working);
+				hkldata.data_export(ih.hkl(),working.data() );
 				if (this->is_anomalous() ) {
 					clipper::ftype Ip(working[0]);
 					clipper::ftype sp(working[1]);

@@ -280,9 +280,9 @@ namespace ctruncate
 	{
 		int num = 0;
 		clipper::ftype a,s;
-		clipper::xtype working[cdata_->data_size()];
+		std::vector<clipper::xtype> working(cdata_->data_size());
 		for ( clipper::HKL_info::HKL_reference_index ih = cdata_->first_data(); !ih.last(); cdata_->next_data(ih) ) {
-                        cdata_->data_export(ih.hkl(),working);
+                        cdata_->data_export(ih.hkl(),working.data() );
 			if (cdata_->data_size() == 2) {
 				a = clipper::ftype(working[0]);
 				s = clipper::ftype(working[1]);

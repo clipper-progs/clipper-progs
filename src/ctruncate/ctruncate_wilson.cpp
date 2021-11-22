@@ -1017,8 +1017,8 @@ namespace ctruncate {
     clipper::ftype  WilsonB::obs(const clipper::HKL_data_base& hkldata, const clipper::HKL_data_base::HKL_reference_index& ih)
     {
         clipper::ftype a;
-        clipper::xtype working[hkldata.data_size()];
-        hkldata.data_export(ih.hkl(),working);
+        std::vector<clipper::xtype> working(hkldata.data_size());
+        hkldata.data_export(ih.hkl(),working.data());
         if (hkldata.data_size() == 2) {
             a = working[0];
         } else {
@@ -1044,8 +1044,8 @@ namespace ctruncate {
     {
         clipper::ftype a;
         clipper::ftype s;
-        clipper::xtype working[hkldata.data_size()];
-        hkldata.data_export(ih.hkl(),working);
+        std::vector<clipper::xtype> working(hkldata.data_size());
+        hkldata.data_export(ih.hkl(),working.data());
         if (hkldata.data_size() == 2) {
             a = working[0];
             s = working[1];

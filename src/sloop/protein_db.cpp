@@ -261,14 +261,14 @@ bool Chain::load_db( const clipper::String file )
   fs.seekg( 0, std::ios::beg );
   int i1 = fs.tellg();
   int l = i2 - i1;
-  char d[l];
-  fs.read( d, l );
+  std::vector<char> d(l);
+  fs.read( d.data(), l );
   fs.close();
   if ( l%20 != 0 ) return false;
   // import file data
   dbresidues.resize( l/20 );
   for ( int r = 0; r < dbresidues.size(); r++ ) {
-    dbresidues[r].data_import( d + 20*r );
+    dbresidues[r].data_import( d.data() + 20*r );
   }
   return true;
 }

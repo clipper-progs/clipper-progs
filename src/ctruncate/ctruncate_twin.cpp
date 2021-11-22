@@ -290,7 +290,7 @@ namespace ctruncate {
     void TwinSymops::principles(const clipper::Cell& cell, const clipper::Spacegroup& spgr) {		
         const int scalefac = 12;           // scale factor for integer symops
         double sc_tol = 3.5;    // tolerance for determining candidate twinops, obliquity in degrees
-        int lc = 48;             // maximum number of twinops that can be stored
+        const int lc = 48;             // maximum number of twinops that can be stored
         int nc = 0;
         int ivb = 0;
         int ierr = 0;
@@ -314,8 +314,8 @@ namespace ctruncate {
             rot.push_back( isymop.rot() );
         }
         
-        int vv[nsymops][3][3];
-        int ww[nsymops][3];
+        std::vector<std::vector<std::vector<int> > > vv(nsymops, std::vector<std::vector<int> >(3, std::vector<int>(3)));
+        std::vector<std::vector<int> > ww(nsymops, std::vector<int>(3));
         int uu_c[lc][3][3];
         double *sc_c = &score[0];
         double twin_cell[6];
@@ -329,8 +329,9 @@ namespace ctruncate {
             for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) for (int k = 0 ; k != 3 ; ++k ) vv[i][j][k] = rot[i](k,j);
             for (int i=0; i!=nsymops; ++i) for (int j=0 ; j != 3; ++j ) ww[i][j] = trans[i][j];
         }
-        
-        yyy_cell2tg(twin_cell, sc_tol, nsymops, vv, ww, lc, nc, nc2, uu_c, sc_c, ivb, ierr);
+       
+        int lc_tmp = lc; 
+        yyy_cell2tg(twin_cell, sc_tol, nsymops, vv, ww, lc_tmp, nc, nc2, uu_c, sc_c, ivb, ierr);
                     
         if (nc > 1) {
             for (int k=1; k!=nc; ++k) {

@@ -1093,7 +1093,7 @@ namespace ctruncate {
         clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
         //clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
         
-		clipper::ftype c[np];
+		std::vector<clipper::ftype> c(np);
 		c[1] = xs[0]*xs[0];
 		c[2] = xs[1]*xs[1];
 		c[3] = xs[2]*xs[2];
@@ -1155,7 +1155,7 @@ namespace ctruncate {
         clipper::ftype Adet2 = 1.0 /*(params[1]-Uiso)*(params[2]-Uiso)*(params[3]-Uiso)*2.0*params[4]*2.0*params[5]*2.0*params[6]*/;
         //clipper::ftype norm2 = std::pow(clipper::Util::twopi(),3.0)*std::pow(sigma_,6.0)/std::sqrt(std::fabs(Adet2) );
 
-		clipper::ftype c[np];
+		std::vector<clipper::ftype> c(np);
 		c[1] = xs[0]*xs[0];
 		c[2] = xs[1]*xs[1];
 		c[3] = xs[2]*xs[2];

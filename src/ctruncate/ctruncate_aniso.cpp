@@ -40,22 +40,15 @@ namespace ctruncate {
 		clipper::Spacegroup spg = fsig.hkl_info().spacegroup();
 		
 		
-		std::vector<float> somov(nbins,0.0);
-		std::vector<float> somsdov(nbins,0.0);
+		std::vector<float> somov(nbins,0.0f);
+		std::vector<float> somsdov(nbins,0.0f);
 		std::vector<int> numov(nbins,0);
-		std::vector<float> enumov(nbins,0.0);
+		std::vector<float> enumov(nbins,0.0f);
 		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
-		}
+		std::vector<std::vector<float> > somdir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<float> > somsddir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<float> > enumdir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<int> >   numdir(3, std::vector<int>(nbins,0) );
 		
 		int nzerosigma = 0;
 		float cone = 30.0; //hardwired for now
@@ -197,17 +190,10 @@ namespace ctruncate {
 		std::vector<int> numov(nbins,0);
 		std::vector<float> enumov(nbins,0.0);
 		
-		float somdir[3][nbins];
-		float somsddir[3][nbins];
-		int numdir[3][nbins];
-		float enumdir[3][nbins];
-		
-		for (int i=0;i<3;i++){
-			for (int j=0;j<nbins;j++){
-				somdir[i][j] = somsddir[i][j] = enumdir[i][j] = 0.0;
-				numdir[i][j] = 0;
-			}
-		}
+		std::vector<std::vector<float> > somdir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<float> > somsddir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<float> > enumdir(3, std::vector<float>(nbins,0.0f) );
+		std::vector<std::vector<int> >   numdir(3, std::vector<int>(nbins,0) );
 		
 		int nzerosigma = 0;
 		float cone = 30.0; //hardwired for now
@@ -1013,7 +999,7 @@ namespace ctruncate {
         clipper::Spacegroup spg = hkldata.hkl_info().spacegroup();
         clipper::Cell cell = hkldata.hkl_info().cell();
 		
-		clipper::xtype working[hkldata.data_size()];
+		std::vector<clipper::xtype> working(hkldata.data_size());
 		for ( clipper::HKL_data_base::HKL_reference_index ih = hkldata.first(); !ih.last(); ih.next() ) {
 			clipper::ftype eps = (this->is_intensity() ) ? 1.0/ih.hkl_class().epsilonc() : 1.0/std::sqrt(ih.hkl_class().epsilonc());
             clipper::HKL ri = ih.hkl();
@@ -1023,7 +1009,7 @@ namespace ctruncate {
                 clipper::ftype I(0.0);
                 clipper::ftype sig(1.0);
                 clipper::ftype s = ih.invresolsq();
-                hkldata.data_export(ih.hkl(),working);
+                hkldata.data_export(ih.hkl(),working.data());
                 if (this->is_anomalous() ) {
                     clipper::ftype Ip(working[0]);
                     clipper::ftype sp(working[1]);

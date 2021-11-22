@@ -14,6 +14,7 @@
 //    and converted from FORTRAN to C
 //
 
+#include <vector>
 #include "twinlaws.h"
 #include <cstdlib>
 #include <cmath>
@@ -121,7 +122,7 @@ void yyy_invert_int( int b[3][3], int r[3][3], int &d )
 }
 // -----------------------------------------------------------------------------
 
-void yyy_find_base( int &ng, int uu_g[][3][3], int u_g[][3], int u_b[3][3] )
+void yyy_find_base( int &ng, std::vector<std::vector<std::vector<int> > > &uu_g, std::vector<std::vector<int> > &u_g, int u_b[3][3] )
 {
 
 	int u[3], v[3], r[3][3] ;
@@ -881,7 +882,7 @@ void yyy_cell_group(
 	int &nh, int vv_h[24][3][3], double sc_h[24] )
 {
 
-	int mo = 504 ;
+	const int mo = 504 ;
 	int no ;
 	int vv_o[mo][3][3] ;
 	int o_s[mo*2] ;
@@ -890,7 +891,8 @@ void yyy_cell_group(
 	int h_s[mo] ;
 	int s_h[mo] ;
 
-	yyy_generate_ops( mo, no, vv_o ) ;
+        int mmo = mo;
+	yyy_generate_ops( mmo, no, vv_o ) ;
 	yyy_score_ops( mvv, no, vv_o, sc_o ) ;
 
 	sc_o[0] = - 1 ;
@@ -1054,7 +1056,7 @@ void yyy_test_group12( int &nh, int uu_h[24][3][3], int h_hh[24][24], int tr_h[2
 }
 // -----------------------------------------------------------------------------
 
-void yyy_map_subgroup( int &ng, int uu_g[][3][3], int &nh, int uu_h[24][3][3], int p_h[24], int &np, int h_p[24] )
+void yyy_map_subgroup( int &ng, std::vector<std::vector<std::vector<int> > > &uu_g, int &nh, int uu_h[24][3][3], int p_h[24], int &np, int h_p[24] )
 {
 
 	int uu_x[3][3], uu_y[3][3] ;
@@ -1281,7 +1283,7 @@ void yyy_write_classes( int &np, int &nc, int h_c[24], int h_pc[24][24], int tr_
 
 void yyy_cell2tg(
 	double cell[6], double &sc_tol,
-	int &ng, int uu_g[][3][3], int u_g[][3],
+	int &ng, std::vector<std::vector<std::vector<int> > > &uu_g, std::vector<std::vector<int> > &u_g,
 	int &lc, int &nc, int &nc2, int uu_c[][3][3], double sc_c[],
 	int &ivb, int &ierr )
 {
