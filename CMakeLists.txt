@@ -38,6 +38,9 @@ target_link_libraries(csfcalc ${CCP4_LIBRARIES})
 add_executable(cfft src/cfft.cpp)
 target_link_libraries(cfft ${CCP4_LIBRARIES})
 
+add_executable(clipper_test src/clipper_test.cpp)
+target_link_libraries(clipper_test ${CCP4_LIBRARIES})
+
 add_executable(cinvfft src/cinvfft.cpp)
 target_link_libraries(cinvfft ${CCP4_LIBRARIES})
 
@@ -186,7 +189,7 @@ target_link_libraries(cnautilus ${CCP4_LIBRARIES})
 install(FILES src/nautilus/data/nautilus_lib.pdb src/sloop/prot500.db
         DESTINATION lib/data)
 
-install(TARGETS ccontacts cextend chltofom cphasematch csfcalc cfft cinvfft csigmaa
+install(TARGETS ccontacts cextend chltofom cphasematch csfcalc cfft clipper_test cinvfft csigmaa
                 csheetbend cecalc cphasecombine cpatterson caniso convert2mtz
                 csymmatch cmaplocal cncsfrommodel cmodeltoseq cmapcut
                 comit cmapcoeff cmtzsplit cmtzjoin

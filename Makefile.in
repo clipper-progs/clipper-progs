@@ -52,7 +52,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = src/chltofom$(EXEEXT) src/cphasematch$(EXEEXT) \
-	src/csfcalc$(EXEEXT) src/cfft$(EXEEXT) src/cinvfft$(EXEEXT) \
+	src/csfcalc$(EXEEXT) src/cfft$(EXEEXT) src/clipper_test$(EXEEXT) src/cinvfft$(EXEEXT) \
 	src/csigmaa$(EXEEXT) src/cecalc$(EXEEXT) \
 	src/cphasecombine$(EXEEXT) src/cpatterson$(EXEEXT) \
 	src/caniso$(EXEEXT) src/convert2mtz$(EXEEXT) \
@@ -141,6 +141,10 @@ am_src_cfft_OBJECTS = src/cfft.$(OBJEXT)
 src_cfft_OBJECTS = $(am_src_cfft_OBJECTS)
 src_cfft_LDADD = $(LDADD)
 src_cfft_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am_src_clipper_test_OBJECTS = src/clipper_test.$(OBJEXT)
+src_clipper_test_OBJECTS = $(am_src_clipper_test_OBJECTS)
+src_clipper_test_LDADD = $(LDADD)
+src_clipper_test_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_src_chltofom_OBJECTS = src/chltofom.$(OBJEXT)
 src_chltofom_OBJECTS = $(am_src_chltofom_OBJECTS)
 src_chltofom_LDADD = $(LDADD)
@@ -335,7 +339,7 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
-	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
+	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) $(src_clipper_test_SOURCES) \
 	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
 	$(src_cmapcoeff_SOURCES) $(src_cmapcut_SOURCES) \
 	$(src_cmaplocal_SOURCES) $(src_cmodeltoseq_SOURCES) \
@@ -351,7 +355,7 @@ SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_pirate_cpirate_SOURCES) $(src_sloop_csloop_SOURCES)
 DIST_SOURCES = $(src_buccaneer_cbuccaneer_SOURCES) \
 	$(src_buccaneer_csequins_SOURCES) $(src_caniso_SOURCES) \
-	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) \
+	$(src_cecalc_SOURCES) $(src_cfft_SOURCES) $(src_clipper_test_SOURCES)\
 	$(src_chltofom_SOURCES) $(src_cinvfft_SOURCES) \
 	$(src_cmapcoeff_SOURCES) $(src_cmapcut_SOURCES) \
 	$(src_cmaplocal_SOURCES) $(src_cmodeltoseq_SOURCES) \
@@ -545,6 +549,7 @@ src_chltofom_SOURCES = src/chltofom.cpp
 src_cphasematch_SOURCES = src/cphasematch.cpp
 src_csfcalc_SOURCES = src/csfcalc.cpp
 src_cfft_SOURCES = src/cfft.cpp
+src_clipper_test_SOURCES = src/clipper_test.cpp
 src_cinvfft_SOURCES = src/cinvfft.cpp
 src_csigmaa_SOURCES = src/csigmaa.cpp
 src_cecalc_SOURCES = src/cecalc.cpp
@@ -874,6 +879,10 @@ src/cfft.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/cfft$(EXEEXT): $(src_cfft_OBJECTS) $(src_cfft_DEPENDENCIES) $(EXTRA_src_cfft_DEPENDENCIES) src/$(am__dirstamp)
 	@rm -f src/cfft$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(src_cfft_OBJECTS) $(src_cfft_LDADD) $(LIBS)
+src/clipper_test.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/clipper_test$(EXEEXT): $(src_clipper_test_OBJECTS) $(src_clipper_test_DEPENDENCIES) $(EXTRA_src_clipper_test_DEPENDENCIES) src/$(am__dirstamp)
+	@rm -f src/clipper_test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(src_clipper_test_OBJECTS) $(src_clipper_test_LDADD) $(LIBS)
 src/chltofom.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/chltofom$(EXEEXT): $(src_chltofom_OBJECTS) $(src_chltofom_DEPENDENCIES) $(EXTRA_src_chltofom_DEPENDENCIES) src/$(am__dirstamp)
@@ -1125,6 +1134,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/caniso.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cecalc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cfft.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/clipper_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/chltofom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cinvfft.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/cmapcoeff.Po@am__quote@

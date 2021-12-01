@@ -14,6 +14,7 @@ bin_PROGRAMS = src/chltofom src/cphasematch src/csfcalc src/cfft \
 	       src/cmodeltoseq src/cmapcut src/comit \
 	       src/cmapcoeff \
 	       src/cmtzsplit src/cmtzjoin \
+	       src/clipper_test \
 	       src/ctruncate/ctruncate \
 	       src/pirate/cpirate src/pirate/cmakereference \
 	       src/buccaneer/cbuccaneer src/buccaneer/csequins \
@@ -37,6 +38,8 @@ src_cphasematch_SOURCES = src/cphasematch.cpp
 src_csfcalc_SOURCES = src/csfcalc.cpp
 
 src_cfft_SOURCES = src/cfft.cpp
+
+src_clipper_test_SOURCES = src/clipper_test.cpp
 
 src_cinvfft_SOURCES = src/cinvfft.cpp
 
