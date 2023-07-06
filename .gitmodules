@@ -1,0 +1,24 @@
+[submodule "src/buccaneer"]
+	path = src/buccaneer
+	url = https://github.com/clipper-progs/buccaneer.git
+	branch = main
+[submodule "src/sloop"]
+	path = src/sloop
+	url = https://github.com/clipper-progs/sloop.git
+	branch = main
+[submodule "src/sheetbend"]
+	path = src/sheetbend
+	url = https://github.com/clipper-progs/sheetbend.git
+	branch = main
+[submodule "src/pirate"]
+	path = src/pirate
+	url = https://github.com/clipper-progs/pirate.git
+	branch = main
+[submodule "src/parrot"]
+	path = src/parrot
+	url = https://github.com/clipper-progs/parrot.git
+	branch = main
+[submodule "src/ctruncate"]
+	path = src/ctruncate
+	url = https://github.com/clipper-progs/ctruncate.git
+	branch = main
