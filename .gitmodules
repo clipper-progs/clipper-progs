@@ -22,3 +22,6 @@
 	path = src/ctruncate
 	url = https://github.com/clipper-progs/ctruncate.git
 	branch = main
+[submodule "src/nautilus"]
+	path = src/nautilus
+	url = https://github.com/clipper-progs/nautilus
